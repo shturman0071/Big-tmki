@@ -81,9 +81,11 @@ gh label create phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6 security
 
 ### #7 [phase-2] [security] Матрица «роль → права → RLS»
 
-На базе `ORG_MODEL.md` (проект Сатимол): Direktor, Projektleiter, ГИП, начальники участков.
+**Статус:** done (DRAFT v0.1 в `ORG_MODEL.md`)
 
-**Выход:** таблица role × resource × action × RLS-поля.
+На базе `ORG_MODEL.md` (проект Сатимол). Выход: таблица role × resource × action × RLS-поля.
+
+**Осталось:** согласовать открытые вопросы (access_label, подрядчики, group_admin).
 
 ---
 
@@ -156,6 +158,6 @@ pgvector + RLS-поля до выдачи в RAG.
 ## Текущий фокус (эта неделя)
 
 1. ~~#1 Синхронизация ссылок~~ ✅
-2. **#7 Матрица роль → права → RLS**
+2. ~~#7 Матрица роль → права → RLS~~ ✅ (DRAFT v0.1)
 3. **#10 JSON-схемы Run/Step/Event**
 4. **#3 Установить gh + создать issues на GitHub**

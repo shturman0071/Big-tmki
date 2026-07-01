@@ -104,6 +104,112 @@ Project -> ProjectRole -> Employee
 
 **MUST**: доступ к документам и tool calls фильтруется по `company_id`, `project_id`, `department_id` и роли сотрудника (см. `07_security_addendum.md`, `10_ai_runtime.md`).
 
+## Матрица «роль → права → RLS» (проект «Сатимол»)
+
+> Статус: **DRAFT v0.1** — для согласования с Директором / РП / ИБ.  
+> Основа: оргсхема 10.09.2025. Реализация — **server-side** (RLS + policy engine).
+
+### Легенда действий
+
+| Код | Значение |
+|-----|----------|
+| **R** | read (чтение) |
+| **W** | write (создание/изменение в своём scope) |
+| **A** | admin (управление доступами, policy, назначения) |
+| **T_r** | tool call read-only (RAG, search, web read) |
+| **T_w** | tool call с side-effects (write/API/интеграции) |
+| **I** | ingest / индексация документов |
+| **—** | запрещено |
+
+### Ресурсы системы
+
+| Resource ID | Описание | Ключевые RLS-поля |
+|-------------|----------|-------------------|
+| `doc.project` | Проектная документация (ПД/РД/ГРД, общие регламенты) | `project_id`, `access_label` |
+| `doc.department` | Документы подразделения / участка | `project_id`, `department_id`, `access_label` |
+| `doc.confidential` | HR, финансы, персональные данные | `company_id`, `access_label` ≥ restricted |
+| `doc.external` | Документы подрядчиков | `project_id`, `access_label`, contractor flag |
+| `runtime.chat` | AI Run / чат с агентом | `project_id`, `project_role` |
+| `runtime.tool` | Вызовы инструментов (см. `16_tool_registry.md`) | `project_role`, env, risk class |
+| `runtime.audit` | Журнал аудита | `company_id`, `project_id` (read scoped) |
+| `org.assignments` | Назначения ролей и доступов | `company_id`, `project_id` |
+
+### Scope-правила RLS (MUST)
+
+| Scope | SQL/policy смысл | Применение |
+|-------|------------------|------------|
+| **S_project** | `project_id = current_user.project_id` | Все участники проекта «Сатимол» |
+| **S_company** | `company_id = current_user.company_id` | Внутри юрлица (ТМКИ и т. п.) |
+| **S_dept** | `department_id = current_user.department_id` | Только своё подразделение |
+| **S_dept_tree** | `department_id IN user.dept_tree` | Подразделение + подчинённые участки |
+| **S_label** | `doc.access_label <= user.clearance` | Классификация конфиденциальности |
+| **S_self** | `employee_id = current_user.employee_id` | Только свои записи |
+
+**MUST**: фильтрация `S_label` и `S_project` применяется **до** выдачи в RAG (см. `09_document_processing.md`).
+
+### Матрица по проектным ролям
+
+| ProjectRole | doc.project | doc.department | doc.confidential | doc.external | runtime.chat | T_r | T_w | I | runtime.audit | org.assignments |
+|-------------|:-----------:|:--------------:|:----------------:|:------------:|:------------:|:---:|:---:|:---:|:-------------:|:---------------:|
+| **Direktor** | R+W `S_project`+`S_label` | R `S_project` | R `S_company`+`S_label` | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_project` | A `S_project` |
+| **Projektleiter** | R+W `S_project` | R+W `S_dept_tree` | R `S_company`† | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_project` | W‡ |
+| **Projektleiter (Design)** | R+W `S_project` | R+W `S_dept` | — | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_dept` | — |
+| **ГИП / Гл. инж. проекта** | R+W `S_project` | R+W `S_dept_tree` | — | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_dept_tree` | — |
+| **Generalprojektant (КГЦМ)** | R+W `S_project` | R `S_project` | — | R `S_project` | R+W | ✓ | — | ✓ | — | — |
+| **Начальник подразделения**§ | R `S_project` | R+W `S_dept` | — | R `S_dept` | R+W | ✓ | ✓* | ✓ `S_dept` | R `S_dept` | — |
+| **Начальник участка** (БВР/КС/СС/СМУ) | R `S_project` | R+W `S_dept` | — | — | R+W | ✓ | — | ✓ `S_dept` | — | — |
+| **Служба ОТ и ПБ** | R `S_project` | R `S_project` | — | — | R | ✓ | — | R | R `S_project` | — |
+| **Бухгалтерия / Кадры** | — | R `S_dept` | R+W `S_dept`¶ | — | R | ✓ | — | — | — | — |
+| **МТО / Закупки** | R `S_project` | R+W `S_dept` | — | R `S_project` | R+W | ✓ | ✓* | ✓ `S_dept` | — | — |
+| **ИТ / Связь** | R `S_project` | R `S_dept` | — | — | R+W | ✓ | ✓** | ✓ | R `S_project` | W** |
+| **Секретариат / АУП** | R `S_project` | R `S_dept` | — | — | R | ✓ | — | R | — | — |
+| **Подрядчик (external)** | R‖ | R‖ | — | R‖ | R | ✓ | — | — | — | — |
+
+**Примечания к матрице:**
+
+- \* **T_w** — только с guardrails + audit; write-операции MAY требовать подтверждения пользователя (см. `07_security_addendum.md`).
+- † Projektleiter: финансы/HR — read сводных отчётов, без персональных данных уровня `restricted`.
+- ‡ Назначение ролей в пределах проекта, без изменения `company_id`-level policy.
+- § Начальник ПТО, геологии, маркшейдерии, лаборатории, главный механик/энергетик и т. п.
+- ¶ Только в scope своего подразделения (`S_dept`); персональные данные — минимально необходимый набор.
+- \*\* ИТ: T_w/I для инфраструктурных инструментов; без доступа к `doc.confidential` по умолчанию.
+- ‖ Подрядчик: доступ только к документам с явным `contractor_id` / share flag; `project_id` обязателен.
+
+### Tool gating по ролям (связь с `16_tool_registry.md`)
+
+| Категория tool | Direktor / Projektleiter | ГИП / Нач. подразделения | Design / КГЦМ | Участки / АУП | Подрядчик |
+|----------------|--------------------------|---------------------------|---------------|---------------|-----------|
+| LLM (OpenAI/Anthropic/Local) | ✓ | ✓ | ✓ | R-only† | R-only† |
+| RAG / pgvector | ✓ | ✓ scoped | ✓ | ✓ scoped | ✓ scoped‖ |
+| Web (SearXNG, Firecrawl) | ✓ | ✓ | ✓ | ✓ | — |
+| OCR / ingest (MinerU) | ✓ | ✓ `S_dept` | ✓ | ✓ `S_dept` | — |
+| Write/API integrations | ✓* | ✓* | — | — | — |
+
+† Без T_w без явного разрешения policy. ‖ Только shared docs.
+
+### Контекст Context Builder (поля сессии)
+
+При старте Run **MUST** передаваться в policy context:
+
+```json
+{
+  "company_id": "...",
+  "project_id": "satimol",
+  "department_id": "...",
+  "project_role": "Projektleiter",
+  "employee_id": "...",
+  "clearance": "internal",
+  "env": "production"
+}
+```
+
+### Открытые вопросы для согласования (SHOULD)
+
+1. Уровни `access_label` (например: `public`, `internal`, `restricted`, `confidential`) — утвердить перечень.
+2. Доступ Projektleiter (Design) к документам смежных подразделений — read-only на весь проект или только `S_dept`?
+3. Права SchBK / Gen. Direktor (группа) — отдельная роль `group_admin` вне `project_id`?
+4. Подрядчики — отдельный `company_id` и guest `project_role`?
+
 ## Связанные документы
 
 | Документ | Связь |

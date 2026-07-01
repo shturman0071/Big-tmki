@@ -59,7 +59,7 @@
 | Документ | Связь |
 |----------|-------|
 | `10_ai_runtime.md` | Guardrails, Audit, Run/Step budget |
-| `ORG_MODEL.md` | RLS-поля (`company_id`, `project_id`, `department_id`, `project_role`) |
+| `ORG_MODEL.md` | RLS-поля (`company_id`, `project_id`, `department_id`, `project_role`), матрица ролей |
 | `09_document_processing.md` | фильтрация доступа к документам до выдачи |
 | `16_tool_registry.md` | tool gating, policy hooks |
 | `18_technology_watch.md` | model governance, approved-провайдеры |

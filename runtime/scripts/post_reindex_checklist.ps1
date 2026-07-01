@@ -2,7 +2,8 @@
 param(
     [switch]$ExportAudit,
     [switch]$RecordSnapshot,
-    [switch]$QualitySnapshot
+    [switch]$QualitySnapshot,
+    [switch]$Bundle
 )
 
 $runtime = Resolve-Path $PSScriptRoot\..
@@ -29,4 +30,12 @@ if ($QualitySnapshot) {
 if ($ExportAudit) {
     Write-Host ""
     python scripts/export_reindex_audit.py
+}
+if ($Bundle) {
+    Write-Host ""
+    python scripts/export_reindex_ops_bundle.py
+}
+if (Test-Path "artifacts\regulations-import\quality-partial-p*.json") {
+    Write-Host ""
+    python scripts/compare_partial_quality.py
 }

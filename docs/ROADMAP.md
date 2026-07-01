@@ -376,6 +376,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `--save` dashboard, `snapshot_partial_quality.py`, demo на dashboard
 
+### #75 [phase-4] [runtime] Partial quality trend + ops bundle
+
+**Статус:** MVP (v0.3) — `compare_partial_quality.py`, `export_reindex_ops_bundle.py`, trend в finalize report
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

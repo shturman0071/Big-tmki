@@ -34,6 +34,7 @@ def pgvector_row_count(dsn: str | None = None) -> int | None:
 def build_post_finalize_report(artifacts_dir: Path, *, dsn: str | None = None) -> dict[str, Any]:
     audit = _read_json(artifacts_dir / "reindex-audit-latest.json")
     quality = _read_json(artifacts_dir / "quality-benchmark-final.json")
+    partial_quality = _read_json(artifacts_dir / "quality-partial-latest.json")
     finalize_marker = _read_json(artifacts_dir / "finalize-done.json")
 
     reindex_report = (audit or {}).get("report")
@@ -44,6 +45,7 @@ def build_post_finalize_report(artifacts_dir: Path, *, dsn: str | None = None) -
         "reindex": reindex_report,
         "errors_total": (audit or {}).get("errors", {}).get("errors_total"),
         "quality_benchmark": quality,
+        "partial_quality_latest": partial_quality,
         "pgvector_rows": pg_rows,
         "finalize_marker": finalize_marker,
         "artifacts": {

@@ -24,6 +24,14 @@ def main() -> int:
     parser.add_argument("--log", type=Path, default=DEFAULT_LOG)
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--record-snapshot", action="store_true", help="Append progress snapshot before display")
+    parser.add_argument(
+        "--save",
+        nargs="?",
+        const=DEFAULT_STATE.parent / "reindex-dashboard-latest.json",
+        type=Path,
+        default=None,
+        help="Сохранить dashboard JSON (default: reindex-dashboard-latest.json)",
+    )
     args = parser.parse_args()
 
     if not args.state.is_file():
@@ -59,6 +67,14 @@ def main() -> int:
         lock_path=args.lock,
         progress_log_path=args.log,
     )
+
+    save_path = args.save
+    if save_path is not None:
+        from datetime import datetime, timezone
+
+        dash["saved_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        save_path.write_text(json.dumps(dash, ensure_ascii=False, indent=2), encoding="utf-8")
 
     if args.json:
         print(json.dumps(dash, ensure_ascii=False, indent=2))
@@ -100,6 +116,8 @@ def main() -> int:
     if log_a and log_a.get("points"):
         print(f"  log points: {log_a['points']}  rate: {log_a.get('rate_per_hour')} files/h")
 
+    if not args.json and save_path is not None:
+        print(f"\nsaved: {save_path}")
     return 0
 
 

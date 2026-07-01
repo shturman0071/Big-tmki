@@ -1,7 +1,8 @@
 # Read-only чеклист re-index: отчёт, ошибки, аудит (не трогает re-index)
 param(
     [switch]$ExportAudit,
-    [switch]$RecordSnapshot
+    [switch]$RecordSnapshot,
+    [switch]$QualitySnapshot
 )
 
 $runtime = Resolve-Path $PSScriptRoot\..
@@ -20,6 +21,10 @@ if ($RecordSnapshot) {
 if (Test-Path "artifacts\regulations-import\reindex-progress-log.jsonl") {
     Write-Host ""
     python scripts/analyze_reindex_progress_log.py
+}
+if ($QualitySnapshot) {
+    Write-Host ""
+    python scripts/snapshot_partial_quality.py
 }
 if ($ExportAudit) {
     Write-Host ""

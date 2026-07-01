@@ -372,6 +372,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `reindex_dashboard.py`, `reindex_dashboard.ps1`, сводный ETA state+log
 
+### #74 [phase-4] [runtime] Dashboard export + partial quality snapshot
+
+**Статус:** MVP (v0.3) — `--save` dashboard, `snapshot_partial_quality.py`, demo на dashboard
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

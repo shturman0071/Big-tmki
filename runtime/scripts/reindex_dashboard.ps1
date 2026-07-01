@@ -1,7 +1,8 @@
 # Единый dashboard re-index (read-only)
 param(
     [switch]$RecordSnapshot,
-    [switch]$Json
+    [switch]$Json,
+    [switch]$Save
 )
 
 $runtime = Resolve-Path $PSScriptRoot\..
@@ -12,4 +13,5 @@ Set-Location $runtime
 $args = @("scripts/reindex_dashboard.py")
 if ($RecordSnapshot) { $args += "--record-snapshot" }
 if ($Json) { $args += "--json" }
+if ($Save) { $args += "--save" }
 python @args

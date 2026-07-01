@@ -15,7 +15,7 @@ Set-Location $runtime
 
 Write-Host "=== TMKI demo ===" -ForegroundColor Cyan
 python scripts/check_runtime_health.py
-python scripts/reindex_report.py
+python scripts/reindex_dashboard.py
 
 $mvpArgs = @("scripts/run_mvp_regulations.py", "--variant", "v2", "--hybrid")
 if ($Backend -eq "pgvector") {

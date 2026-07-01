@@ -72,6 +72,7 @@ Components:
 - **Вход**: user message, сессия, org/project, разрешения, краткая история диалога (см. `ORG_MODEL.md`).
 - **Выход**: `ContextBundle` (структурировано, с лимитами размера).
 - **MUST**: редактировать/маскировать PII/секреты согласно guardrails.
+- **MUST**: `policy_context` собирать server-side — референс: `runtime/tmki_policy` (org-снимок `schemas/org/`).
 
 ### Memory Tree
 

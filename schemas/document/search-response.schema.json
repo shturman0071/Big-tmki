@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/search-response.schema.json",
+  "title": "TMKI Vector Search Response",
+  "description": "RAG retrieval response after server-side RLS filtering (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "trace_id",
+    "results",
+    "filter_applied",
+    "occurred_at"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "trace_id": { "type": "string", "format": "uuid" },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["chunk_id", "doc_id", "score", "citation"],
+        "properties": {
+          "chunk_id": { "type": "string" },
+          "doc_id": { "type": "string" },
+          "score": { "type": "number" },
+          "citation": {
+            "$ref": "../runtime/common.schema.json#/$defs/citation"
+          },
+          "classification": {
+            "type": "string",
+            "enum": ["public", "internal", "restricted", "confidential"]
+          }
+        }
+      }
+    },
+    "filter_applied": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["company_id", "project_id", "max_clearance"],
+      "properties": {
+        "company_id": { "type": "string" },
+        "project_id": { "type": "string" },
+        "department_scope": {
+          "type": "string",
+          "enum": ["S_project", "S_dept", "S_dept_tree"]
+        },
+        "max_clearance": { "type": "string" },
+        "project_role": { "type": "string" }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "candidates_before_rls": { "type": "integer", "minimum": 0 },
+        "results_after_rls": { "type": "integer", "minimum": 0 },
+        "duration_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "denied_by_policy": {
+      "type": "boolean",
+      "description": "True if query blocked before search (e.g. insufficient clearance)"
+    },
+    "occurred_at": { "type": "string", "format": "date-time" }
+  }
+}

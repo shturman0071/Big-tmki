@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/search-request.schema.json",
+  "title": "TMKI Vector Search Request",
+  "description": "RAG retrieval request with server-side access filters (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "trace_id",
+    "query",
+    "policy_context",
+    "top_k"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "trace_id": { "type": "string", "format": "uuid" },
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Natural language query; embedded server-side"
+    },
+    "policy_context": {
+      "$ref": "../runtime/common.schema.json#/$defs/policyContext"
+    },
+    "top_k": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 8
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "department_id": { "type": "string" },
+        "document_type": { "type": "string" },
+        "language": { "type": "string" },
+        "doc_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "description": "Narrowing filters within allowed RLS scope only"
+    },
+    "hybrid": {
+      "type": "boolean",
+      "default": false,
+      "description": "BM25 + vector if supported"
+    }
+  }
+}

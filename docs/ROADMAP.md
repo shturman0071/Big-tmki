@@ -147,6 +147,8 @@ gh label create phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6 security
 
 ### #15 [phase-4] [security] Индексация с server-side фильтрацией доступа
 
+**Статус:** done (v0.1 — `09_document_processing.md` §7, `schemas/document/search-*.schema.json`)
+
 pgvector + RLS-поля до выдачи в RAG.
 
 ---
@@ -174,5 +176,6 @@ pgvector + RLS-поля до выдачи в RAG.
 5. ~~#12 Каталог audit events~~ ✅ (v0.1)
 6. ~~#13 Ingest + dedup (Document Intelligence)~~ ✅ (v0.1)
 7. ~~#14 OCR pipeline MinerU + fallback~~ ✅ (v0.1)
-8. **#15 Индексация с server-side фильтрацией**
-9. **#3 Установить gh + создать issues на GitHub**
+8. ~~#15 Индексация с server-side фильтрацией~~ ✅ (v0.1)
+9. **Phase 5: Tool Registry каркас (#16)**
+10. **#3 Установить gh + создать issues на GitHub**

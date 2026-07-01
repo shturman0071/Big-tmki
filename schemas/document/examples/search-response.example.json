@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440200",
+  "results": [
+    {
+      "chunk_id": "chk_grd_0142_p12_001",
+      "doc_id": "doc_grd_0142",
+      "score": 0.89,
+      "citation": {
+        "doc_id": "doc_grd_0142",
+        "page": 12,
+        "start_offset": 1024,
+        "end_offset": 1456,
+        "snippet": "Маркшейдерская съёмка на участке КС выполняется..."
+      },
+      "classification": "internal"
+    }
+  ],
+  "filter_applied": {
+    "company_id": "tmki",
+    "project_id": "satimol",
+    "department_scope": "S_dept_tree",
+    "max_clearance": "internal",
+    "project_role": "Chefmarkscheider"
+  },
+  "stats": {
+    "candidates_before_rls": 42,
+    "results_after_rls": 8,
+    "duration_ms": 124
+  },
+  "denied_by_policy": false,
+  "occurred_at": "2026-07-01T11:15:00Z"
+}

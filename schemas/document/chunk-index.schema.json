@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/chunk-index.schema.json",
+  "title": "TMKI Chunk Index Record",
+  "description": "pgvector index row for a document chunk with RLS metadata (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "chunk_id",
+    "doc_id",
+    "company_id",
+    "project_id",
+    "classification",
+    "language",
+    "page",
+    "start_offset",
+    "end_offset",
+    "embedding_model",
+    "indexed_at"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "chunk_id": { "type": "string" },
+    "doc_id": { "type": "string" },
+    "company_id": { "type": "string" },
+    "project_id": { "type": "string" },
+    "department_id": { "type": "string" },
+    "classification": {
+      "type": "string",
+      "enum": ["public", "internal", "restricted", "confidential"]
+    },
+    "language": { "type": "string", "minLength": 2 },
+    "page": { "type": "integer", "minimum": 1 },
+    "start_offset": { "type": "integer", "minimum": 0 },
+    "end_offset": { "type": "integer", "minimum": 0 },
+    "contractor_id": {
+      "type": "string",
+      "description": "Set for doc.external / subcontractor-shared chunks"
+    },
+    "document_type": { "type": "string" },
+    "embedding_model": { "type": "string" },
+    "embedding_dimensions": { "type": "integer", "minimum": 1 },
+    "content_preview": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Sanitized snippet for debugging; not for RAG output"
+    },
+    "indexed_at": { "type": "string", "format": "date-time" }
+  }
+}

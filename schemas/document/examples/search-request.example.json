@@ -1,0 +1,20 @@
+{
+  "schema_version": "0.1",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440200",
+  "query": "требования маркшейдерской съёмки участок КС",
+  "policy_context": {
+    "company_id": "tmki",
+    "project_id": "satimol",
+    "department_id": "markscheider",
+    "project_role": "Chefmarkscheider",
+    "employee_id": "emp_litovsky",
+    "clearance": "internal",
+    "env": "production"
+  },
+  "top_k": 8,
+  "filters": {
+    "document_type": "GRD",
+    "language": "ru"
+  },
+  "hybrid": true
+}

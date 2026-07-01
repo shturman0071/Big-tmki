@@ -190,9 +190,85 @@ Audit: `document_ingested` payload **MUST** включать `parser_version`, `
 
 ### 7) Index / Vector Search
 
-- индекс хранит: embedding + поля фильтрации (org, project, classification, language) — см. `ORG_MODEL.md`, `07_security_addendum.md`.
-- **MUST**: фильтрация доступа применяется **до** выдачи результатов (server-side).
-- vector store: см. `16_tool_registry.md` (pgvector — approved).
+- vector store: **pgvector** (approved, см. `16_tool_registry.md`)
+- **Schema**: `chunk-index.schema.json`, `search-request.schema.json`, `search-response.schema.json`
+- **MUST**: фильтрация доступа применяется **до** выдачи результатов (server-side)
+
+#### Запись в индекс (Index Write)
+
+Каждый chunk **MUST** сохраняться с RLS-метаданными:
+
+| Поле | Источник | MUST |
+|------|----------|------|
+| `company_id` | ingest `policy_context` | ✓ |
+| `project_id` | ingest `policy_context` | ✓ |
+| `department_id` | ingest / metadata enrichment | ✓ |
+| `classification` | ingest `classification` | ✓ |
+| `language` | metadata | ✓ |
+| `page`, `start_offset`, `end_offset` | chunking | ✓ |
+| `contractor_id` | для `doc.external` | при наличии |
+| `embedding_model` | embeddings stage | ✓ |
+
+**MUST NOT**: индексировать chunk без `company_id` + `project_id` + `classification`.
+
+#### Алгоритм server-side фильтрации (MUST)
+
+Фильтры применяются **в запросе к pgvector** (WHERE / metadata filter), **не** post-filter в приложении.
+
+```
+1. policy_context из Run/Search request (server-side, не от LLM)
+2. Resolve department_scope по project_role (ORG_MODEL.md матрица)
+3. Построить filter:
+   - company_id = :company_id
+   - project_id = :project_id
+   - classification <= :user.clearance
+   - department_id IN allowed_departments (по scope)
+   - contractor_id IS NULL OR contractor_id IN user.shared_contractors
+4. Vector search + optional BM25 hybrid ВНУТРИ filter
+5. Вернуть top_k цитируемых chunks
+6. Audit: document_accessed per doc_id (aggregated)
+```
+
+| `department_scope` | Фильтр department |
+|--------------------|-------------------|
+| `S_project` | без ограничения по department (в рамках project) |
+| `S_dept` | `department_id = user.department_id` |
+| `S_dept_tree` | `department_id IN user.dept_tree` |
+
+**MUST**: при `denied_by_policy=true` — пустой `results[]`, audit `policy_denied`.
+
+#### Clearance ordering (MUST)
+
+```
+public < internal < restricted < confidential
+```
+
+Chunk с `classification=restricted` **не виден** пользователю с `clearance=internal`.
+
+#### pgvector (SHOULD)
+
+- Таблица `document_chunks` + столбец `embedding vector(N)`
+- Индекс: HNSW или IVFFlat (настройка нагрузки отдельно)
+- Composite btree на `(company_id, project_id, classification)` для pre-filter
+- **MUST**: параметры search выполняются с SET LOCAL для RLS-контекста (PostgreSQL RLS) или эквивалентным policy layer
+
+#### Search response (MUST)
+
+- Каждый result **MUST** содержать `citation` (doc_id, page, offsets, snippet)
+- `filter_applied` **MUST** возвращаться для audit/debug (без секретов)
+- `stats.candidates_before_rls` / `results_after_rls` — для мониторинга over-filtering
+
+#### Ошибки
+
+| Код | Описание |
+|-----|----------|
+| `SEARCH_POLICY_DENIED` | Недостаточно прав для запроса |
+| `SEARCH_INDEX_UNAVAILABLE` | pgvector недоступен |
+| `SEARCH_EMPTY_INDEX` | Нет проиндексированных docs в scope |
+
+#### Связь с RAG (`10_ai_runtime.md`)
+
+RAG **MUST** вызывать search API с `policy_context` из Context Builder; **MUST NOT** подставлять фильтры из LLM output.
 
 ## JSON Schema (v0.1)
 
@@ -201,6 +277,9 @@ Audit: `document_ingested` payload **MUST** включать `parser_version`, `
 | Ingest Request | `schemas/document/ingest-request.schema.json` | `schemas/document/examples/ingest-request.example.json` |
 | Ingest Response | `schemas/document/ingest-response.schema.json` | `schemas/document/examples/ingest-response-duplicate.example.json` |
 | OCR Result | `schemas/document/ocr-result.schema.json` | `schemas/document/examples/ocr-result-fallback.example.json` |
+| Chunk Index | `schemas/document/chunk-index.schema.json` | — |
+| Search Request | `schemas/document/search-request.schema.json` | `schemas/document/examples/search-request.example.json` |
+| Search Response | `schemas/document/search-response.schema.json` | `schemas/document/examples/search-response.example.json` |
 
 ## SLA и деградация (SHOULD)
 

@@ -83,6 +83,7 @@ def main() -> int:
         print("  [info] chunks file not found")
 
     state = Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import" / "reindex-state.json"
+    heartbeat = state.parent / "reindex-heartbeat.json"
     if state.is_file():
         import json
 
@@ -90,7 +91,15 @@ def main() -> int:
         stats = st.get("stats", {})
         proc = len(st.get("processed", []))
         total = int(st.get("total_candidates") or 10_089)
-        print(f"  [info] re-index: {proc}/{total} processed, imported={stats.get('imported', 0)}")
+        live = proc
+        if heartbeat.is_file():
+            hb = json.loads(heartbeat.read_text(encoding="utf-8"))
+            live = max(proc, int(hb.get("file_index") or 0))
+        pct = 100.0 * live / total if total else 0
+        print(
+            f"  [info] re-index: {live}/{total} ({pct:.1f}%), "
+            f"imported={stats.get('imported', 0)}, errors={stats.get('errors', 0)}"
+        )
 
     return 0 if ok else 1
 

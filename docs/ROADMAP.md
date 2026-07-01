@@ -324,6 +324,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `finalize_regulations_index.ps1`, live progress + ETA в `reindex_report.py`
 
+### #62 [phase-4] [runtime] Watchdog finalize + error summary
+
+**Статус:** MVP (v0.3) — `watch_reindex.ps1 -Finalize`, `reindex_errors.py --summary`, live progress в health check
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

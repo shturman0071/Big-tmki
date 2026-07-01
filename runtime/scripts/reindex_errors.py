@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 DEFAULT_STATE = (
@@ -13,10 +14,18 @@ DEFAULT_STATE = (
 )
 
 
+def _error_key(msg: str) -> str:
+    text = (msg or "").strip()
+    if not text:
+        return "unknown"
+    return text.split(":", 1)[0][:80]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Show recent re-index errors")
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--limit", type=int, default=20)
+    parser.add_argument("--summary", action="store_true", help="Группировка по типу ошибки")
     args = parser.parse_args()
 
     if not args.state.is_file():
@@ -29,6 +38,14 @@ def main() -> int:
     total = stats.get("errors", len(errors))
 
     print(f"errors total: {total}  (recent in state: {len(errors)})\n")
+
+    if args.summary and errors:
+        counts = Counter(_error_key(row.get("error", "")) for row in errors)
+        print("summary:")
+        for key, n in counts.most_common():
+            print(f"  {n:>3}  {key}")
+        print()
+
     for row in errors[-args.limit :]:
         print(f"  {row.get('path', '?')}")
         print(f"    {row.get('error', '')[:200]}")

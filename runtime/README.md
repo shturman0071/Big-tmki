@@ -87,7 +87,8 @@ pip install -e ".[ocr]"   # pypdf для PDF
 python scripts/reindex_regulations_local.py --checkpoint-every 200
 .\scripts\resume_reindex.ps1
 .\scripts\watch_reindex.ps1
-.\scripts\watch_reindex.ps1 -SyncPgvector
+.\scripts\watch_reindex.ps1 -SyncPgvector -Finalize
+python scripts/reindex_errors.py --summary
 # → artifacts/regulations-import/chunks-v2.json
 python scripts/benchmark_regulations_search.py
 python scripts/run_mvp_regulations.py "промбезопасность кран" --hybrid

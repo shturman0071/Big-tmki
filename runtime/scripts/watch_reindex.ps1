@@ -2,13 +2,15 @@
 param(
     [int]$StaleMinutes = 20,
     [int]$PollSeconds = 120,
-    [switch]$SyncPgvector
+    [switch]$SyncPgvector,
+    [switch]$Finalize
 )
 
 $runtime = Resolve-Path $PSScriptRoot\..
 $heartbeat = Join-Path $runtime "artifacts\regulations-import\reindex-heartbeat.json"
 $stateFile = Join-Path $runtime "artifacts\regulations-import\reindex-state.json"
 $syncMarker = Join-Path $runtime "artifacts\regulations-import\last-pgvector-sync.json"
+$finalizeMarker = Join-Path $runtime "artifacts\regulations-import\finalize-done.json"
 $env:PYTHONPATH = $runtime.Path
 
 function Get-StateUpdatedAt {
@@ -47,6 +49,23 @@ function Test-HeartbeatStale {
     return $age.TotalMinutes -gt $StaleMinutes
 }
 
+function Test-ReindexComplete {
+    if (-not (Test-Path $stateFile)) { return $false }
+    $report = python scripts/reindex_report.py --json | ConvertFrom-Json
+    return ($report.live_progress -ge $report.total)
+}
+
+function Invoke-FinalizeIfNeeded {
+    if (-not $Finalize) { return }
+    if (Test-Path $finalizeMarker) { return }
+    if (-not (Test-ReindexComplete)) { return }
+    Write-Host "[$(Get-Date -Format HH:mm:ss)] re-index complete — finalize..."
+    & $PSScriptRoot\finalize_regulations_index.ps1
+    if ($LASTEXITCODE -eq 0) {
+        @{ done_at = (Get-Date).ToUniversalTime().ToString("o") } | ConvertTo-Json | Set-Content $finalizeMarker -Encoding utf8
+    }
+}
+
 Set-Location $runtime
 Write-Host "watch_reindex: poll every ${PollSeconds}s, stale>${StaleMinutes}m"
 
@@ -66,6 +85,7 @@ while ($true) {
     else {
         python scripts/reindex_report.py 2>$null
         Invoke-PgvectorSyncIfNeeded
+        Invoke-FinalizeIfNeeded
     }
     Start-Sleep -Seconds $PollSeconds
 }

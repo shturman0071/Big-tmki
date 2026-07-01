@@ -1,0 +1,14 @@
+{
+  "schema_version": "0.1",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440100",
+  "ingest_status": "duplicate",
+  "doc_id": "doc_grd_0142",
+  "content_hash": "sha256:a3f2c8910b4e5d6789abcdef0123456789abcdef0123456789abcdef01234567",
+  "dedup": {
+    "is_duplicate": true,
+    "matched_doc_id": "doc_grd_0142",
+    "dedup_key": "tmki:satimol:sha256:a3f2c8910b4e5d6789abcdef0123456789abcdef0123456789abcdef01234567",
+    "action": "skipped_processing"
+  },
+  "occurred_at": "2026-07-01T11:00:01Z"
+}

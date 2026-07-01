@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/ingest-request.schema.json",
+  "title": "TMKI Document Ingest Request",
+  "description": "Ingest API request for Document Intelligence pipeline (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "trace_id",
+    "file",
+    "policy_context",
+    "classification"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "trace_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "description": "Client-provided key for safe retries (optional)"
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filename", "mime_type", "size_bytes", "content_base64"],
+      "properties": {
+        "filename": { "type": "string", "minLength": 1 },
+        "mime_type": {
+          "type": "string",
+          "enum": [
+            "application/pdf",
+            "image/png",
+            "image/jpeg",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          ]
+        },
+        "size_bytes": { "type": "integer", "minimum": 1, "maximum": 104857600 },
+        "content_base64": {
+          "type": "string",
+          "description": "Raw file bytes, base64-encoded"
+        }
+      }
+    },
+    "policy_context": {
+      "$ref": "../runtime/common.schema.json#/$defs/policyContext"
+    },
+    "classification": {
+      "type": "string",
+      "enum": ["public", "internal", "restricted", "confidential"]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_url": { "type": "string", "format": "uri" },
+        "source_path": { "type": "string" },
+        "document_type": {
+          "type": "string",
+          "description": "e.g. GRD, PD, RD, report"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "force_reprocess": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, bypass dedup and create new processing job (admin only)"
+    }
+  }
+}

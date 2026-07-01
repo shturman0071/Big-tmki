@@ -131,6 +131,8 @@ gh label create phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6 security
 
 ### #13 [phase-4] [runtime] Ingest + dedup по `content_hash`
 
+**Статус:** done (v0.1 — `09_document_processing.md`, `schemas/document/`)
+
 По `09_document_processing.md`, поля из `ORG_MODEL.md`.
 
 ---
@@ -168,5 +170,6 @@ pgvector + RLS-поля до выдачи в RAG.
 3. ~~#10 JSON-схемы Run/Step/Event~~ ✅ (v0.1)
 4. ~~#11 State machine Loop Engine~~ ✅ (v0.1)
 5. ~~#12 Каталог audit events~~ ✅ (v0.1)
-6. **#13 Ingest + dedup (Document Intelligence)**
-7. **#3 Установить gh + создать issues на GitHub**
+6. ~~#13 Ingest + dedup (Document Intelligence)~~ ✅ (v0.1)
+7. **#14 OCR pipeline MinerU + fallback**
+8. **#3 Установить gh + создать issues на GitHub**

@@ -1,0 +1,27 @@
+{
+  "schema_version": "0.1",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440100",
+  "idempotency_key": "upload-grd-0142-v1",
+  "file": {
+    "filename": "GRD_0142_markscheider.pdf",
+    "mime_type": "application/pdf",
+    "size_bytes": 2458624,
+    "content_base64": "<base64 omitted>"
+  },
+  "policy_context": {
+    "company_id": "tmki",
+    "project_id": "satimol",
+    "department_id": "markscheider",
+    "project_role": "Chefmarkscheider",
+    "employee_id": "emp_litovsky",
+    "clearance": "internal",
+    "env": "production"
+  },
+  "classification": "internal",
+  "provenance": {
+    "source_path": "/projects/satimol/grd/GRD_0142.pdf",
+    "document_type": "GRD",
+    "tags": ["markscheider", "satimol"]
+  },
+  "force_reprocess": false
+}

@@ -41,6 +41,56 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 
 - **Вход**: бинарный документ + базовые поля (org/project, uploader, access label).
 - **MUST**: вычислить `content_hash` и проверить дедупликацию.
+- **Schema**: `schemas/document/ingest-request.schema.json`, `schemas/document/ingest-response.schema.json`
+
+#### Алгоритм ingest (MUST)
+
+1. **Валидация** — mime_type, size limit (default max 100 MB), `policy_context`, `classification`.
+2. **Вычисление hash** — `content_hash = "sha256:" + SHA-256(raw_bytes)`.
+3. **Dedup lookup** — ключ: `dedup_key = {company_id}:{project_id}:{content_hash}`.
+4. **Решение** — см. таблицу ниже.
+5. **Audit** — `document_ingested` или skip с `dedup.action` (см. `audit-event-catalog.json`).
+
+#### Дедупликация по `content_hash`
+
+| Условие | `ingest_status` | Действие | `dedup.action` |
+|---------|-----------------|----------|----------------|
+| Hash не найден в проекте | `accepted` → `processing` | Новый `doc_id`, запуск pipeline | `none` |
+| Hash найден, тот же `classification` | `duplicate` | Вернуть `matched_doc_id`, pipeline **не** запускать | `skipped_processing` |
+| Hash найден, другой `classification` | `duplicate` | Вернуть `matched_doc_id` + audit warning; re-index filters MAY обновиться† | `linked_existing` |
+| `force_reprocess=true` (admin) | `accepted` | Новый pipeline job на существующий `doc_id` | `reprocessed` |
+| `idempotency_key` повторён | `duplicate` или `processing` | Идемпотентный ответ первого запроса | `skipped_processing` |
+| Валидация не пройдена | `rejected` | 4xx, без записи doc | — |
+
+† Обновление `classification` на существующем doc — отдельная admin-операция (SHOULD), не через обычный ingest.
+
+#### Идемпотентность (MUST)
+
+- Повторный ingest с тем же `content_hash` в том же `project_id` **MUST NOT** создавать второй `doc_id`.
+- Повтор с тем же `idempotency_key` **MUST** возвращать тот же результат (safe retry).
+- Pipeline stages после ingest **MUST** быть идемпотентны по `doc_id` + `content_hash` + `parser_version`.
+
+#### `doc_id` (MUST)
+
+- Формат: `doc_{slug}` или UUID — стабилен после первого ingest.
+- **MUST NOT** переиспользовать `doc_id` для другого `content_hash` (кроме явного versioning).
+
+#### Поля ingest request (обязательные)
+
+| Поле | Источник |
+|------|----------|
+| `policy_context` | `ORG_MODEL.md` — `company_id`, `project_id`, `department_id`, `employee_id`, `project_role` |
+| `classification` | `access_label` для RLS |
+| `trace_id` | Связь с Audit (`10_ai_runtime.md`) |
+
+#### Ошибки ingest
+
+| Код | Причина |
+|-----|---------|
+| `INGEST_FILE_TOO_LARGE` | Превышен size limit |
+| `INGEST_UNSUPPORTED_MIME` | Тип не в allowlist |
+| `INGEST_CLEARANCE_DENIED` | `classification` выше `user.clearance` |
+| `INGEST_DEDUP_CONFLICT` | Редкий конфликт idempotency (retry с другим телом) |
 
 ### 2) OCR / Extract
 
@@ -78,6 +128,13 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 - индекс хранит: embedding + поля фильтрации (org, project, classification, language) — см. `ORG_MODEL.md`, `07_security_addendum.md`.
 - **MUST**: фильтрация доступа применяется **до** выдачи результатов (server-side).
 - vector store: см. `16_tool_registry.md` (pgvector — approved).
+
+## JSON Schema (v0.1)
+
+| Контракт | Schema | Пример |
+|----------|--------|--------|
+| Ingest Request | `schemas/document/ingest-request.schema.json` | `schemas/document/examples/ingest-request.example.json` |
+| Ingest Response | `schemas/document/ingest-response.schema.json` | `schemas/document/examples/ingest-response-duplicate.example.json` |
 
 ## SLA и деградация (SHOULD)
 

@@ -116,6 +116,8 @@ python scripts/compare_chunks_quality.py --hybrid --save artifacts/regulations-i
 .\scripts\watch_to_finalize.ps1
 python scripts/reindex_ops_status.py
 python scripts/reindex_ops_status.py --json
+python scripts/reindex_dashboard.py
+.\scripts\reindex_dashboard.ps1 -RecordSnapshot
 python scripts/reindex_stats.py
 python scripts/record_reindex_snapshot.py
 python scripts/analyze_reindex_progress_log.py

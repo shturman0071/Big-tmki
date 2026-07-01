@@ -10,9 +10,7 @@ $env:PYTHONIOENCODING = "utf-8"
 Set-Location $runtime
 
 Write-Host "=== Re-index checklist ===" -ForegroundColor Cyan
-python scripts/reindex_report.py
-Write-Host ""
-python scripts/reindex_stats.py
+python scripts/reindex_dashboard.py
 Write-Host ""
 python scripts/reindex_errors.py --summary
 if ($RecordSnapshot) {

@@ -368,6 +368,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `analyze_reindex_progress_log.py`, ETA из лога в ops status, `watch_to_finalize -RecordSnapshot`
 
+### #73 [phase-4] [runtime] Re-index ops dashboard
+
+**Статус:** MVP (v0.3) — `reindex_dashboard.py`, `reindex_dashboard.ps1`, сводный ETA state+log
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

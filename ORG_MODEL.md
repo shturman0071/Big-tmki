@@ -259,7 +259,7 @@ erDiagram
 | `confidential` | 3 | HR, персональные данные, зарплата, договоры с NDA | `confidential`+ |
 
 **MUST**: порядок `public < internal < restricted < confidential` (см. `09_document_processing.md` §7).  
-**MUST**: `user.clearance` в `policy_context` — тот же enum; назначается владельцем ИБ при онбординге.
+**MUST**: `user.clearance` в `policy_context` — тот же enum; назначается владельцем ИБ ([@shturman0071](https://github.com/shturman0071)) при онбординге.
 
 ### Подрядчики (MUST)
 

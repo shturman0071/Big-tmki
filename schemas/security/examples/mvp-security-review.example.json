@@ -7,7 +7,7 @@
     "tool_gating": "tool-gating-2026-07-01",
     "mvp_flow": "tmki-runtime-mvp-v0.1"
   },
-  "reviewer": "TBD — ИБ / Security owner",
+  "reviewer": "shturman0071 — владелец ИБ / разработчик",
   "reviewed_at": "2026-07-01T14:00:00Z",
   "overall_status": "pass_with_notes",
   "blockers": [],

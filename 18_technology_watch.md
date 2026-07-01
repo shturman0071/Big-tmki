@@ -16,8 +16,8 @@
 | Super Context | паттерн TBD | ГИП — Дядин С. | переполнение контекста, потеря цитат | 2026-09-01 | — |
 | Ponytail | паттерн | ГИП — Дядин С. | избыточное сжатие, PII в сводке | 2026-09-01 | skill в `13_ai_skills_registry.md` |
 | make-interfaces-feel-better | паттерн | Projektleiter (Design) — Хофманн С. | сокрытие неопределённости | 2026-09-01 | skill в `13_ai_skills_registry.md` |
-| OWASP | ASVS (уровень TBD) | Владелец ИБ — TBD | разрыв compliance с продуктом | 2026-12-01 | `07_security_addendum.md` |
-| RLS | Postgres RLS + ORG_MODEL | Владелец ИБ + РП | дрейф политик, scope подрядчиков | 2026-09-01 | `ORG_MODEL.md` |
+| OWASP | ASVS (уровень уточняется) | Владелец ИБ — разработчик [@shturman0071](https://github.com/shturman0071) | разрыв compliance с продуктом | 2026-12-01 | `07_security_addendum.md` |
+| RLS | Postgres RLS + ORG_MODEL | Владелец ИБ + РП ([@shturman0071](https://github.com/shturman0071) + Нефф А.) | дрейф политик, scope подрядчиков | 2026-09-01 | `ORG_MODEL.md` |
 
 ## Критерии «Утверждено» (SHOULD)
 
@@ -45,7 +45,7 @@
 | Технология | Причина наблюдения | Владелец | Пересмотр |
 |------------|-------------------|----------|-----------|
 | zvec | альтернатива vector stack, не валидирован | ГИП — Дядин С. | 2026-09-01 |
-| Camofox | риск browser automation, заблокирован в production | Владелец ИБ — TBD | 2026-07-15 |
+| Camofox | риск browser automation, заблокирован в production | Владелец ИБ — [@shturman0071](https://github.com/shturman0071) | 2026-07-15 |
 | Gemma 4 12B | governance локальных моделей | ГИП — Дядин С. | 2026-09-01 |
 | Local LLM Optimization | сложность эксплуатации, нет пути в MVP | ГИП — Дядин С. | 2026-09-01 |
 

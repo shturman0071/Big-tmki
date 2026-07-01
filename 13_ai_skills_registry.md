@@ -65,7 +65,7 @@
 - **outputs**: чеклист pass/fail, список блокеров.
 - **constraints**: MUST сверка с `07_security_addendum.md` и `ORG_MODEL.md`.
 - **checklist**: полный MVP checklist — `schemas/security/mvp-security-review.checklist.json`; краткий: RLS → secrets → tool gating → rate limits → guardrails PII.
-- **owner**: Security owner (Служба ОТ и ПБ) — TBD; co-sign: Projektleiter — Нефф А.
+- **owner**: Владелец ИБ — разработчик [@shturman0071](https://github.com/shturman0071); co-sign: Projektleiter — Нефф А.
 - **example**: PR с изменением `tool-gating.rules.json` → прогон checks TL и SEC из checklist → sign-off в `mvp-security-review.schema.json`.
 
 ## Связь с runtime

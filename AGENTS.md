@@ -46,7 +46,9 @@
 | Область | Файлы / артефакты | Owner (роль) | Назначенный (по схеме) |
 |---------|-------------------|--------------|------------------------|
 | Хэндбук (custodian) | `README.md`, `AGENTS.md`, `docs/ROADMAP.md` | Projektleiter (РП) | Нефф А. |
-| Security baseline | `07_security_addendum.md`, `schemas/security/` | Служба ОТ и ПБ + РП | TBD (ИБ) |
+| Security baseline | `07_security_addendum.md`, `schemas/security/` | Владелец ИБ (разработчик) | [@shturman0071](https://github.com/shturman0071) |
+
+> **Примечание:** до назначения отдельного сотрудника Службы ОТ и ПБ функции владельца ИБ исполняет разработчик / владелец репозитория.
 | Org / RLS | `ORG_MODEL.md` | Projektleiter + ГИП | Нефф А., Дядин С. / Гаер Д. |
 | AI Runtime | `10_ai_runtime.md`, `schemas/runtime/` | ГИП (runtime) | Дядин С. |
 | Document Intelligence | `09_document_processing.md`, `schemas/document/` | Projektleiter (Design) | Хофманн С. |

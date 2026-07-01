@@ -60,6 +60,9 @@ def main() -> int:
     started = time.perf_counter()
 
     def progress(payload: dict) -> None:
+        if payload.get("phase") == "scan_done":
+            print(f"  Кандидатов: {payload['total_candidates']}", flush=True)
+            return
         s = payload["stats"]
         print(
             f"  [{payload['file_index']}/{payload['total_candidates']}] "

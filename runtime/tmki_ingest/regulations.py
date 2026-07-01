@@ -281,6 +281,9 @@ def import_regulations_full(
     candidates = _iter_ingest_candidates(root, allowed)
     started = _now_iso()
 
+    if on_progress:
+        on_progress({"phase": "scan_done", "total_candidates": len(candidates), "stats": dict(stats)})
+
     for i, path in enumerate(candidates, start=1):
         if limit is not None and stats["imported"] >= limit:
             break

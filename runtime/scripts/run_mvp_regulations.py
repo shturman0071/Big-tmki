@@ -60,8 +60,20 @@ def main() -> int:
 
     print(json.dumps(result["output"], ensure_ascii=False, indent=2))
     print(f"\nchunks: {chunks_path} ({len(chunks)} records)", file=sys.stderr)
-    print(f"loop: {result['loop_state']['loop_state']}", file=sys.stderr)
-    return 0 if result["output"] else 1
+    loop_state = result["loop_state"]["loop_state"]
+    print(f"loop: {loop_state}", file=sys.stderr)
+    if not result["output"]:
+        if args.llm == "ollama":
+            print(
+                "Подсказка: Ollama недоступна или модель не скачана. "
+                "Проверьте: ollama --version && ollama list && ollama pull qwen2.5:7b\n"
+                "Или запустите без --llm ollama (режим stub).",
+                file=sys.stderr,
+            )
+        else:
+            print("LLM-шаг не завершён. См. audit_events в run_mvp.", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

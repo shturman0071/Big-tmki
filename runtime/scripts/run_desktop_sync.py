@@ -16,6 +16,7 @@ def main() -> int:
     parser.add_argument("--display-name", default="Литовский Д.")
     parser.add_argument("--once", action="store_true", help="Один проход без цикла")
     parser.add_argument("--interval", type=int, default=None)
+    parser.add_argument("--ingest", action="store_true", help="Ingest новых файлов в RAG после sync")
     args = parser.parse_args()
 
     from tmki_desktop_sync import DesktopSyncWatcher, default_server_path, desktop_folder_for_employee
@@ -25,11 +26,20 @@ def main() -> int:
     print(f"desktop: {desk}")
     print(f"server:  {server}")
 
+    on_synced = None
+    if args.ingest:
+        from tmki_desktop_sync.ingest_hook import ingest_synced_file
+
+        def on_synced(_src: Path, dest: Path) -> None:
+            result = ingest_synced_file(dest)
+            print(f"  ingest {dest.name}: {result['ingest_status']} chunks={result['chunks']}", flush=True)
+
     watcher = DesktopSyncWatcher(
         desktop_path=desk,
         server_path=server,
         employee_id=args.employee_id,
         interval_sec=args.interval,
+        on_file_synced=on_synced,
     )
 
     if args.once:

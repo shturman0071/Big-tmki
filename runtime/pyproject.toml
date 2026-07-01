@@ -10,7 +10,10 @@ dev = ["pytest>=8.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["tmki_policy*", "tmki_rag*", "tmki_tools*", "tmki_loop*", "tmki_runtime*", "tmki_ingest*"]
+include = ["tmki_policy*", "tmki_rag*", "tmki_tools*", "tmki_loop*", "tmki_runtime*", "tmki_ingest*", "tmki_admin*", "tmki_sharepoint*"]
+
+[project.scripts]
+tmki-grants-ui = "tmki_admin.server:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

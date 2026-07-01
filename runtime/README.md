@@ -9,6 +9,8 @@
 | `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
 | `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
 | `tmki_ingest` | `validate_ingest` / `validate_delete` — gate до OCR pipeline |
+| `tmki_admin` | UI + API галочек grant/deny (`python -m tmki_admin`) |
+| `tmki_sharepoint` | stub sync ACL SharePoint после изменения grants |
 | `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 
 ## Запуск тестов
@@ -66,4 +68,12 @@ snapshot = load_org_snapshot(Path("../schemas/org/examples/satimol-snapshot.exam
 ctx = build_policy_context(snapshot, employee_id="emp_litovsky_d", env="production", as_of=date(2025, 9, 10))
 chunks = load_chunks(Path("../schemas/document/examples/satimol-chunks.example.json"))
 result = run_mvp(message="маркшейдерская съёмка", policy_context=ctx, chunks=chunks)
+```
+
+### Admin UI (folder grants)
+
+```powershell
+cd runtime
+python -m tmki_admin
+# Открыть http://127.0.0.1:8765/
 ```

@@ -379,7 +379,8 @@ erDiagram
 6. Для RAG/pgvector — те же фильтры до ранжирования (folder_id + grant/deny)
 ```
 
-Контракты: `schemas/document/folder-catalog.schema.json`, `schemas/org/employee-folder-grant.schema.json`.
+Контракты: `schemas/document/folder-catalog.schema.json`, `schemas/org/employee-folder-grant.schema.json`.  
+UI (MVP): `runtime/tmki_admin` (`python -m tmki_admin`). SharePoint sync: `runtime/tmki_sharepoint` (stub).
 
 ### Примеры папок (Сатимол, черновик)
 

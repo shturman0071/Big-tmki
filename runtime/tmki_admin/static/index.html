@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>TMKI — доступ к папкам</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 960px; }
+    h1 { font-size: 1.25rem; }
+    fieldset { margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 0.5rem; text-align: left; }
+    .tier { color: #666; font-size: 0.85rem; }
+    .msg { margin-top: 1rem; padding: 0.5rem; background: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h1>Доступ к папкам (начальник подразделения)</h1>
+
+  <fieldset>
+    <legend>Начальник (granter)</legend>
+    <label>employee_id <input id="granter_id" value="emp_litovsky_d" size="24" /></label>
+    <label>роль <input id="granter_role" value="Chefmarkscheider" size="20" /></label>
+    <label>отдел <input id="granter_dept" value="dept_markscheider" size="20" /></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Сотрудник</legend>
+    <label>employee_id
+      <select id="employee_id">
+        <option value="emp_petrov_v">emp_petrov_v (рядовой)</option>
+        <option value="emp_ivanov_a">emp_ivanov_a</option>
+        <option value="emp_staff_x">emp_staff_x</option>
+      </select>
+    </label>
+    <button type="button" id="reload">Обновить</button>
+  </fieldset>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Папка</th>
+        <th>Тип</th>
+        <th>Запретить (deny)</th>
+        <th>Доступ read</th>
+        <th>Доступ write</th>
+        <th>Сброс</th>
+      </tr>
+    </thead>
+    <tbody id="folders"></tbody>
+  </table>
+
+  <div class="msg" id="msg"></div>
+
+  <script>
+    const granter = () => ({
+      employee_id: document.getElementById('granter_id').value,
+      project_role: document.getElementById('granter_role').value,
+      department_id: document.getElementById('granter_dept').value,
+      company_id: 'company_tmki_ru',
+      project_id: 'project_satimol',
+    });
+
+    async function api(path, opts) {
+      const res = await fetch(path, opts);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      return data;
+    }
+
+    function stateForFolder(grants, folderId) {
+      const active = grants.filter(g => g.folder_id === folderId && g.status === 'active');
+      return {
+        deny: active.some(g => g.grant_type === 'deny'),
+        grantRead: active.some(g => g.grant_type === 'grant' && g.actions.includes('read')),
+        grantWrite: active.some(g => g.grant_type === 'grant' && g.actions.includes('write')),
+      };
+    }
+
+    async function load() {
+      const dept = document.getElementById('granter_dept').value;
+      const employeeId = document.getElementById('employee_id').value;
+      const [{ folders }, { grants }] = await Promise.all([
+        api('/api/folders?department_id=' + encodeURIComponent(dept)),
+        api('/api/grants?employee_id=' + encodeURIComponent(employeeId)),
+      ]);
+
+      const tbody = document.getElementById('folders');
+      tbody.innerHTML = '';
+      for (const f of folders) {
+        const st = stateForFolder(grants, f.folder_id);
+        const tr = document.createElement('tr');
+        const name = (f.name && f.name.ru) || f.folder_id;
+        tr.innerHTML = `
+          <td>${name}<br><span class="tier">${f.physical_path}</span></td>
+          <td class="tier">${f.access_tier}</td>
+          <td>${f.access_tier === 'department_open' ? `<input type="checkbox" data-mode="deny_read" data-folder="${f.folder_id}" ${st.deny ? 'checked' : ''} />` : '—'}</td>
+          <td>${f.access_tier !== 'department_open' ? `<input type="checkbox" data-mode="grant_read" data-folder="${f.folder_id}" ${st.grantRead ? 'checked' : ''} />` : '—'}</td>
+          <td>${f.access_tier !== 'department_open' ? `<input type="checkbox" data-mode="grant_write" data-folder="${f.folder_id}" ${st.grantWrite ? 'checked' : ''} />` : '—'}</td>
+          <td><button type="button" data-revoke="${f.folder_id}">revoke</button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      tbody.querySelectorAll('input[type=checkbox]').forEach(cb => {
+        cb.addEventListener('change', () => toggle(cb.dataset.folder, cb.dataset.mode, cb.checked));
+      });
+      tbody.querySelectorAll('button[data-revoke]').forEach(btn => {
+        btn.addEventListener('click', () => revokeAll(btn.dataset.revoke));
+      });
+    }
+
+    async function toggle(folderId, mode, enabled) {
+      const msg = document.getElementById('msg');
+      try {
+        if (!enabled) {
+          await api('/api/grants/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              granter: granter(),
+              employee_id: document.getElementById('employee_id').value,
+              folder_id: folderId,
+              mode: 'revoke',
+              grant_type: mode === 'deny_read' ? 'deny' : 'grant',
+            }),
+          });
+        } else {
+          const res = await api('/api/grants/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              granter: granter(),
+              employee_id: document.getElementById('employee_id').value,
+              folder_id: folderId,
+              mode,
+            }),
+          });
+          msg.textContent = 'Сохранено. SharePoint sync: ' + JSON.stringify(res.sharepoint_sync);
+        }
+        await load();
+      } catch (e) {
+        msg.textContent = 'Ошибка: ' + e.message;
+        await load();
+      }
+    }
+
+    async function revokeAll(folderId) {
+      const employeeId = document.getElementById('employee_id').value;
+      for (const grant_type of ['deny', 'grant']) {
+        await api('/api/grants/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            granter: granter(),
+            employee_id: employeeId,
+            folder_id: folderId,
+            mode: 'revoke',
+            grant_type,
+          }),
+        });
+      }
+      document.getElementById('msg').textContent = 'Revoke выполнен';
+      await load();
+    }
+
+    document.getElementById('reload').addEventListener('click', load);
+    document.getElementById('employee_id').addEventListener('change', load);
+    load();
+  </script>
+</body>
+</html>

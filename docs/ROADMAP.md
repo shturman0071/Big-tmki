@@ -408,6 +408,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `check_docker.py`, `run_finalize.ps1`, docker check в preflight
 
+### #83 [phase-4] [runtime] Wait for Docker + auto finalize
+
+**Статус:** MVP (v0.3) — `wait_for_docker.py`, `wait_docker_and_finalize.ps1`, `-WaitDocker` в run_finalize
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

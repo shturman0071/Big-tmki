@@ -129,7 +129,10 @@ python scripts/export_reindex_complete.py
 python scripts/verify_post_finalize.py
 .\scripts\post_finalize_checklist.ps1
 .\scripts\run_finalize.ps1
+.\scripts\run_finalize.ps1 -WaitDocker
+.\scripts\wait_docker_and_finalize.ps1
 python scripts/check_docker.py
+python scripts/wait_for_docker.py --once
 .\scripts\wait_and_finalize.ps1
 python scripts/reindex_stats.py
 python scripts/record_reindex_snapshot.py

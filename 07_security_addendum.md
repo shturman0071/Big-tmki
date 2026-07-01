@@ -37,7 +37,7 @@
 
 - **Audit logs**:
   - фиксировать: аутентификацию, изменения доступов/ролей, доступ к документам, tool calls, изменение конфигураций guardrails
-  - связывать события через `trace_id` / `run_id` (см. `10_ai_runtime.md`, Event)
+  - связывать события через `trace_id` / `run_id` (см. `10_ai_runtime.md`, Event; каталог: `schemas/runtime/audit-event-catalog.json`)
   - хранить payload в санитизированном виде (без секретов/лишних PII)
 
 ## AI Guardrails (MUST)

@@ -1,0 +1,195 @@
+{
+  "schema_version": "0.1",
+  "description": "TMKI Runtime audit event catalog — event_type, severity, payload rules",
+  "trace_correlation": {
+    "MUST": ["trace_id", "run_id", "event_id", "occurred_at"],
+    "SHOULD": ["step_id", "policy_version"]
+  },
+  "sanitization_rules": {
+    "MUST_NOT_log": [
+      "api_keys",
+      "passwords",
+      "oauth_tokens",
+      "private_keys",
+      "full_request_bodies_with_secrets",
+      "unsanitized_pii"
+    ],
+    "SHOULD_redact": [
+      "email",
+      "phone",
+      "passport_id",
+      "full_name_in_user_content",
+      "raw_llm_prompt_if_contains_pii"
+    ],
+    "ALLOWED_fields": [
+      "doc_id",
+      "project_id",
+      "company_id",
+      "department_id",
+      "employee_id",
+      "tool_name",
+      "event_type",
+      "error_code",
+      "duration_ms",
+      "token_counts",
+      "cost_usd",
+      "redacted_snippet",
+      "policy_version",
+      "loop_state",
+      "stop_reason"
+    ]
+  },
+  "events": [
+    {
+      "event_type": "run_started",
+      "severity": "info",
+      "description": "Run создан и принят в обработку",
+      "required_payload": ["project_id", "project_role", "env"],
+      "optional_payload": ["session_id", "budget_summary"],
+      "forbidden_payload": ["message_full_if_pii"]
+    },
+    {
+      "event_type": "run_completed",
+      "severity": "info",
+      "description": "Run успешно завершён",
+      "required_payload": ["step_count", "duration_ms"],
+      "optional_payload": ["confidence", "read_only_mode", "token_usage_summary"]
+    },
+    {
+      "event_type": "run_failed",
+      "severity": "error",
+      "description": "Run завершён с ошибкой",
+      "required_payload": ["error_code", "stop_reason"],
+      "optional_payload": ["step_index", "last_loop_state"]
+    },
+    {
+      "event_type": "run_cancelled",
+      "severity": "warning",
+      "description": "Run отменён пользователем или системой",
+      "required_payload": ["cancelled_by"],
+      "optional_payload": ["reason"]
+    },
+    {
+      "event_type": "step_started",
+      "severity": "debug",
+      "description": "Начало Step",
+      "required_payload": ["step_type"],
+      "optional_payload": ["tool_name", "step_index"]
+    },
+    {
+      "event_type": "step_completed",
+      "severity": "debug",
+      "description": "Step успешно завершён",
+      "required_payload": ["step_type", "duration_ms"],
+      "optional_payload": ["tool_name", "token_usage_summary", "output_summary"]
+    },
+    {
+      "event_type": "step_failed",
+      "severity": "warning",
+      "description": "Step завершён с ошибкой",
+      "required_payload": ["step_type", "error_code"],
+      "optional_payload": ["tool_name", "retryable", "duration_ms"]
+    },
+    {
+      "event_type": "loop_state_changed",
+      "severity": "info",
+      "description": "Переход Loop Engine state machine",
+      "required_payload": ["from_state", "to_state"],
+      "optional_payload": ["stop_reason", "step_index"]
+    },
+    {
+      "event_type": "tool_call_requested",
+      "severity": "info",
+      "description": "Запрос вызова инструмента (до выполнения)",
+      "required_payload": ["tool_name", "capabilities"],
+      "optional_payload": ["input_summary"],
+      "forbidden_payload": ["raw_tool_input", "auth_headers"]
+    },
+    {
+      "event_type": "tool_call_completed",
+      "severity": "info",
+      "description": "Инструмент выполнен успешно",
+      "required_payload": ["tool_name", "duration_ms"],
+      "optional_payload": ["result_count", "output_summary"]
+    },
+    {
+      "event_type": "tool_call_denied",
+      "severity": "warning",
+      "description": "Tool gating отклонил вызов",
+      "required_payload": ["tool_name", "deny_reason"],
+      "optional_payload": ["project_role", "policy_rule_id"]
+    },
+    {
+      "event_type": "document_accessed",
+      "severity": "info",
+      "description": "Доступ к документу (read/RAG)",
+      "required_payload": ["doc_id", "access_mode"],
+      "optional_payload": ["project_id", "department_id", "chunk_count"],
+      "forbidden_payload": ["full_document_content"]
+    },
+    {
+      "event_type": "document_ingested",
+      "severity": "info",
+      "description": "Документ загружен и обработан pipeline",
+      "required_payload": ["doc_id", "content_hash", "parser_version"],
+      "optional_payload": ["chunk_count", "warnings_count", "fallback_used"]
+    },
+    {
+      "event_type": "guardrail_block",
+      "severity": "warning",
+      "description": "Guardrails заблокировали действие или вывод",
+      "required_payload": ["rule_id", "action"],
+      "optional_payload": ["step_type", "redacted_preview"],
+      "forbidden_payload": ["blocked_content_raw"]
+    },
+    {
+      "event_type": "guardrail_redact",
+      "severity": "info",
+      "description": "Guardrails отредактировали контент (PII/secrets)",
+      "required_payload": ["rule_id", "redaction_count"],
+      "optional_payload": ["step_type"]
+    },
+    {
+      "event_type": "guardrail_warn",
+      "severity": "info",
+      "description": "Guardrails предупреждение без блокировки",
+      "required_payload": ["rule_id", "message_code"],
+      "optional_payload": ["step_type"]
+    },
+    {
+      "event_type": "judge_pass",
+      "severity": "info",
+      "description": "Judge одобрил результат",
+      "required_payload": ["checklist_version"],
+      "optional_payload": ["checks_passed"]
+    },
+    {
+      "event_type": "judge_fail",
+      "severity": "warning",
+      "description": "Judge отклонил результат",
+      "required_payload": ["checklist_version", "failed_checks"],
+      "optional_payload": ["retry_allowed"]
+    },
+    {
+      "event_type": "policy_denied",
+      "severity": "warning",
+      "description": "Server-side policy отклонила операцию (RLS/ACL)",
+      "required_payload": ["resource", "action", "deny_reason"],
+      "optional_payload": ["project_id", "department_id", "project_role"]
+    },
+    {
+      "event_type": "budget_exceeded",
+      "severity": "warning",
+      "description": "Превышен лимит budget Run",
+      "required_payload": ["limit_type", "limit_value", "consumed_value"],
+      "optional_payload": ["step_index"]
+    },
+    {
+      "event_type": "circuit_breaker_tripped",
+      "severity": "error",
+      "description": "Circuit breaker открылся",
+      "required_payload": ["trigger", "consecutive_failures", "recovery_mode"],
+      "optional_payload": ["last_error_code", "last_tool_name"]
+    }
+  ]
+}

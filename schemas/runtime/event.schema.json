@@ -47,7 +47,8 @@
         "judge_fail",
         "policy_denied",
         "budget_exceeded",
-        "circuit_breaker_tripped"
+        "circuit_breaker_tripped",
+        "loop_state_changed"
       ]
     },
     "severity": {

@@ -121,6 +121,8 @@ gh label create phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6 security
 
 ### #12 [phase-3] [security] Каталог audit events
 
+**Статус:** done (v0.1 — `schemas/runtime/audit-event-catalog.json`, раздел Audit в `10_ai_runtime.md`)
+
 `event_type`, severity, санитизация payload, связь с `trace_id`.
 
 ---
@@ -165,5 +167,6 @@ pgvector + RLS-поля до выдачи в RAG.
 2. ~~#7 Матрица роль → права → RLS~~ ✅ (DRAFT v0.1)
 3. ~~#10 JSON-схемы Run/Step/Event~~ ✅ (v0.1)
 4. ~~#11 State machine Loop Engine~~ ✅ (v0.1)
-5. **#12 Каталог audit events**
-6. **#3 Установить gh + создать issues на GitHub**
+5. ~~#12 Каталог audit events~~ ✅ (v0.1)
+6. **#13 Ingest + dedup (Document Intelligence)**
+7. **#3 Установить gh + создать issues на GitHub**

@@ -1,0 +1,24 @@
+{
+  "schema_version": "0.1",
+  "event_id": "550e8400-e29b-41d4-a716-446655440010",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "run_id": "550e8400-e29b-41d4-a716-446655440001",
+  "step_id": "550e8400-e29b-41d4-a716-446655440002",
+  "event_type": "policy_denied",
+  "severity": "warning",
+  "actor": {
+    "type": "service",
+    "service_name": "tmki-runtime"
+  },
+  "occurred_at": "2026-07-01T10:00:03Z",
+  "policy_version": "guardrails-2026-06-01",
+  "payload": {
+    "resource": "doc.confidential",
+    "action": "read",
+    "deny_reason": "insufficient_clearance",
+    "project_id": "satimol",
+    "project_role": "Projektleiter (Design)",
+    "required_clearance": "restricted",
+    "user_clearance": "internal"
+  }
+}

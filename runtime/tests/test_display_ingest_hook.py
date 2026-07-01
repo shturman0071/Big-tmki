@@ -16,6 +16,26 @@ def test_cast_mvp_output():
     assert r.target == "computer"
 
 
+def test_http_cast_tv(monkeypatch, tmp_path):
+    monkeypatch.setenv("TMKI_CAST_PORT", "18766")
+    from tmki_voice.cast_server import reset_cast_server
+    from tmki_voice.display import DisplayTarget, HttpCastDisplayProvider
+
+    reset_cast_server()
+    provider = HttpCastDisplayProvider(tmp_path)
+    result = provider.show({"answer": "тест TV"}, target=DisplayTarget.TV)
+    assert result.delivered
+    assert result.method == "http_cast"
+    assert result.detail.startswith("http://")
+
+    import urllib.request
+
+    with urllib.request.urlopen(result.detail, timeout=2) as resp:
+        body = resp.read().decode("utf-8")
+    assert "тест TV" in body
+    reset_cast_server()
+
+
 def test_ingest_synced_txt(tmp_path):
     f = tmp_path / "note.txt"
     f.write_text("маркшейдерская съёмка регламент", encoding="utf-8")

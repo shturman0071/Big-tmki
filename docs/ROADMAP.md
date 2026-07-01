@@ -278,7 +278,11 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #50 [phase-6] [runtime] TTS Piper + вывод на устройства
 
-**Статус:** MVP (v0.3) — `tmki_voice/tts.py`, `display.py` (stub/browser); TV cast — backlog
+**Статус:** MVP (v0.3) — `tmki_voice/tts.py`, `display.py` (stub/browser/http_cast LAN); Chromecast/Miracast — backlog
+
+### #53 [phase-6] [runtime] TV cast HTTP (LAN)
+
+**Статус:** MVP (v0.3) — `tmki_voice/cast_server.py`, `HttpCastDisplayProvider`, `run_display_cast.py`
 
 ### #51 [phase-4] [runtime] pgvector v2 partial load + ops scripts
 

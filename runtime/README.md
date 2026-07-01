@@ -117,6 +117,15 @@ $env:PIPER_VOICE = "ru_RU-denis-medium"
 python -c "from tmki_voice import synthesize_speech; print(synthesize_speech('Проверка озвучки'))"
 ```
 
+### Display cast (TV / планшет по LAN)
+
+```powershell
+$env:TMKI_DISPLAY_PROVIDER = "http_cast"
+$env:TMKI_CAST_PORT = "8766"
+python scripts/run_display_cast.py "ответ ассистента" --target tv
+# Откройте URL на TV-браузере в той же сети
+```
+
 ## Использование
 
 ```python

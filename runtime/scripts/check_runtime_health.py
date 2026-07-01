@@ -37,6 +37,20 @@ def main() -> int:
                 print(f"  [ok] {key}")
             else:
                 print(f"  [warn] {key} not set")
+        try:
+            import subprocess
+
+            probe = subprocess.run(
+                [sys.executable, str(Path(__file__).parent / "check_ocr_http.py")],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            print(probe.stdout.rstrip() or probe.stderr.rstrip())
+            if probe.returncode != 0:
+                ok = False
+        except Exception as exc:
+            print(f"  [warn] HTTP OCR probe failed: {exc}")
 
     dsn = os.environ.get("DATABASE_URL", "")
     if dsn:

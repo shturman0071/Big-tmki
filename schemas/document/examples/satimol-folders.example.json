@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1",
+  "description": "Пример каталога папок маркшейдерии (Сатимол)",
+  "folders": [
+    {
+      "schema_version": "0.1",
+      "folder_id": "folder_ms_open",
+      "name": { "ru": "Маркшейдерия — общие", "de": "Markscheider — Allgemein" },
+      "storage_backend": "sharepoint",
+      "physical_path": "/sites/Satimol/Markscheider/Общие",
+      "uri": "https://sharepoint.example/sites/Satimol/Markscheider/Общие",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "department_id": "dept_markscheider",
+      "access_tier": "department_open",
+      "default_classification": "internal",
+      "status": "active"
+    },
+    {
+      "schema_version": "0.1",
+      "folder_id": "folder_ms_contracts",
+      "name": { "ru": "Маркшейдерия — договоры", "de": "Markscheider — Verträge" },
+      "storage_backend": "sharepoint",
+      "physical_path": "/sites/Satimol/Markscheider/Договоры",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "department_id": "dept_markscheider",
+      "access_tier": "grant_only",
+      "default_classification": "confidential",
+      "status": "active"
+    }
+  ]
+}

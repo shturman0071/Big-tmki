@@ -1,0 +1,69 @@
+{
+  "schema_version": "0.1",
+  "description": "Тестовые chunks для RAG Сатимол (маркшейдерия)",
+  "chunks": [
+    {
+      "schema_version": "0.1",
+      "chunk_id": "chunk_ms_ks_01",
+      "doc_id": "doc_markscheider_ks_2025",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "department_id": "dept_markscheider",
+      "classification": "restricted",
+      "language": "ru",
+      "page": 3,
+      "start_offset": 120,
+      "end_offset": 480,
+      "embedding_model": "text-embedding-3-small",
+      "content_preview": "Маркшейдерская съёмка на участке КС: отметки выработок, нормативы съёмки.",
+      "indexed_at": "2025-09-15T10:00:00Z"
+    },
+    {
+      "schema_version": "0.1",
+      "chunk_id": "chunk_pto_01",
+      "doc_id": "doc_pto_schedule",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "department_id": "dept_pto",
+      "classification": "internal",
+      "language": "ru",
+      "page": 1,
+      "start_offset": 0,
+      "end_offset": 200,
+      "embedding_model": "text-embedding-3-small",
+      "content_preview": "График ПТО: маркшейдерская съёмка — ссылка на смежный отдел.",
+      "indexed_at": "2025-09-15T10:00:00Z"
+    },
+    {
+      "schema_version": "0.1",
+      "chunk_id": "chunk_hr_01",
+      "doc_id": "doc_hr_payroll",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "department_id": "dept_hr",
+      "classification": "confidential",
+      "language": "ru",
+      "page": 1,
+      "start_offset": 0,
+      "end_offset": 100,
+      "embedding_model": "text-embedding-3-small",
+      "content_preview": "Маркшейдерская съёмка — конфиденциальная сводка HR.",
+      "indexed_at": "2025-09-15T10:00:00Z"
+    },
+    {
+      "schema_version": "0.1",
+      "chunk_id": "chunk_project_grd",
+      "doc_id": "doc_satimol_grd",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "classification": "internal",
+      "language": "ru",
+      "page": 12,
+      "start_offset": 40,
+      "end_offset": 300,
+      "embedding_model": "text-embedding-3-small",
+      "content_preview": "Общий ГРД проекта Сатимол: требования к маркшейдерской съёмке.",
+      "indexed_at": "2025-09-15T10:00:00Z"
+    }
+  ]
+}

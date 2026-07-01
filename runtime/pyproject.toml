@@ -1,12 +1,16 @@
 [project]
 name = "tmki-runtime"
 version = "0.1.0"
-description = "TMKI AI Runtime — policy context и орг-резолвер (MVP)"
+description = "TMKI AI Runtime — policy context, RAG + server-side RLS (MVP)"
 readme = "README.md"
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tmki_policy*", "tmki_rag*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

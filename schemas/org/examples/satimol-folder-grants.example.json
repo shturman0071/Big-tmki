@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1",
+  "description": "Пример grant/deny для маркшейдерии (Сатимол)",
+  "grants": [
+    {
+      "schema_version": "0.1",
+      "grant_id": "grant_ms_contracts_ivanov",
+      "grant_type": "grant",
+      "employee_id": "emp_ivanov_a",
+      "folder_id": "folder_ms_contracts",
+      "department_id": "dept_markscheider",
+      "granted_by_employee_id": "emp_litovsky_d",
+      "actions": ["read"],
+      "valid_from": "2025-09-01",
+      "valid_to": "2026-03-31",
+      "status": "active",
+      "reason": "Работа с договором субподряда КС"
+    },
+    {
+      "schema_version": "0.1",
+      "grant_id": "deny_ms_open_petrov",
+      "grant_type": "deny",
+      "employee_id": "emp_petrov_v",
+      "folder_id": "folder_ms_open",
+      "department_id": "dept_markscheider",
+      "granted_by_employee_id": "emp_litovsky_d",
+      "actions": ["read"],
+      "valid_from": "2025-09-15",
+      "status": "active",
+      "reason": "Временное отстранение от общих материалов участка"
+    }
+  ]
+}

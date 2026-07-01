@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/folder-catalog.schema.json",
+  "title": "TMKI — каталог физических папок",
+  "description": "Маппинг SharePoint/диск → folder_id для RLS и делегирования (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "folder_id",
+    "storage_backend",
+    "physical_path",
+    "company_id",
+    "project_id",
+    "department_id",
+    "access_tier",
+    "default_classification"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "folder_id": {
+      "type": "string",
+      "pattern": "^folder_[a-z][a-z0-9_]{1,63}$"
+    },
+    "name": { "$ref": "../org/common.schema.json#/$defs/localizedLabel" },
+    "storage_backend": {
+      "type": "string",
+      "enum": ["sharepoint", "filesystem"]
+    },
+    "physical_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Префикс пути в хранилище (longest match при ingest)"
+    },
+    "uri": {
+      "type": "string",
+      "format": "uri",
+      "description": "MAY: URL библиотеки SharePoint"
+    },
+    "company_id": { "$ref": "../org/common.schema.json#/$defs/entityId" },
+    "project_id": { "$ref": "../org/common.schema.json#/$defs/entityId" },
+    "department_id": { "$ref": "../org/common.schema.json#/$defs/entityId" },
+    "access_tier": {
+      "type": "string",
+      "enum": ["department_open", "department_restricted", "grant_only"]
+    },
+    "default_classification": {
+      "$ref": "../org/common.schema.json#/$defs/clearanceLevel"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "inactive"],
+      "default": "active"
+    }
+  }
+}

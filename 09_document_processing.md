@@ -81,6 +81,8 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 |------|----------|
 | `policy_context` | `ORG_MODEL.md` — `company_id`, `project_id`, `department_id`, `employee_id`, `project_role` |
 | `classification` | `access_label` для RLS |
+| `source_path` | Физический путь файла (SharePoint/диск) для определения `folder_id` |
+| `folder_id` | MAY: явный ID; иначе — longest prefix match по `FolderCatalog` |
 | `trace_id` | Связь с Audit (`10_ai_runtime.md`) |
 
 #### Ошибки ingest
@@ -90,6 +92,8 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 | `INGEST_FILE_TOO_LARGE` | Превышен size limit |
 | `INGEST_UNSUPPORTED_MIME` | Тип не в allowlist |
 | `INGEST_CLEARANCE_DENIED` | `classification` выше `user.clearance` |
+| `INGEST_FOLDER_DENIED` | Нет доступа к `folder_id` (tier / grant / deny) |
+| `INGEST_DELETE_DENIED` | Попытка delete рядовым сотрудником |
 | `INGEST_DEDUP_CONFLICT` | Редкий конфликт idempotency (retry с другим телом) |
 
 ### 2) OCR / Extract

@@ -99,6 +99,7 @@ Components:
 Retrieval + формирование “evidence pack” для генерации ответа.
 
 - **MUST**: возвращать не просто текст, а **цитируемые** фрагменты (doc id, offsets, url/path) — контракт чанков в `09_document_processing.md`.
+- **MUST**: server-side RLS **до** vector/BM25 ранжирования — референс: `runtime/tmki_rag` (`rag_search`, пример chunks `schemas/document/examples/satimol-chunks.example.json`).
 - **SHOULD**: уметь hybrid search (BM25 + embeddings) при наличии — vector store см. `16_tool_registry.md`.
 
 ### Loop Engine

@@ -42,8 +42,11 @@ erDiagram
 | Project | `project.schema.json` | `project_id`, `primary_company_id` |
 | ProjectRole | `project-role.schema.json` | `role_key` → `policy_context.project_role` |
 | Assignment | `assignment.schema.json` | `position` / `project_role` / `group_grant` |
+| FolderCatalog | `../document/folder-catalog.schema.json` | физический каталог SharePoint/диск → `folder_id` |
+| EmployeeFolderGrant | `employee-folder-grant.schema.json` | deny/grant от начальника подразделения |
 
-**MUST**: `policy_context` в runtime собирается из активных `Assignment` на дату запроса (server-side).
+**MUST**: `policy_context` в runtime собирается из активных `Assignment` на дату запроса (server-side).  
+**MUST**: эффективные права на папки — из `FolderCatalog` + активных `EmployeeFolderGrant` (server-side, см. §Делегирование).
 
 ## Источник оргструктуры (проект «Сатимол»)
 
@@ -190,6 +193,7 @@ erDiagram
 | **ГИП / Гл. инж. проекта** | R+W `S_project` | R+W `S_dept_tree` | — | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_dept_tree` | — |
 | **Generalprojektant (КГЦМ)** | R+W `S_project` | R `S_project` | — | R `S_project` | R+W | ✓ | — | ✓ | — | — |
 | **Начальник подразделения**§ | R `S_project` | R+W `S_dept` | — | R `S_dept` | R+W | ✓ | ✓* | ✓ `S_dept` | R `S_dept` | — |
+| **Сотрудник подразделения** | R `S_project` | R `S_dept`³ / W³‡‡ | — | — | R+W | ✓ | — | ✓ `S_dept` | — | — |
 | **Начальник участка** (БВР/КС/СС/СМУ) | R `S_project` | R+W `S_dept` | — | — | R+W | ✓ | — | ✓ `S_dept` | — | — |
 | **Служба ОТ и ПБ** | R `S_project` | R `S_project` | — | — | R | ✓ | — | R | R `S_project` | — |
 | **Бухгалтерия / Кадры** | — | R `S_dept` | R+W `S_dept`¶ | — | R | ✓ | — | — | — | — |
@@ -207,6 +211,8 @@ erDiagram
 - † Projektleiter: финансы/HR — read сводных отчётов, без персональных данных уровня `restricted`.
 - ‡ Назначение ролей в пределах проекта, без изменения `company_id`-level policy.
 - § Начальник ПТО, геологии, маркшейдерии, лаборатории, главный механик/энергетик и т. п.
+- ³ **Сотрудник подразделения**: read/write по `doc.department` с учётом `FolderCatalog` + `EmployeeFolderGrant` (см. §Делегирование); **delete** — запрещён.
+- ‡‡ Write = upload/ingest в папки отдела; не распространяется на `grant_only` без явного grant.
 - ¶ Только в scope своего подразделения (`S_dept`); персональные данные — минимально необходимый набор.
 - \*\* ИТ: T_w/I для инфраструктурных инструментов; без доступа к `doc.confidential` по умолчанию.
 - ‖ Подрядчик: доступ только к документам с явным `contractor_id` / share flag; `project_id` обязателен.
@@ -290,8 +296,98 @@ erDiagram
 | 2 | Projektleiter (Design) и смежные подразделения | Чтение `doc.department` = `S_project`; запись = только `S_dept` |
 | 3 | SchBK / group_admin | Отдельная роль `group_admin` + `company_group_id`; межпроектные grants обязательны |
 | 4 | Подрядчики | Отдельный `contractor_id`, гостевая `project_role`, share-list на документе |
+| 5 | Делегирование внутри подразделения | Начальник MAY **deny** и **grant** по физическим папкам; рядовой сотрудник — upload без delete (см. §Делегирование) |
 
 **SHOULD**: пересмотр решений при смене оргсхемы или инциденте доступа — владельцы: ИБ + Projektleiter.
+
+## Делегирование доступов внутри подразделения (v0.3)
+
+> Статус: **утверждено** (бизнес-правила). Реализация UI/runtime — backlog Phase 2.5.  
+> Папки = **физические каталоги** SharePoint или сетевого диска; документ при ingest **MUST** привязываться к `folder_id` по пути.
+
+### Роли в правиле
+
+| Субъект | Поведение |
+|---------|-----------|
+| **Начальник подразделения**§ | В пределах своего `S_dept`: выдаёт **grant** на закрытые папки; ставит **deny** (галочка «запретить») на открытые по умолчанию папки отдельным сотрудникам |
+| **Рядовой сотрудник отдела** | Должность в `S_dept` без `is_manager` на позиции начальника: read по матрице + clearance; **upload (write/ingest)** в папки отдела; **delete запрещён** |
+| **Projektleiter / Direktor / ИБ** | Могут отменить grant/deny; задают `clearance` и каталог папок; audit обязателен |
+
+§ Chefmarkscheider, Начальник ПТО, начальник участка и т. п. — см. матрицу «Начальник подразделения».
+
+### Каталог папок (`FolderCatalog`)
+
+Каждая запись описывает **один физический каталог**:
+
+| Поле | Назначение |
+|------|------------|
+| `folder_id` | Стабильный ID в системе |
+| `storage_backend` | `sharepoint` \| `filesystem` |
+| `physical_path` | Путь в хранилище (префикс для сопоставления файлов) |
+| `uri` | MAY: URL библиотеки SharePoint |
+| `company_id`, `project_id`, `department_id` | RLS-контекст |
+| `default_classification` | Минимальный `access_label` документов в папке |
+| `access_tier` | См. таблицу ниже |
+
+| `access_tier` | Кто видит по умолчанию (до grant/deny) |
+|---------------|----------------------------------------|
+| `department_open` | Все сотрудники отдела с достаточным `clearance` |
+| `department_restricted` | Только начальник подразделения + сотрудники с **grant** |
+| `grant_only` | Только явный **grant** (договоры, NDA, зарплата и т. п.) |
+
+**MUST**: папки `grant_only` и `department_restricted` **не** открываются автоматически всему отделу, даже при `S_dept`.
+
+### Grant / Deny (`EmployeeFolderGrant`)
+
+Начальник подразделения управляет **персональными** исключениями (не меняет `clearance` и не выходит за `S_dept`):
+
+| `grant_type` | Действие |
+|--------------|----------|
+| `deny` | Запретить доступ к папке сотруднику, которому иначе положен доступ по `access_tier` |
+| `grant` | Открыть закрытую папку (`department_restricted` / `grant_only`) конкретному сотруднику |
+
+| Поле grant | Правило |
+|------------|---------|
+| `actions` | `read`, `write` (upload/ingest). **delete** для рядового состава **MUST NOT** выдаваться через grant |
+| `granted_by_employee_id` | Начальник того же `department_id` или выше по матрице |
+| `valid_from` / `valid_to` | Обязательный период действия |
+| Audit | `folder_grant_issued`, `folder_grant_revoked`, `folder_access_denied` |
+
+**MUST**: `deny` имеет приоритет над default allow.  
+**MUST**: `grant` не MAY поднять эффективный доступ выше `user.clearance` и выше политики ИБ.  
+**MUST NOT**: начальник выдавать grant/deny вне своего `department_id`.
+
+### Действия с файлами (разделение W)
+
+| Действие | Рядовой сотрудник | Начальник подразделения |
+|----------|-------------------|-------------------------|
+| **read** | ✓ (если нет deny, есть clearance) | ✓ |
+| **write / ingest** (загрузка) | ✓ в `department_open` и при grant с `write` | ✓ в `S_dept` |
+| **delete** | **—** | ✓ в `S_dept` (или soft-delete по политике retention) |
+| **share** наружу | — | только Projektleiter+ (см. §Подрядчики) |
+
+Удаление рядовым сотрудником **MUST** блокироваться на уровне хранилища (SharePoint permission / API policy), не только в UI.
+
+### Алгоритм эффективного доступа (MUST)
+
+```text
+1. Базовые права из матрицы роли + user.clearance + S_dept / S_project
+2. Определить folder_id документа по physical_path (longest prefix match)
+3. Применить access_tier папки (open / restricted / grant_only)
+4. Применить активные EmployeeFolderGrant (deny > grant > default)
+5. Проверить действие: read | write | delete
+6. Для RAG/pgvector — те же фильтры до ранжирования (folder_id + grant/deny)
+```
+
+Контракты: `schemas/document/folder-catalog.schema.json`, `schemas/org/employee-folder-grant.schema.json`.
+
+### Примеры папок (Сатимол, черновик)
+
+| `folder_id` | Путь (пример) | `access_tier` | `default_classification` |
+|-------------|---------------|---------------|--------------------------|
+| `folder_ms_open` | `.../Markscheider/Общие` | `department_open` | `internal` |
+| `folder_ms_contracts` | `.../Markscheider/Договоры` | `grant_only` | `confidential` |
+| `folder_pto_open` | `.../PTO/Общие` | `department_open` | `internal` |
 
 ## Связанные документы
 
@@ -301,7 +397,7 @@ erDiagram
 | `10_ai_runtime.md` | Context Builder, tool gating по роли |
 | `09_document_processing.md` | классификация, фильтрация документов |
 | `16_tool_registry.md` | policy hooks по org/role/env, `tool-gating.rules.json` |
-| `schemas/org/` | JSON Schema сущностей и пример Сатимол |
+| `schemas/org/` | JSON Schema сущностей, grants папок и пример Сатимол |
 
 ## Статус вакансий (v0.1, оргсхема 10.09.2025)
 

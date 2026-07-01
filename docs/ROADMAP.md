@@ -211,4 +211,17 @@ pgvector + RLS-поля до выдачи в RAG.
 19. ~~#7 RLS open questions (Сатимол)~~ ✅ (v0.2)
 20. ~~#8 Схема сущностей org model~~ ✅ (v0.1)
 21. ~~#9 Актуализировать вакансии оргсхемы~~ ✅ (v0.1)
-22. **Следующий фокус:** реализация runtime (начато: `runtime/tmki_policy`)
+22. **Следующий фокус:** реализация runtime (`tmki_policy`, `tmki_rag`); Phase 2.5 — folder grants + SharePoint sync (backlog)
+
+---
+
+## Phase 2.5 — Делегирование папок (backlog)
+
+### #21 [phase-2] [security] FolderCatalog + EmployeeFolderGrant + delete policy
+
+**Статус:** правила утверждены (v0.3 — `ORG_MODEL.md` §Делегирование); схемы и примеры — v0.1
+
+- `schemas/document/folder-catalog.schema.json`, `employee-folder-grant.schema.json`
+- UI галочек deny/grant для начальника подразделения
+- Синхронизация ACL SharePoint / API delete guard
+- Расширение RLS в `tmki_rag` по `folder_id`

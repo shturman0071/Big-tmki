@@ -190,6 +190,34 @@
       "description": "Circuit breaker открылся",
       "required_payload": ["trigger", "consecutive_failures", "recovery_mode"],
       "optional_payload": ["last_error_code", "last_tool_name"]
+    },
+    {
+      "event_type": "folder_grant_issued",
+      "severity": "info",
+      "description": "Начальник выдал grant/deny на папку сотруднику",
+      "required_payload": ["grant_id", "grant_type", "folder_id", "employee_id", "granted_by_employee_id"],
+      "optional_payload": ["actions", "valid_to", "reason"]
+    },
+    {
+      "event_type": "folder_grant_revoked",
+      "severity": "info",
+      "description": "Grant/deny на папку отозван",
+      "required_payload": ["grant_id", "folder_id", "employee_id"],
+      "optional_payload": ["revoked_by_employee_id", "reason"]
+    },
+    {
+      "event_type": "folder_access_denied",
+      "severity": "warning",
+      "description": "Доступ к папке/файлу отклонён (tier, deny, delete policy)",
+      "required_payload": ["folder_id", "action", "deny_reason"],
+      "optional_payload": ["source_path", "employee_id"]
+    },
+    {
+      "event_type": "document_deleted",
+      "severity": "info",
+      "description": "Документ удалён (только уполномоченные роли)",
+      "required_payload": ["doc_id", "deleted_by_employee_id"],
+      "optional_payload": ["folder_id", "soft_delete"]
     }
   ]
 }

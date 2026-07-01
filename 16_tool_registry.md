@@ -47,3 +47,14 @@
 - описать риски (данные/сеть/side-effects)
 - прописать политику доступа (кто и в каких окружениях может вызывать)
 - добавить наблюдаемость (минимум: latency, error rate, usage)
+- пройти процесс `18_technology_watch.md` перед добавлением в Approved
+
+## Связанные документы
+
+| Документ | Связь |
+|----------|-------|
+| `10_ai_runtime.md` | Tool Registry модуль, tool calls, policy |
+| `07_security_addendum.md` | tool gating, auth scopes, audit |
+| `09_document_processing.md` | OCR, vector retrieval провайдеры |
+| `18_technology_watch.md` | Approved / Watchlist, процесс добавления |
+| `ORG_MODEL.md` | ограничение доступа по роли/подразделению |

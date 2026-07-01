@@ -40,3 +40,12 @@
 - Camofox
 - Gemma 4 12B
 - Local LLM Optimization
+
+## Связанные документы
+
+| Документ | Связь |
+|----------|-------|
+| `16_tool_registry.md` | конкретные инструменты по категориям |
+| `10_ai_runtime.md` | provider pattern, model governance в runtime |
+| `07_security_addendum.md` | security review при добавлении технологии |
+| `09_document_processing.md` | MinerU, Mistral OCR 4, vector stack |

@@ -102,7 +102,16 @@ Project -> ProjectRole -> Employee
 | Employee | `employee_id` / `user_id` | субъект доступа |
 | Classification | `access_label` | уровень конфиденциальности документов |
 
-**MUST**: доступ к документам и tool calls фильтруется по `company_id`, `project_id`, `department_id` и роли сотрудника (см. `07_security_addendum.md`).
+**MUST**: доступ к документам и tool calls фильтруется по `company_id`, `project_id`, `department_id` и роли сотрудника (см. `07_security_addendum.md`, `10_ai_runtime.md`).
+
+## Связанные документы
+
+| Документ | Связь |
+|----------|-------|
+| `07_security_addendum.md` | RLS, server-side authorization |
+| `10_ai_runtime.md` | Context Builder, tool gating по роли |
+| `09_document_processing.md` | classification, фильтрация документов |
+| `16_tool_registry.md` | policy hooks по org/role/env |
 
 ## Статус вакансий (по схеме на 10.09.2025)
 

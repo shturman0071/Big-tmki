@@ -59,3 +59,8 @@ branch  main
 |-------|-------------------|
 | `tmki-handbook-update` | Дополнение/синхронизация глав хэндбука |
 | `vsdx-org-import` | Импорт оргструктуры из Visio `.vsdx` |
+
+## Roadmap
+
+План работ и backlog: `docs/ROADMAP.md`.  
+Создание issues на GitHub: `scripts/create-github-issues.ps1` (нужен `gh` CLI).

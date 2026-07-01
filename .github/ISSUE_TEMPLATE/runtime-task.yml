@@ -1,0 +1,45 @@
+name: Runtime / Security Task
+description: Задача по runtime, RLS, pipeline или security
+title: "[runtime] "
+labels: ["runtime"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Область
+      options:
+        - runtime
+        - security
+        - document-pipeline
+        - tool-registry
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Фаза
+      options:
+        - phase-2
+        - phase-3
+        - phase-4
+        - phase-5
+        - phase-6
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Цель
+    validations:
+      required: true
+  - type: textarea
+    id: handbook_refs
+    attributes:
+      label: Связанные главы хэндбука
+      placeholder: "10_ai_runtime.md, 07_security_addendum.md"
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Критерий готовности
+    validations:
+      required: true

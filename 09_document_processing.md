@@ -60,7 +60,7 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 ### 4) Metadata enrichment
 
 - извлечение: автор/дата (если есть), темы/теги, тип документа
-- связывание с орг-моделью/проектом при наличии
+- связывание с орг-моделью/проектом при наличии (см. `ORG_MODEL.md`)
 
 ### 5) Chunking
 
@@ -75,8 +75,9 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 
 ### 7) Index / Vector Search
 
-- индекс хранит: embedding + поля фильтрации (org, project, classification, language).
+- индекс хранит: embedding + поля фильтрации (org, project, classification, language) — см. `ORG_MODEL.md`, `07_security_addendum.md`.
 - **MUST**: фильтрация доступа применяется **до** выдачи результатов (server-side).
+- vector store: см. `16_tool_registry.md` (pgvector — approved).
 
 ## SLA и деградация (SHOULD)
 
@@ -87,4 +88,14 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 ## Наблюдаемость (MUST)
 
 - метрики: время по стадиям, доля fallback, доля ошибок, размер документов/чанков
-- логи: trace id на документ, причины деградаций
+- логи: trace id на документ, причины деградаций (см. `10_ai_runtime.md`, Audit)
+
+## Связанные документы
+
+| Документ | Связь |
+|----------|-------|
+| `10_ai_runtime.md` | Document Intelligence, RAG, Audit/trace |
+| `07_security_addendum.md` | server-side фильтрация, classification |
+| `16_tool_registry.md` | OCR (MinerU, Mistral OCR 4), pgvector |
+| `ORG_MODEL.md` | org/project поля в metadata и индексе |
+| `18_technology_watch.md` | статус MinerU, Mistral OCR 4, zvec |

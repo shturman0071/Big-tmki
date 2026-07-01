@@ -26,7 +26,7 @@
 ## Rate limiting и защита от злоупотреблений (MUST)
 
 - **Rate limiting**: лимиты на пользователя/организацию/IP, отдельные лимиты на tool calls и OCR/индексацию.
-- **Budgeting**: лимиты стоимости/токенов на Run/сессию (см. runtime).
+- **Budgeting**: лимиты стоимости/токенов на Run/сессию (см. `10_ai_runtime.md`, сущности Run/Step).
 - **Circuit breaker**: остановка при повторяющихся ошибках или подозрительной активности.
 
 ## Security headers (SHOULD)
@@ -37,7 +37,7 @@
 
 - **Audit logs**:
   - фиксировать: аутентификацию, изменения доступов/ролей, доступ к документам, tool calls, изменение конфигураций guardrails
-  - связывать события через `trace_id` / `run_id` (см. runtime)
+  - связывать события через `trace_id` / `run_id` (см. `10_ai_runtime.md`, Event)
   - хранить payload в санитизированном виде (без секретов/лишних PII)
 
 ## AI Guardrails (MUST)
@@ -45,7 +45,7 @@
 - **Политики**: запреты/ограничения на действия (например, “не выполнять write-операции без явного подтверждения пользователя”, если применимо).
 - **PII & Secrets**: детект/редакция/блокирование.
 - **Tool gating**: запуск инструмента только если удовлетворены условия policy (роль, окружение, тип запроса, риск).
-- **Model governance**: список разрешенных моделей/провайдеров и правила переключения (см. tech watch).
+- **Model governance**: список разрешенных моделей/провайдеров и правила переключения (см. `18_technology_watch.md`, `16_tool_registry.md`).
 
 ## Минимальный security-review перед релизом (SHOULD)
 
@@ -53,3 +53,13 @@
 - проверка логирования (нет секретов)
 - проверка лимитов и бюджетов
 - проверка критичных guardrails (PII, запрещенные действия)
+
+## Связанные документы
+
+| Документ | Связь |
+|----------|-------|
+| `10_ai_runtime.md` | Guardrails, Audit, Run/Step budget |
+| `ORG_MODEL.md` | RLS-поля (`company_id`, `project_id`, `department_id`, `project_role`) |
+| `09_document_processing.md` | фильтрация доступа к документам до выдачи |
+| `16_tool_registry.md` | tool gating, policy hooks |
+| `18_technology_watch.md` | model governance, approved-провайдеры |

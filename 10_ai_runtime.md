@@ -52,7 +52,7 @@ Components:
 
 Собирает исходный контекст для модели/агента.
 
-- **Вход**: user message, сессия, org/project, разрешения, краткая история диалога.
+- **Вход**: user message, сессия, org/project, разрешения, краткая история диалога (см. `ORG_MODEL.md`).
 - **Выход**: `ContextBundle` (структурировано, с лимитами размера).
 - **MUST**: редактировать/маскировать PII/секреты согласно guardrails.
 
@@ -67,8 +67,8 @@ Components:
 
 Каталог доступных инструментов и политик доступа к ним.
 
-- **MUST**: описывать интерфейс инструмента (вход/выход, side-effects, auth scope).
-- **MUST**: уметь отключать/ограничивать инструмент по policy (org, role, env).
+- **MUST**: описывать интерфейс инструмента (вход/выход, side-effects, auth scope) — см. `16_tool_registry.md`.
+- **MUST**: уметь отключать/ограничивать инструмент по policy (org, role, env) — см. `07_security_addendum.md`, `ORG_MODEL.md`.
 
 ### Document Intelligence
 
@@ -80,8 +80,8 @@ Components:
 
 Retrieval + формирование “evidence pack” для генерации ответа.
 
-- **MUST**: возвращать не просто текст, а **цитируемые** фрагменты (doc id, offsets, url/path).
-- **SHOULD**: уметь hybrid search (BM25 + embeddings) при наличии.
+- **MUST**: возвращать не просто текст, а **цитируемые** фрагменты (doc id, offsets, url/path) — контракт чанков в `09_document_processing.md`.
+- **SHOULD**: уметь hybrid search (BM25 + embeddings) при наличии — vector store см. `16_tool_registry.md`.
 
 ### Loop Engine
 
@@ -94,7 +94,7 @@ Retrieval + формирование “evidence pack” для генераци
 
 Самопроверка качества/безопасности результата перед выдачей.
 
-- **MUST**: проверять соответствие policy (PII, секреты, запрещенные действия).
+- **MUST**: проверять соответствие policy (PII, секреты, запрещенные действия) — см. `07_security_addendum.md`, чеклисты в `13_ai_skills_registry.md`.
 - **SHOULD**: проверять полноту ответа (например, выполнены ли requested outputs).
 
 ### Guardrails
@@ -124,3 +124,14 @@ Retrieval + формирование “evidence pack” для генераци
 - Если недоступны инструменты → отвечать в “read-only” режиме без side-effects.
 - Если retrieval пуст/сомнителен → явно сообщать об уверенности и просить уточнение/источник.
 - При подозрении на секрет/PII → редактировать и логировать событие guardrails.
+
+## Связанные документы
+
+| Документ | Связь |
+|----------|-------|
+| `07_security_addendum.md` | RLS, guardrails, audit, rate limits, tool gating |
+| `09_document_processing.md` | Document Intelligence, чанки, embeddings |
+| `16_tool_registry.md` | контракты и approved-инструменты |
+| `ORG_MODEL.md` | org/project/role context, RLS-поля |
+| `13_ai_skills_registry.md` | процедуры Loop Engine, Security Review |
+| `18_technology_watch.md` | approved модели, провайдеры, пересмотр стека |

@@ -336,6 +336,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `run_full_stack_demo.ps1`, `watch_reindex.ps1 -Milestone`
 
+### #65 [phase-6] [runtime] MVP experience + HTTP OCR retry
+
+**Статус:** MVP (v0.3) — `--tts`/`--cast` в MVP, `TMKI_OCR_HTTP_RETRIES`, `run_tmki_demo -Experience`
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

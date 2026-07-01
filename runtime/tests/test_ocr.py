@@ -53,3 +53,19 @@ def test_http_mineru_provider_mock(monkeypatch):
     )
     assert result["ocr_status"] == "completed"
     assert result["provider_used"] == "mineru"
+
+
+def test_http_post_with_retry():
+    from tmki_ocr.ocr import _http_post_with_retry
+
+    calls = {"n": 0}
+
+    def flaky(url, payload, headers, timeout):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("temporary")
+        return {"markdown": "ok"}
+
+    data = _http_post_with_retry(flaky, "http://x", {}, {}, 10, retries=1)
+    assert data["markdown"] == "ok"
+    assert calls["n"] == 2

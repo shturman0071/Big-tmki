@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="TMKI MVP over regulations chunks")
-    parser.add_argument("message", nargs="?", default="промбезопасность кран")
+    parser.add_argument("message", nargs="?", default=None)
     parser.add_argument("--variant", choices=["auto", "v1", "v2"], default="auto")
     parser.add_argument("--llm", default="stub", choices=["stub", "ollama", "openai"])
     parser.add_argument("--hybrid", action="store_true", help="vector+keyword scoring")
@@ -26,7 +26,12 @@ def main() -> int:
         default="json",
         help="json — chunks file; pgvector — DATABASE_URL; auto — env TMKI_INDEX_BACKEND",
     )
+    parser.add_argument("--tts", action="store_true", help="Озвучить ответ (Piper stub/piper)")
+    parser.add_argument("--cast", choices=["none", "tv", "computer", "browser"], default="none")
     args = parser.parse_args()
+    from tmki_runtime.cli_encoding import resolve_cli_message
+
+    message = resolve_cli_message(positional=args.message, default="промбезопасность кран")
 
     from tmki_policy import build_policy_context, load_org_snapshot
     from tmki_rag import VectorChunkIndex, get_chunk_index, load_regulations_chunks, resolve_regulations_chunks_path
@@ -79,7 +84,7 @@ def main() -> int:
         chunk_list = chunks
 
     result = run_mvp(
-        message=args.message,
+        message=message,
         policy_context=ctx,
         chunks=chunk_list,
         index=index,
@@ -106,6 +111,23 @@ def main() -> int:
         else:
             print("LLM-шаг не завершён. См. audit_events в run_mvp.", file=sys.stderr)
         return 1
+
+    answer = (result["output"] or {}).get("answer") or ""
+    if args.tts and answer:
+        from tmki_voice import synthesize_speech
+
+        tts = synthesize_speech(answer[:500])
+        print(f"\ntts: provider={tts.provider} path={tts.audio_path}", file=sys.stderr)
+    if args.cast != "none" and answer:
+        target = "tv" if args.cast == "tv" else "computer"
+        if args.cast == "browser":
+            os.environ["TMKI_DISPLAY_PROVIDER"] = "browser"
+        elif args.cast == "tv":
+            os.environ["TMKI_DISPLAY_PROVIDER"] = "http_cast"
+        from tmki_voice.display import cast_mvp_output
+
+        cast = cast_mvp_output({"answer": answer}, target=target)
+        print(f"cast: {cast.method} delivered={cast.delivered} {cast.detail or ''}", file=sys.stderr)
     return 0
 
 

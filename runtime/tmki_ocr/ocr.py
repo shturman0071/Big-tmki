@@ -53,6 +53,29 @@ def _default_http_post(url: str, payload: dict[str, Any], headers: dict[str, str
         raise RuntimeError(f"OCR HTTP unavailable: {exc.reason}") from exc
 
 
+def _http_post_with_retry(
+    http_post: HttpPostFn,
+    url: str,
+    payload: dict[str, Any],
+    headers: dict[str, str],
+    timeout: int,
+    *,
+    retries: int | None = None,
+) -> dict[str, Any]:
+    max_retries = retries if retries is not None else int(os.environ.get("TMKI_OCR_HTTP_RETRIES", "1"))
+    last_exc: Exception | None = None
+    for attempt in range(max_retries + 1):
+        try:
+            return http_post(url, payload, headers, timeout)
+        except Exception as exc:  # noqa: BLE001 — retry OCR HTTP
+            last_exc = exc
+            if attempt >= max_retries:
+                raise
+    if last_exc:
+        raise last_exc
+    return {}
+
+
 from tmki_ocr.extractors import extract_local_text, guess_suffix
 
 
@@ -160,7 +183,7 @@ class HttpMinerUProvider:
             "output_format": "markdown",
         }
         started = datetime.now(timezone.utc)
-        data = self._http_post(self._api_url, payload, headers, self._timeout)
+        data = _http_post_with_retry(self._http_post, self._api_url, payload, headers, self._timeout)
         text = data.get("markdown") or data.get("text") or ""
         page_count = int(data.get("page_count") or len(data.get("pages", [])) or 1)
         confidence = float(data.get("avg_confidence", 0.85))
@@ -223,7 +246,7 @@ class HttpMistralOcrProvider:
             }
         }
         started = datetime.now(timezone.utc)
-        data = self._http_post(self._api_url, payload, headers, self._timeout)
+        data = _http_post_with_retry(self._http_post, self._api_url, payload, headers, self._timeout)
         pages = data.get("pages") or []
         text = data.get("markdown") or "\n".join(p.get("text", "") for p in pages)
         page_count = int(data.get("page_count") or len(pages) or 1)

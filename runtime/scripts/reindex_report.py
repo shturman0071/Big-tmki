@@ -126,6 +126,8 @@ def main() -> int:
     print(f"  progress: {live_progress}/{total} ({pct:.1f}%)  [checkpoint {processed}]")
     print(f"  imported: {imported}  chunks-v2: {chunk_count}")
     print(f"  errors: {errors}  skip_temp: {stats.get('skip_temp', 0)}  ocr_failed: {stats.get('ocr_failed', 0)}")
+    if stats.get("too_large"):
+        print(f"  too_large: {stats.get('too_large', 0)}")
     if eta_hours is not None:
         print(f"  ETA: ~{eta_hours:.1f} h")
     if current_file:

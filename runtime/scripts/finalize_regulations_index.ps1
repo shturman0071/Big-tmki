@@ -6,6 +6,7 @@ param(
 $runtime = Resolve-Path $PSScriptRoot\..
 $env:PYTHONPATH = $runtime.Path
 $env:PYTHONIOENCODING = "utf-8"
+$env:TMKI_MVP_MESSAGE = $Query
 Set-Location $runtime
 
 python scripts/reindex_report.py --json | Out-Null
@@ -24,5 +25,5 @@ python scripts/load_regulations_pgvector.py --variant v2
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 python scripts/compare_chunks_quality.py
-python scripts/run_mvp_regulations.py $Query --variant v2 --backend pgvector --hybrid
+python scripts/run_mvp_regulations.py --variant v2 --backend pgvector --hybrid
 Write-Host "Done."

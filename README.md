@@ -21,6 +21,7 @@
 - `13_ai_skills_registry.md` — реестр инженерных скиллов (повторно используемые процедуры).
 - `16_tool_registry.md` — реестр инструментов и провайдеров.
 - `18_technology_watch.md` — утверждённые технологии / watchlist и процесс пересмотра.
+- `20_product_requirements_v0_3.md` — требования v0.3: рабочий стол, sync, нормативная база, голос (DRAFT).
 - `schemas/runtime/` — JSON Schema контрактов Run, Step, Event, Loop State (v0.1).
 - `schemas/document/` — JSON Schema ingest/dedup Document Intelligence (v0.1).
 - `schemas/tools/` — реестр инструментов, provider pattern, контракты вызовов (v0.1).

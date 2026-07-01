@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/document-creation-policy.schema.json",
+  "title": "TMKI — политика создания документов",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "document_type", "use_internal_templates"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "document_type": {
+      "type": "string",
+      "enum": ["contract", "instruction", "report", "letter", "regulation", "other"]
+    },
+    "use_internal_templates": {
+      "type": "boolean",
+      "const": true,
+      "description": "MUST использовать внутренние шаблоны/примеры TMKI"
+    },
+    "external_law_check": {
+      "type": "string",
+      "enum": ["never", "on_user_request", "always"],
+      "description": "contract → always; прочие новые → on_user_request по умолчанию"
+    },
+    "template_id": { "type": "string" },
+    "example_doc_id": { "type": "string" },
+    "user_requested_law_check": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "document_type": { "const": "contract" } } },
+      "then": { "properties": { "external_law_check": { "const": "always" } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "document_type": { "enum": ["instruction", "report", "letter", "regulation", "other"] },
+          "user_requested_law_check": { "const": false }
+        }
+      },
+      "then": { "properties": { "external_law_check": { "const": "never" } } }
+    }
+  ]
+}

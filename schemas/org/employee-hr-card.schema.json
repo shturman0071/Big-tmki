@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/org/employee-hr-card.schema.json",
+  "title": "TMKI — HR-карточка сотрудника (расширенная)",
+  "description": "ПДн: голос и антропометрия — только при consent_signed. Не индексировать в RAG.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "employee_id", "consent_signed", "hr_fields"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "employee_id": { "type": "string", "minLength": 1 },
+    "consent_signed": {
+      "type": "boolean",
+      "description": "Подписанное соглашение на обработку ПДн (152-ФЗ)"
+    },
+    "consent_signed_at": { "type": "string", "format": "date-time" },
+    "consent_document_ref": { "type": "string" },
+    "hr_fields": {
+      "type": "object",
+      "description": "Поля по российскому кадровому законодательству",
+      "additionalProperties": true
+    },
+    "voice_profile": {
+      "type": "object",
+      "description": "Только при consent_signed=true",
+      "additionalProperties": false,
+      "properties": {
+        "enrolled": { "type": "boolean" },
+        "enrolled_at": { "type": "string", "format": "date-time" },
+        "profile_ref": {
+          "type": "string",
+          "description": "Ссылка на зашифрованное хранилище, не inline audio"
+        }
+      }
+    },
+    "anthropometrics": {
+      "type": "object",
+      "description": "Только при consent_signed=true",
+      "additionalProperties": false,
+      "properties": {
+        "height_cm": { "type": "number" },
+        "recorded_at": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" }
+      }
+    },
+    "access_restricted": {
+      "type": "boolean",
+      "const": true,
+      "description": "Доступ: HR + Security owner only"
+    }
+  },
+  "if": { "properties": { "consent_signed": { "const": false } } },
+  "then": {
+    "not": {
+      "anyOf": [
+        { "required": ["voice_profile"] },
+        { "required": ["anthropometrics"] }
+      ]
+    }
+  }
+}

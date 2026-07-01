@@ -1,0 +1,126 @@
+{
+  "schema_version": "0.1",
+  "title": "TMKI — каталог внешней нормативной базы РФ",
+  "description": "Документы для первичной загрузки и еженедельного мониторинга агентом Legal Corpus Curator",
+  "update_schedule": "weekly",
+  "default_cron": "0 6 * * 1",
+  "timezone": "Europe/Moscow",
+  "categories": [
+    {
+      "id": "base_legislation",
+      "title": "Базовое законодательство",
+      "documents": [
+        {
+          "doc_key": "law_2395_1_nedra",
+          "title": "Закон РФ от 21.02.1992 № 2395-1 «О недрах»",
+          "monitor_urls": ["https://publication.pravo.gov.ru", "https://docs.cntd.ru"]
+        },
+        {
+          "doc_key": "fz_116_opo",
+          "title": "Федеральный закон от 21.07.1997 № 116-ФЗ «О промышленной безопасности опасных производственных объектов»",
+          "monitor_urls": ["https://docs.cntd.ru", "https://base.garant.ru"]
+        },
+        {
+          "doc_key": "grad_code_rf",
+          "title": "Градостроительный кодекс Российской Федерации",
+          "monitor_urls": ["https://docs.cntd.ru", "https://base.garant.ru"]
+        }
+      ]
+    },
+    {
+      "id": "project_underground",
+      "title": "Проектная документация и недра",
+      "documents": [
+        {
+          "doc_key": "pp_2127_2021",
+          "title": "Постановление Правительства РФ от 30.11.2021 № 2127",
+          "description": "Правила подготовки, согласования и утверждения технических проектов строительства и эксплуатации подземных сооружений",
+          "monitor_urls": ["https://base.garant.ru", "https://publication.pravo.gov.ru"]
+        }
+      ]
+    },
+    {
+      "id": "rostekhnadzor",
+      "title": "Промышленная и технологическая безопасность (Ростехнадзор)",
+      "documents": [
+        {
+          "doc_key": "rtn_507_2020",
+          "title": "Приказ Ростехнадзора от 08.12.2020 № 507",
+          "description": "ФНП «Правила безопасности в угольных шахтах»",
+          "monitor_urls": ["https://www.consultant.ru", "https://base.garant.ru"]
+        },
+        {
+          "doc_key": "rtn_506_2020",
+          "title": "Приказ Ростехнадзора от 08.12.2020 № 506",
+          "description": "ФНП «Инструкция по аэрологической безопасности угольных шахт»",
+          "monitor_urls": ["https://www.consultant.ru", "https://base.garant.ru"]
+        },
+        {
+          "doc_key": "rtn_429_2020",
+          "title": "Приказ Ростехнадзора от 28.10.2020 № 429",
+          "description": "ФНП «Инструкция по электроснабжению угольных шахт»",
+          "monitor_urls": ["https://base.garant.ru"]
+        },
+        {
+          "doc_key": "rtn_448_2020",
+          "title": "Приказ Ростехнадзора от 19.11.2020 № 448",
+          "description": "ФНП «Инструкция по расчёту и применению анкерной крепи на угольных шахтах»",
+          "monitor_urls": ["https://base.garant.ru"]
+        },
+        {
+          "doc_key": "rtn_467_2020",
+          "title": "Приказ Ростехнадзора от 27.11.2020 № 467",
+          "description": "ФНП «Инструкция по порядку разработки планов ликвидации аварий на угольных шахтах»",
+          "monitor_urls": ["https://base.garant.ru"]
+        }
+      ]
+    },
+    {
+      "id": "sp_construction",
+      "title": "Строительные нормы и правила (СП)",
+      "documents": [
+        {
+          "doc_key": "sp_69_13330_2016",
+          "title": "СП 69.13330.2016 «Подземные горные выработки»",
+          "monitor_urls": ["https://nav.tn.ru", "https://docs.cntd.ru"]
+        },
+        {
+          "doc_key": "sp_249_1325800_2016",
+          "title": "СП 249.1325800.2016 «Коммуникации подземные. Проектирование и строительство»",
+          "monitor_urls": ["https://nav.tn.ru"]
+        },
+        {
+          "doc_key": "sp_473_1325800_2019",
+          "title": "СП 473.1325800.2019 «Здания, сооружения и комплексы подземные»",
+          "monitor_urls": ["https://nav.tn.ru"]
+        }
+      ]
+    },
+    {
+      "id": "gost_equipment",
+      "title": "Стандарты на оборудование и материалы",
+      "documents": [
+        {
+          "doc_key": "gost_r_70298_2022",
+          "title": "ГОСТ Р 70298-2022 «Оборудование горно-шахтное. Самоходные машины для подземных горных работ»",
+          "monitor_urls": ["https://gostassistent.ru"]
+        },
+        {
+          "doc_key": "gost_r_55153_2012",
+          "title": "ГОСТ Р 55153-2012 «Машины погрузочно-доставочные»",
+          "monitor_urls": ["https://gostassistent.ru"]
+        },
+        {
+          "doc_key": "gost_r_58493_2019",
+          "title": "ГОСТ Р 58493-2019 «Машины буропогрузочные»",
+          "monitor_urls": ["https://gostassistent.ru"]
+        },
+        {
+          "doc_key": "gost_r_55154_2019",
+          "title": "ГОСТ Р 55154-2019 «Многофункциональные системы безопасности угольных шахт»",
+          "monitor_urls": ["https://gostassistent.ru"]
+        }
+      ]
+    }
+  ]
+}

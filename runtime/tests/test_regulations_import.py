@@ -92,6 +92,21 @@ def test_import_regulations_skip_temp_office_files(tmp_path: Path):
     assert result["skip_temp_count"] == 1
 
 
+def test_import_regulations_legacy_state_merges_skip_temp(tmp_path: Path):
+    import json
+
+    from tmki_ingest.regulations import _load_import_state
+
+    state_path = tmp_path / "state.json"
+    state_path.write_text(
+        json.dumps({"processed": [], "stats": {"imported": 5, "errors": 1}}),
+        encoding="utf-8",
+    )
+    state = _load_import_state(state_path)
+    assert state["stats"]["skip_temp"] == 0
+    assert state["stats"]["imported"] == 5
+
+
 def test_import_regulations_resume(tmp_path: Path):
     (tmp_path / "a.txt").write_text("документ a", encoding="utf-8")
     (tmp_path / "b.txt").write_text("документ b", encoding="utf-8")

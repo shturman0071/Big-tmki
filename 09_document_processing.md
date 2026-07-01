@@ -298,6 +298,24 @@ RAG **MUST** вызывать search API с `policy_context` из Context Builde
 - метрики: время по стадиям, доля fallback, доля ошибок, размер документов/чанков
 - логи: trace id на документ, причины деградаций (см. `10_ai_runtime.md`, Audit)
 
+## Создание и правка документов (v0.3)
+
+> Спецификация: `20_product_requirements_v0_3.md` §5, schema `document-creation-policy.schema.json`.
+
+| Правило | MUST/MAY |
+|---------|----------|
+| Опора на внутренние шаблоны и примеры TMKI | **MUST** |
+| Новый документ (не договор) — проверка по внешнему РФ законодательству | **MAY**, только по запросу пользователя |
+| Договор (`contract`) — проверка по нормативной базе | **MUST** |
+| Внешний корпус для проверки | `schemas/document/legal-corpus-catalog.json` |
+
+## Синхронизация рабочего стола (v0.3)
+
+> Спецификация: `20_product_requirements_v0_3.md` §2–3, `desktop-sync-manifest.schema.json`.
+
+- Папка `%USERPROFILE%\Desktop\{surname}\` → локальный сервер, интервал **5 с**.
+- Новые файлы → ingest с `folder_id` и dedup по `content_hash`.
+
 ## Связанные документы
 
 | Документ | Связь |
@@ -307,3 +325,4 @@ RAG **MUST** вызывать search API с `policy_context` из Context Builde
 | `16_tool_registry.md` | OCR (MinerU, Mistral OCR 4), pgvector |
 | `ORG_MODEL.md` | org/project поля в metadata и индексе |
 | `18_technology_watch.md` | статус MinerU, Mistral OCR 4, zvec |
+| `20_product_requirements_v0_3.md` | desktop sync, нормативная база, голос |

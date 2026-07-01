@@ -18,6 +18,7 @@
 | make-interfaces-feel-better | паттерн | Projektleiter (Design) — Хофманн С. | сокрытие неопределённости | 2026-09-01 | skill в `13_ai_skills_registry.md` |
 | OWASP | ASVS (уровень уточняется) | Владелец ИБ — разработчик [@shturman0071](https://github.com/shturman0071) | разрыв compliance с продуктом | 2026-12-01 | `07_security_addendum.md` |
 | RLS | Postgres RLS + ORG_MODEL | Владелец ИБ + РП ([@shturman0071](https://github.com/shturman0071) + Нефф А.) | дрейф политик, scope подрядчиков | 2026-09-01 | `ORG_MODEL.md` |
+| Piper TTS | piper1-gpl v1.4+ (`tts_piper`) | ГИП — Дядин С. | GPL-3.0 для движка; голоса — проверять лицензию на HuggingFace | 2026-09-01 | `tmki_voice/tts.py`, `20_product_requirements_v0_3.md` §8 |
 
 ## Критерии «Утверждено» (SHOULD)
 
@@ -48,6 +49,8 @@
 | Camofox | риск browser automation, заблокирован в production | Владелец ИБ — [@shturman0071](https://github.com/shturman0071) | 2026-07-15 |
 | Gemma 4 12B | governance локальных моделей | ГИП — Дядин С. | 2026-09-01 |
 | Local LLM Optimization | сложность эксплуатации, нет пути в MVP | ГИП — Дядин С. | 2026-09-01 |
+| Kokoro TTS | альтернатива Piper, Apache 2.0, выше качество | ГИП — Дядин С. | 2026-09-01 |
+| faster-whisper STT | локальный STT для voice assistant | ГИП — Дядин С. | 2026-09-01 |
 
 ## Связанные документы
 

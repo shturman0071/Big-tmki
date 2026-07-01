@@ -68,6 +68,36 @@
 - **owner**: Владелец ИБ — разработчик [@shturman0071](https://github.com/shturman0071); co-sign: Projektleiter — Нефф А.
 - **example**: PR с изменением `tool-gating.rules.json` → прогон checks TL и SEC из checklist → sign-off в `mvp-security-review.schema.json`.
 
+### Legal Corpus Curator
+
+- **intent**: еженедельное обновление внешней нормативной базы РФ по каталогу.
+- **inputs**: `schemas/document/legal-corpus-catalog.json`, доступ к официальным источникам.
+- **outputs**: `regulatory-update.schema.json` records, re-indexed chunks, уведомление куратору.
+- **constraints**: только лицензированные/официальные URL; audit `regulatory_corpus_updated`.
+- **checklist**: fetch → hash diff → ingest → notify → weekly report.
+- **owner**: Projektleiter (Design) — Хофманн С.; co-sign Security owner.
+- **example**: новая редакция ФЗ 116-ФЗ → diff → ingest → email куратору Промбезопасности.
+
+### Document Author
+
+- **intent**: создание/правка документов по внутренним шаблонам TMKI.
+- **inputs**: `document-creation-policy.schema.json`, template_id, черновик.
+- **outputs**: docx/pdf в папке сотрудника; audit `document_created`.
+- **constraints**: договор — проверка по РФ всегда; прочие — только по запросу (`20_product_requirements_v0_3.md` §5).
+- **checklist**: выбрать шаблон → заполнить → internal review → (optional) external law check.
+- **owner**: Projektleiter (Design) — Хофманн С.
+- **example**: инструкция по крану из шаблона TMKI без auto-check по ГОСТ до запроса инженера.
+
+### Voice Meeting Assistant
+
+- **intent**: голосовые to-do и планёрки с идентификацией спикера.
+- **inputs**: `voice-session.schema.json`, voice profile (при consent), аудиопоток.
+- **outputs**: transcript, todo items, meeting action items; TTS ответ (Piper `generated_default`).
+- **constraints**: speaker ID только при `consent_signed`; HR card не в RAG; TTS — только preset Piper, без клонирования актёра.
+- **checklist**: STT → speaker ID → extract actions → store todo → TTS + display cast.
+- **owner**: ГИП (runtime) — Дядин С.; co-sign HR.
+- **example**: планёрка Сатимол → 3 action items по спикерам → вывод на TV в офисе.
+
 ## Связь с runtime
 
 - **Loop Engine** использует “Looper”-подобные процедуры для многошаговых задач.
@@ -83,3 +113,4 @@
 | `07_security_addendum.md` | Security Review, MVP security-review checklist |
 | `16_tool_registry.md` | инструменты в harness |
 | `18_technology_watch.md` | Harness Engineering Guide (approved) |
+| `20_product_requirements_v0_3.md` | desktop sync, нормативная база, голос |

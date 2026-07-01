@@ -164,7 +164,9 @@ def _load_import_state(state_path: Path) -> dict[str, Any]:
         }
     data = json.loads(state_path.read_text(encoding="utf-8"))
     data.setdefault("processed", [])
-    data.setdefault("stats", _empty_import_stats())
+    defaults = _empty_import_stats()
+    saved = data.get("stats") or {}
+    data["stats"] = {**defaults, **saved}
     return data
 
 

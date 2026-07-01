@@ -101,6 +101,16 @@ python scripts/check_runtime_health.py
 python scripts/load_regulations_pgvector.py
 ```
 
+### TTS (Piper, бесплатный офлайн)
+
+```powershell
+pip install -e ".[voice]"
+python scripts/download_piper_voice.py
+$env:TMKI_TTS_PROVIDER = "piper"
+$env:PIPER_VOICE = "ru_RU-denis-medium"
+python -c "from tmki_voice import synthesize_speech; print(synthesize_speech('Проверка озвучки'))"
+```
+
 ## Использование
 
 ```python

@@ -9,10 +9,11 @@ requires-python = ">=3.10"
 dev = ["pytest>=8.0"]
 pgvector = ["psycopg[binary]>=3.2"]
 ocr = ["pypdf>=4.0"]
+voice = ["piper-tts>=1.4.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["tmki_policy*", "tmki_rag*", "tmki_tools*", "tmki_loop*", "tmki_runtime*", "tmki_ingest*", "tmki_admin*", "tmki_sharepoint*", "tmki_llm*", "tmki_ocr*"]
+include = ["tmki_policy*", "tmki_rag*", "tmki_tools*", "tmki_loop*", "tmki_runtime*", "tmki_ingest*", "tmki_admin*", "tmki_sharepoint*", "tmki_llm*", "tmki_ocr*", "tmki_voice*"]
 
 [project.scripts]
 tmki-grants-ui = "tmki_admin.server:main"

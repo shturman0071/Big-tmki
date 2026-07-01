@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/desktop-sync-manifest.schema.json",
+  "title": "TMKI — манифест синхронизации рабочего стола",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "employee_id", "desktop_path", "server_path", "sync_interval_sec"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "employee_id": { "type": "string", "minLength": 1 },
+    "folder_id": { "type": "string", "description": "FolderCatalog entry for this desktop folder" },
+    "surname_folder_name": {
+      "type": "string",
+      "description": "Имя папки на рабочем столе (фамилия)"
+    },
+    "desktop_path": {
+      "type": "string",
+      "description": "Полный путь на ПК сотрудника, напр. %USERPROFILE%\\Desktop\\Иванов"
+    },
+    "server_path": {
+      "type": "string",
+      "description": "Путь на локальном сервере синхронизации"
+    },
+    "sync_interval_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 5,
+      "description": "Интервал проверки новых/изменённых файлов"
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["desktop_to_server", "bidirectional"],
+      "default": "desktop_to_server"
+    },
+    "conflict_policy": {
+      "type": "string",
+      "enum": ["server_wins", "desktop_wins", "manual"],
+      "default": "server_wins"
+    },
+    "last_sync_at": { "type": "string", "format": "date-time" },
+    "files_synced": { "type": "integer", "minimum": 0 },
+    "status": {
+      "type": "string",
+      "enum": ["active", "paused", "error"]
+    }
+  }
+}

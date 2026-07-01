@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/voice/voice-session.schema.json",
+  "title": "TMKI — голосовая сессия",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "trace_id", "employee_id", "session_type"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "trace_id": { "type": "string", "format": "uuid" },
+    "employee_id": { "type": "string" },
+    "session_type": {
+      "type": "string",
+      "enum": ["todo_command", "meeting", "query_response"]
+    },
+    "speaker_identified": { "type": "boolean" },
+    "stt_transcript": { "type": "string" },
+    "stt_provider": { "type": "string" },
+    "tts_persona": {
+      "type": "string",
+      "enum": ["generated_default", "piper_preset", "system_default"],
+      "default": "generated_default",
+      "description": "Сгенерированный голос Piper, не клон актёра"
+    },
+    "tts_audio_ref": { "type": "string" },
+    "display_targets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["tv", "tablet", "computer", "browser"]
+      }
+    },
+    "todo_items_created": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "meeting_action_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "speaker_employee_id": { "type": "string" },
+          "text": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -26,6 +26,7 @@
 | `13_ai_skills_registry.md` | Реестр инженерных скиллов |
 | `16_tool_registry.md` | Реестр инструментов и провайдеров |
 | `18_technology_watch.md` | Approved / Watchlist технологий |
+| `20_product_requirements_v0_3.md` | Требования v0.3: desktop sync, нормативная база, голос (DRAFT) |
 
 ## Исходники вне репозитория
 

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/regulatory-update.schema.json",
+  "title": "TMKI — дельта обновления нормативного корпуса",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "doc_key", "update_type", "detected_at"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "doc_key": { "type": "string", "description": "Ключ из legal-corpus-catalog.json" },
+    "update_type": {
+      "type": "string",
+      "enum": ["new_edition", "amendment", "repeal", "no_change"]
+    },
+    "old_content_hash": { "type": "string" },
+    "new_content_hash": { "type": "string" },
+    "effective_date": { "type": "string", "format": "date" },
+    "source_url": { "type": "string", "format": "uri" },
+    "detected_at": { "type": "string", "format": "date-time" },
+    "ingest_status": {
+      "type": "string",
+      "enum": ["pending", "ingested", "failed", "skipped"]
+    },
+    "notify_curator": { "type": "boolean", "default": true }
+  }
+}

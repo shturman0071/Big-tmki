@@ -232,6 +232,67 @@ pgvector + RLS-поля до выдачи в RAG.
 40. ~~#40 Production stack + re-index hardening~~ ✅ (docker-compose.full, health check, pypdf noise fix, skip ~$ temp)
 41. ~~#41 Re-index progress + PDF hardening~~ ✅ (max_pages, heartbeat progress, reindex_status, check_ocr_http)
 42. **Следующий фокус:** завершить полный re-index → chunks-v2; load pgvector; HTTP MinerU/Mistral
+43. **Новый эпик v0.3:** `20_product_requirements_v0_3.md` — рабочее место, нормативная база, голос (#43–#50)
+
+---
+
+## Phase 7 — Product v0.3 (рабочее место и нормативная база)
+
+### #43 [phase-6] [runtime] Сетевая политика LLM (local + internet)
+
+**Статус:** spec (v0.3) — `20_product_requirements_v0_3.md` §1
+
+- Единый provider pattern; gating по env/role; аудит egress
+- **Критерий:** политика в `16_tool_registry.md` + `tool-gating.rules.json`; Ollama/OpenAI переключение без смены кода
+
+### #44 [phase-2] [runtime] Папка сотрудника на рабочем столе
+
+**Статус:** spec (v0.3) — `20_product_requirements_v0_3.md` §2
+
+- `%USERPROFILE%\Desktop\{surname}\` → `folder_id` в FolderCatalog
+- **Критерий:** provisioning при onboarding; привязка к `employee_id`
+
+### #45 [phase-4] [runtime] Desktop sync agent (5 с → локальный сервер)
+
+**Статус:** spec (v0.3) — `schemas/document/desktop-sync-manifest.schema.json`
+
+- Watch folder → server copy → ingest; `TMKI_DESKTOP_SYNC_INTERVAL_SEC=5`
+- **Критерий:** `runtime/tmki_desktop_sync/`; audit `desktop_sync_file_uploaded`
+
+### #46 [phase-4] [runtime] Внешняя нормативная база РФ + Legal Corpus Curator
+
+**Статус:** spec (v0.3) — `schemas/document/legal-corpus-catalog.json`, `regulatory-update.schema.json`
+
+- Первичная загрузка 16+ актов; еженедельный мониторинг официальных сайтов
+- **Критерий:** агент diff → ingest → notify; skill в `13_ai_skills_registry.md`
+
+### #47 [phase-4] [docs] Политика создания документов
+
+**Статус:** spec (v0.3) — `schemas/document/document-creation-policy.schema.json`, `09_document_processing.md` §Создание
+
+- Внутренние шаблоны; договоры — проверка по РФ всегда; прочее — только по запросу
+- **Критерий:** guardrail в runtime document author flow
+
+### #48 [phase-2] [security] HR-карточка: голос и антропометрия
+
+**Статус:** spec (v0.3) — `schemas/org/employee-hr-card.schema.json`
+
+- Consent 152-ФЗ; изолированное хранилище; доступ HR + Security
+- **Критерий:** security-review sign-off перед production
+
+### #49 [phase-6] [runtime] Voice STT: to-do и планёрки
+
+**Статус:** spec (v0.3) — `schemas/voice/voice-session.schema.json`
+
+- Speaker ID по voice profile; todo/meeting action items
+- **Критерий:** `runtime/tmki_voice/stt.py`; enrollment flow
+
+### #50 [phase-6] [runtime] TTS Piper + вывод на устройства
+
+**Статус:** MVP (v0.3) — `runtime/tmki_voice/tts.py`, Piper preset `ru_RU-denis-medium`
+
+- Сгенерированный голос (Piper, бесплатные голоса с HuggingFace); cast на TV/tablet/PC — backlog
+- **Критерий:** `TMKI_TTS_PROVIDER=piper`; display provider
 
 ---
 

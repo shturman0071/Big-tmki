@@ -4,7 +4,8 @@ import json
 import os
 from typing import Any
 
-from tmki_rag.embeddings import text_embedding
+from tmki_rag.embedding_providers import get_embedding_provider
+from tmki_rag.embeddings import cosine_similarity
 from tmki_rag.vector import VectorChunkIndex
 
 _CREATE_SQL = """
@@ -21,6 +22,14 @@ CREATE TABLE IF NOT EXISTS tmki_chunks (
 CREATE INDEX IF NOT EXISTS tmki_chunks_project_idx ON tmki_chunks (company_id, project_id);
 """
 
+_PGVECTOR_EXT_SQL = "CREATE EXTENSION IF NOT EXISTS vector"
+
+_ALTER_VECTOR_SQL = """
+ALTER TABLE tmki_chunks
+    ALTER COLUMN embedding TYPE vector({dims})
+    USING embedding::vector({dims});
+"""
+
 
 class PgVectorChunkIndex(VectorChunkIndex):
     """
@@ -34,10 +43,12 @@ class PgVectorChunkIndex(VectorChunkIndex):
         *,
         dims: int = 64,
         table: str = "tmki_chunks",
+        use_pgvector: bool | None = None,
     ) -> None:
-        super().__init__(dims=dims)
+        super().__init__(dims=dims, embedding_provider=get_embedding_provider())
         self._conn = conn
         self._table = table
+        self._use_pgvector = use_pgvector if use_pgvector is not None else False
         self._ensure_schema()
 
     @classmethod
@@ -55,6 +66,12 @@ class PgVectorChunkIndex(VectorChunkIndex):
     def _ensure_schema(self) -> None:
         with self._conn.cursor() as cur:
             cur.execute(_CREATE_SQL)
+            try:
+                cur.execute(_PGVECTOR_EXT_SQL)
+                cur.execute(_ALTER_VECTOR_SQL.format(dims=self._dims))
+                self._use_pgvector = True
+            except Exception:
+                self._use_pgvector = False
         self._conn.commit()
 
     def add(self, chunks: list[dict[str, Any]]) -> int:
@@ -62,29 +79,53 @@ class PgVectorChunkIndex(VectorChunkIndex):
         with self._conn.cursor() as cur:
             for chunk in chunks:
                 item = dict(chunk)
-                emb = text_embedding(item.get("content_preview", ""), dims=self._dims)
-                item["_embedding"] = emb
-                cur.execute(
-                    f"""
-                    INSERT INTO {self._table}
-                    (chunk_id, doc_id, company_id, project_id, classification, payload, embedding, indexed_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (chunk_id) DO UPDATE SET
-                        payload = EXCLUDED.payload,
-                        embedding = EXCLUDED.embedding,
-                        indexed_at = EXCLUDED.indexed_at
-                    """,
-                    (
-                        item["chunk_id"],
-                        item["doc_id"],
-                        item["company_id"],
-                        item["project_id"],
-                        item["classification"],
-                        json.dumps(item),
-                        emb,
-                        item["indexed_at"],
-                    ),
-                )
+                self._ensure_embedding(item)
+                emb = item["_embedding"]
+                if self._use_pgvector:
+                    emb_param = f"[{','.join(str(v) for v in emb)}]"
+                    cur.execute(
+                        f"""
+                        INSERT INTO {self._table}
+                        (chunk_id, doc_id, company_id, project_id, classification, payload, embedding, indexed_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s::vector, %s)
+                        ON CONFLICT (chunk_id) DO UPDATE SET
+                            payload = EXCLUDED.payload,
+                            embedding = EXCLUDED.embedding,
+                            indexed_at = EXCLUDED.indexed_at
+                        """,
+                        (
+                            item["chunk_id"],
+                            item["doc_id"],
+                            item["company_id"],
+                            item["project_id"],
+                            item["classification"],
+                            json.dumps(item),
+                            emb_param,
+                            item["indexed_at"],
+                        ),
+                    )
+                else:
+                    cur.execute(
+                        f"""
+                        INSERT INTO {self._table}
+                        (chunk_id, doc_id, company_id, project_id, classification, payload, embedding, indexed_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (chunk_id) DO UPDATE SET
+                            payload = EXCLUDED.payload,
+                            embedding = EXCLUDED.embedding,
+                            indexed_at = EXCLUDED.indexed_at
+                        """,
+                        (
+                            item["chunk_id"],
+                            item["doc_id"],
+                            item["company_id"],
+                            item["project_id"],
+                            item["classification"],
+                            json.dumps(item),
+                            emb,
+                            item["indexed_at"],
+                        ),
+                    )
                 count += 1
                 self._chunks.append(item)
         self._conn.commit()
@@ -103,3 +144,38 @@ class PgVectorChunkIndex(VectorChunkIndex):
                     rows.append(dict(payload))
         self._chunks = rows
         return super().list()
+
+    def search_similar(
+        self,
+        query: str,
+        *,
+        company_id: str,
+        project_id: str,
+        top_k: int = 20,
+    ) -> list[tuple[float, dict[str, Any]]]:
+        q_emb = self.embed_query(query)
+        if self._use_pgvector:
+            vec = f"[{','.join(str(v) for v in q_emb)}]"
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    SELECT payload, 1 - (embedding <=> %s::vector) AS score
+                    FROM {self._table}
+                    WHERE company_id = %s AND project_id = %s
+                    ORDER BY embedding <=> %s::vector
+                    LIMIT %s
+                    """,
+                    (vec, company_id, project_id, vec, top_k),
+                )
+                rows = cur.fetchall()
+            result: list[tuple[float, dict[str, Any]]] = []
+            for payload, score in rows:
+                item = json.loads(payload) if isinstance(payload, str) else dict(payload)
+                result.append((float(score), item))
+            return result
+        return super().search_similar(
+            query,
+            company_id=company_id,
+            project_id=project_id,
+            top_k=top_k,
+        )

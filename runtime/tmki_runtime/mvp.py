@@ -9,7 +9,8 @@ from uuid import uuid4
 
 from tmki_loop import LoopEngine
 from tmki_rag.folders import FolderAclContext, load_folder_catalog, load_folder_grants
-from tmki_rag.search import rag_search
+from tmki_rag.search import _default_score, rag_search
+from tmki_rag.vector import VectorChunkIndex, hybrid_score_fn
 from tmki_llm import get_llm_provider
 from tmki_tools import ToolRegistry, load_gating_rules
 
@@ -57,11 +58,11 @@ def _llm_handler(provider_name: str | None = None):
     return handler
 
 
-def _stub_llm_generate(request: dict[str, Any], _decision: Any) -> dict[str, Any]:
-    return _llm_handler("stub")(request, _decision)
-
-
-def _rag_handler(chunks: list[dict[str, Any]], folder_acl: Any | None = None):
+def _rag_handler(
+    chunks: list[dict[str, Any]],
+    folder_acl: Any | None = None,
+    score_fn: Any | None = None,
+):
     def handler(request: dict[str, Any], _decision: Any) -> dict[str, Any]:
         inp = request["input"]
         search_req = {
@@ -71,7 +72,7 @@ def _rag_handler(chunks: list[dict[str, Any]], folder_acl: Any | None = None):
             "top_k": inp.get("top_k", 8),
             "policy_context": request["policy_context"],
         }
-        resp = rag_search(search_req, chunks, folder_acl=folder_acl)
+        resp = rag_search(search_req, chunks, folder_acl=folder_acl, score_fn=score_fn)
         return {
             **resp,
             "summary": f"rag results={len(resp.get('results', []))}",
@@ -85,11 +86,13 @@ def build_registry(
     rules_path: Path | None = None,
     *,
     folder_acl: Any | None = None,
+    score_fn: Any | None = None,
+    llm_provider: str = "stub",
 ) -> ToolRegistry:
     rules = load_gating_rules(rules_path or GATING_RULES)
     registry = ToolRegistry(rules)
-    registry.register("rag_search", _rag_handler(chunks, folder_acl))
-    registry.register("llm_openai", _stub_llm_generate)
+    registry.register("rag_search", _rag_handler(chunks, folder_acl, score_fn))
+    registry.register("llm_openai", _llm_handler(llm_provider))
     return registry
 
 
@@ -110,9 +113,14 @@ def run_mvp(
     run_id: str | None = None,
     folder_acl: Any | None = None,
     use_satimol_folder_acl: bool = True,
+    llm_provider: str = "stub",
+    index: VectorChunkIndex | None = None,
+    use_hybrid_search: bool = False,
 ) -> dict[str, Any]:
     """
-    MVP flow: schemas/runtime/mvp-flow.json (стадии 1–8, без реального LLM).
+    MVP flow: schemas/runtime/mvp-flow.json (стадии 1–8).
+    llm_provider: stub|openai|ollama (env TMKI_LLM_PROVIDER).
+    index: VectorChunkIndex — альтернатива списку chunks; use_hybrid_search — vector+keyword scoring.
     """
     trace_id = trace_id or str(uuid4())
     run_id = run_id or str(uuid4())
@@ -121,8 +129,18 @@ def run_mvp(
     if folder_acl is None and use_satimol_folder_acl:
         folder_acl = load_satimol_folder_acl()
 
+    chunk_source = index.list() if index is not None else chunks
+    score_fn = None
+    if use_hybrid_search and index is not None:
+        score_fn = hybrid_score_fn(index, _default_score)
+
     engine = LoopEngine(run_id=run_id, trace_id=trace_id, env=env)
-    registry = build_registry(chunks, folder_acl=folder_acl)
+    registry = build_registry(
+        chunk_source,
+        folder_acl=folder_acl,
+        score_fn=score_fn,
+        llm_provider=llm_provider,
+    )
     audit_events: list[dict[str, Any]] = [
         _audit("run_started", trace_id, {"run_id": run_id}),
     ]
@@ -211,6 +229,7 @@ def run_mvp(
             "answer": answer,
             "confidence": confidence,
             "citations": citations,
+            "llm_provider": llm_resp["output"].get("provider", llm_provider),
         },
         "audit_events": audit_events,
     }

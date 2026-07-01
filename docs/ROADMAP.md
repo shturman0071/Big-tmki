@@ -221,7 +221,10 @@ pgvector + RLS-поля до выдачи в RAG.
 29. ~~#30 Graph production permissions (resolve + invite/revoke)~~ ✅
 30. ~~#31 OCR HTTP providers (MinerU/Mistral)~~ ✅
 31. ~~#32 VectorChunkIndex + pgvector factory~~ ✅
-32. **Следующий фокус:** реальный pgvector + embeddings API; импорт регламентов (#6); E2E с Ollama
+32. ~~#33 Embeddings API providers (local/openai/ollama)~~ ✅
+33. ~~#34 pgvector cosine search~~ ✅
+34. ~~#35 E2E MVP с Ollama + vector index~~ ✅
+35. **Следующий фокус:** импорт регламентов (#6); production Postgres+pgvector deploy; реальные MinerU/Mistral
 
 ---
 
@@ -272,6 +275,18 @@ pgvector + RLS-поля до выдачи в RAG.
 ### #32 [phase-4] [runtime] VectorChunkIndex + pgvector factory
 
 **Статус:** done (v0.2 — `VectorChunkIndex`, `get_chunk_index()`, `PgVectorChunkIndex` с fallback)
+
+### #33 [phase-4] [runtime] Embeddings API providers
+
+**Статус:** done (v0.2 — `TMKI_EMBEDDING_PROVIDER=local|openai|ollama`)
+
+### #34 [phase-4] [runtime] pgvector cosine search
+
+**Статус:** done (v0.2 — SQL `<=>` при наличии extension, fallback in-memory)
+
+### #35 [phase-6] [runtime] E2E MVP с Ollama + vector index
+
+**Статус:** done (v0.2 — `run_mvp(llm_provider=ollama, index=..., use_hybrid_search=True)`)
 
 ## Phase 2.5 — Делегирование папок (backlog)
 

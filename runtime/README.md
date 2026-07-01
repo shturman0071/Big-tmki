@@ -5,7 +5,7 @@
 | Модуль | Назначение |
 |--------|------------|
 | `tmki_policy` | `policy_context` из org-снимка |
-| `tmki_rag` | `rag_search()` + `ChunkIndex` / `VectorChunkIndex` / `pgvector` (`TMKI_INDEX_BACKEND`) |
+| `tmki_rag` | `rag_search()` + `ChunkIndex` / `VectorChunkIndex` / pgvector (`TMKI_INDEX_BACKEND`, `TMKI_EMBEDDING_PROVIDER`) |
 | `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 | `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
 | `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
@@ -78,6 +78,23 @@ snapshot = load_org_snapshot(Path("../schemas/org/examples/satimol-snapshot.exam
 ctx = build_policy_context(snapshot, employee_id="emp_litovsky_d", env="production", as_of=date(2025, 9, 10))
 chunks = load_chunks(Path("../schemas/document/examples/satimol-chunks.example.json"))
 result = run_mvp(message="маркшейдерская съёмка", policy_context=ctx, chunks=chunks)
+```
+
+### MVP с vector index и Ollama
+
+```python
+from tmki_rag import VectorChunkIndex
+
+index = VectorChunkIndex()
+index.add(chunks)
+result = run_mvp(
+    message="маркшейдерская съёмка",
+    policy_context=ctx,
+    chunks=[],
+    index=index,
+    use_hybrid_search=True,
+    llm_provider="ollama",  # TMKI_LLM_PROVIDER=ollama, OLLAMA_BASE_URL
+)
 ```
 
 ### Admin UI (folder grants)

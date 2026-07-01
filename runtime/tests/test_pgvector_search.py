@@ -1,0 +1,63 @@
+import json
+
+from tmki_rag.pgvector import PgVectorChunkIndex
+
+
+class _MockCursor:
+    def __init__(self, conn: "_MockConn") -> None:
+        self._conn = conn
+
+    def execute(self, sql: str, params=None) -> None:
+        self._conn.last_sql = sql
+        self._conn.last_params = params
+        if "INSERT INTO" in sql:
+            self._conn.inserts.append(params)
+
+    def fetchall(self):
+        if self._conn.last_sql and "embedding <=>" in self._conn.last_sql:
+            payload = json.dumps(
+                {
+                    "chunk_id": "c_pg",
+                    "doc_id": "d1",
+                    "company_id": "company_tmki_ru",
+                    "project_id": "project_satimol",
+                    "classification": "restricted",
+                    "content_preview": "маркшейдерская съёмка",
+                }
+            )
+            return [(payload, 0.91)]
+        return []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args) -> None:
+        return None
+
+
+class _MockConn:
+    def __init__(self) -> None:
+        self.last_sql = ""
+        self.last_params = None
+        self.inserts: list = []
+
+    def cursor(self) -> _MockCursor:
+        return _MockCursor(self)
+
+    def commit(self) -> None:
+        pass
+
+
+def test_pgvector_search_similar_uses_cosine_sql():
+    conn = _MockConn()
+    index = PgVectorChunkIndex(conn, use_pgvector=True)
+    results = index.search_similar(
+        "маркшейдерская",
+        company_id="company_tmki_ru",
+        project_id="project_satimol",
+        top_k=5,
+    )
+    assert "embedding <=>" in conn.last_sql
+    assert len(results) == 1
+    assert results[0][0] == 0.91
+    assert results[0][1]["chunk_id"] == "c_pg"

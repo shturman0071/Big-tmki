@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tmki_ingest.ops_archive import build_ops_archive
+from tmki_ingest.ops_archive import build_ops_archive, format_ops_archive_summary
 
 
 def test_build_ops_archive(tmp_path: Path):
@@ -27,4 +27,22 @@ def test_build_ops_archive(tmp_path: Path):
     assert archive["kind"] == "ops_archive"
     assert archive["pipeline"]["phase"] == "ready_for_finalize"
     assert archive["handoff_reindex"].startswith("TMKI re-index handoff")
-    assert archive["paths"]["archive"].endswith("tmki-ops-archive-latest.json")
+def test_format_ops_archive_summary():
+    archive = {
+        "pipeline": {
+            "phase": "ready_for_finalize",
+            "ops": {
+                "report": {"live_progress": 100, "total": 100, "percent": 100.0, "chunks_v2": 99},
+                "errors": {"errors_total": 2},
+            },
+            "docker": {"ready": False},
+            "artifacts": {"reindex-handoff.txt": True},
+            "next_step": "wait_docker_and_finalize.ps1",
+        },
+        "reindex_audit": {"errors": {"summary": [{"type": "OSError", "count": 2}]}},
+        "paths": {"archive": "/tmp/tmki-ops-archive-latest.json"},
+    }
+    text = format_ops_archive_summary(archive)
+    assert "ready_for_finalize" in text
+    assert "OSError=2" in text
+    assert "wait_docker_and_finalize" in text

@@ -38,6 +38,7 @@ if ($Bundle) {
     Write-Host ""
     python scripts/export_reindex_ops_bundle.py
     python scripts/export_ops_archive.py
+    python scripts/print_ops_archive.py
 }
 if ($Handoff) {
     Write-Host ""

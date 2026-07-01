@@ -420,6 +420,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `export_ops_archive.py`, `tmki-ops-archive-latest.json`, `--save` pipeline status
 
+### #86 [phase-4] [runtime] Ops archive summary + pipeline_status.ps1
+
+**Статус:** MVP (v0.3) — `print_ops_archive.py`, `ops-archive-summary.txt`, errors в archive
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

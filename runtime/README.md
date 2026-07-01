@@ -134,6 +134,8 @@ python scripts/wait_for_docker.py --once
 python scripts/pipeline_status.py
 python scripts/pipeline_status.py --save
 python scripts/export_ops_archive.py
+python scripts/print_ops_archive.py
+.\scripts\pipeline_status.ps1 -Save
 .\scripts\wait_docker_and_finalize.ps1
 python scripts/check_docker.py
 .\scripts\wait_and_finalize.ps1

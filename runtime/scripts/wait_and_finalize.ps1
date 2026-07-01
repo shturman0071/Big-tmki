@@ -37,5 +37,6 @@ python scripts/export_reindex_complete.py
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 python scripts/export_ops_archive.py
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+python scripts/print_ops_archive.py --save (Join-Path $runtime "artifacts\regulations-import\ops-archive-summary.txt")
 
 & $PSScriptRoot\finalize_regulations_index.ps1 -Query $Query

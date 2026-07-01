@@ -53,7 +53,7 @@ Write-Host "watch_reindex: poll every ${PollSeconds}s, stale>${StaleMinutes}m"
 while ($true) {
     if (-not (Test-ReindexRunning)) {
         Write-Host "[$(Get-Date -Format HH:mm:ss)] re-index not running — starting resume..."
-        & $PSScriptRoot\resume_reindex.ps1
+        python scripts/reindex_regulations_local.py --checkpoint-every 200
     }
     elseif (Test-HeartbeatStale) {
         Write-Host "[$(Get-Date -Format HH:mm:ss)] heartbeat stale — restarting..."
@@ -61,7 +61,7 @@ while ($true) {
             Where-Object { $_.CommandLine -like '*reindex_regulations_local*' } |
             ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
         Start-Sleep -Seconds 3
-        & $PSScriptRoot\resume_reindex.ps1
+        python scripts/reindex_regulations_local.py --checkpoint-every 200 --force-lock
     }
     else {
         python scripts/reindex_report.py 2>$null

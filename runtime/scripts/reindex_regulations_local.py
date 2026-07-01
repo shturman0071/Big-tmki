@@ -28,6 +28,7 @@ def main() -> int:
         default="local",
         help="TMKI_OCR_MODE для re-index",
     )
+    parser.add_argument("--force-lock", action="store_true", help="Захватить lock даже если другой PID жив")
     args = parser.parse_args()
 
     os.environ["TMKI_OCR_MODE"] = args.ocr_mode
@@ -36,6 +37,25 @@ def main() -> int:
         print(f"Архив не найден: {args.archive}", file=sys.stderr)
         return 1
 
+    lock_path = args.output / "reindex.lock"
+    from tmki_ingest.reindex_lock import acquire_reindex_lock, release_reindex_lock
+
+    held = acquire_reindex_lock(lock_path, force=args.force_lock)
+    if held:
+        print(
+            f"Re-index уже выполняется (pid={held.get('pid')}, since={held.get('started_at')}). "
+            f"Используйте --force-lock только если процесс завис.",
+            file=sys.stderr,
+        )
+        return 2
+
+    try:
+        return _run(args)
+    finally:
+        release_reindex_lock(lock_path)
+
+
+def _run(args: argparse.Namespace) -> int:
     state_path = args.output / "reindex-state.json"
     if state_path.is_file() and not args.no_resume:
         import json

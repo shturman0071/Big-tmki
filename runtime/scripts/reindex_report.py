@@ -13,6 +13,7 @@ DEFAULT_STATE = (
     Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import" / "reindex-state.json"
 )
 DEFAULT_HEARTBEAT = DEFAULT_STATE.parent / "reindex-heartbeat.json"
+DEFAULT_LOCK = DEFAULT_STATE.parent / "reindex.lock"
 DEFAULT_CHUNKS = DEFAULT_STATE.parent / "chunks-v2.json"
 
 
@@ -29,6 +30,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Re-index progress report")
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--heartbeat", type=Path, default=DEFAULT_HEARTBEAT)
+    parser.add_argument("--lock", type=Path, default=DEFAULT_LOCK)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
@@ -68,6 +70,15 @@ def main() -> int:
 
     recent_errors = state.get("recent_errors") or []
 
+    lock_pid = None
+    if args.lock.is_file():
+        from tmki_ingest.reindex_lock import process_alive, read_lock
+
+        lk = read_lock(args.lock)
+        if lk:
+            pid = int(lk.get("pid") or 0)
+            lock_pid = pid if process_alive(pid) else None
+
     report = {
         "processed": processed,
         "total": total,
@@ -82,6 +93,7 @@ def main() -> int:
         "updated_at": state.get("updated_at"),
         "eta_hours": round(eta_hours, 1) if eta_hours is not None else None,
         "recent_errors_count": len(recent_errors),
+        "lock_pid": lock_pid,
     }
 
     if args.json:
@@ -96,6 +108,8 @@ def main() -> int:
         print(f"  ETA: ~{eta_hours:.1f} h (оценка по checkpoint)")
     if current_file:
         print(f"  current: [{hb_index}/{total}] {current_file}")
+    if lock_pid:
+        print(f"  lock: pid={lock_pid} (active)")
     print(f"  checkpoint: {state.get('updated_at', '?')}")
     if recent_errors:
         print(f"\n  recent errors ({len(recent_errors)}):")

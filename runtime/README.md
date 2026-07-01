@@ -95,6 +95,8 @@ python scripts/run_mvp_regulations.py "промбезопасность кран
 python scripts/compare_chunks_quality.py
 python scripts/compare_chunks_quality.py --json
 .\scripts\setup_http_ocr.ps1
+.\scripts\run_tmki_demo.ps1
+.\scripts\run_tmki_demo.ps1 -Backend pgvector
 python scripts/reindex_status.py
 python scripts/reindex_report.py
 python scripts/reindex_errors.py

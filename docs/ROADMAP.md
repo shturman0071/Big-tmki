@@ -316,6 +316,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `setup_http_ocr.ps1`, `--ocr-mode` в re-index, улучшенный `compare_chunks_quality`
 
+### #60 [phase-4] [runtime] Re-index singleton lock + demo script
+
+**Статус:** MVP (v0.3) — `reindex.lock`, `run_tmki_demo.ps1`, защита от параллельных прогонов
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

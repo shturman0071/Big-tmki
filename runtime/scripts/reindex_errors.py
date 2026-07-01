@@ -6,19 +6,13 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections import Counter
 from pathlib import Path
+
+from tmki_ingest.reindex_errors_lib import load_error_audit
 
 DEFAULT_STATE = (
     Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import" / "reindex-state.json"
 )
-
-
-def _error_key(msg: str) -> str:
-    text = (msg or "").strip()
-    if not text:
-        return "unknown"
-    return text.split(":", 1)[0][:80]
 
 
 def main() -> int:
@@ -26,6 +20,7 @@ def main() -> int:
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--summary", action="store_true", help="Группировка по типу ошибки")
+    parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
     if not args.state.is_file():
@@ -33,20 +28,22 @@ def main() -> int:
         return 1
 
     state = json.loads(args.state.read_text(encoding="utf-8"))
-    errors = state.get("recent_errors") or []
-    stats = state.get("stats", {})
-    total = stats.get("errors", len(errors))
+    audit = load_error_audit(state, limit=args.limit)
+    errors = audit["recent"]
 
-    print(f"errors total: {total}  (recent in state: {len(errors)})\n")
+    if args.json:
+        print(json.dumps(audit, ensure_ascii=False, indent=2))
+        return 0
 
-    if args.summary and errors:
-        counts = Counter(_error_key(row.get("error", "")) for row in errors)
+    print(f"errors total: {audit['errors_total']}  (recent in state: {audit['recent_count']})\n")
+
+    if args.summary and audit["summary"]:
         print("summary:")
-        for key, n in counts.most_common():
-            print(f"  {n:>3}  {key}")
+        for row in audit["summary"]:
+            print(f"  {row['count']:>3}  {row['type']}")
         print()
 
-    for row in errors[-args.limit :]:
+    for row in errors:
         print(f"  {row.get('path', '?')}")
         print(f"    {row.get('error', '')[:200]}")
     return 0

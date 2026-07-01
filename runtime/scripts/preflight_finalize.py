@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -62,7 +63,12 @@ def main() -> int:
     else:
         add("database_url", False, "DATABASE_URL not set (finalize needs Docker/pgvector)", blocking=False)
 
+    error_audit = None
     if report.get("errors", 0):
+        state = json.loads(args.state.read_text(encoding="utf-8"))
+        from tmki_ingest.reindex_errors_lib import load_error_audit
+
+        error_audit = load_error_audit(state, limit=10)
         add(
             "reindex_errors",
             True,
@@ -70,11 +76,11 @@ def main() -> int:
             blocking=False,
         )
 
-    out = {"ready": ok, "checks": checks, "report": report}
+    out: dict[str, object] = {"ready": ok, "checks": checks, "report": report}
+    if error_audit is not None:
+        out["error_audit"] = error_audit
 
     if args.json:
-        import json
-
         print(json.dumps(out, ensure_ascii=False, indent=2))
     else:
         print("TMKI preflight finalize\n")

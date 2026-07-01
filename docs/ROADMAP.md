@@ -348,6 +348,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `wait_reindex_complete.py`, `preflight_finalize.py`, `wait_and_finalize.ps1`, `complete` в report JSON
 
+### #68 [phase-4] [runtime] Re-index error audit + checklist
+
+**Статус:** MVP (v0.3) — `reindex_errors_lib`, `export_reindex_audit.py`, `post_reindex_checklist.ps1`, `--json` в reindex_errors
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

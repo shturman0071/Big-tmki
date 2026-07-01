@@ -89,6 +89,10 @@ python scripts/reindex_regulations_local.py --checkpoint-every 200
 .\scripts\watch_reindex.ps1
 .\scripts\watch_reindex.ps1 -SyncPgvector -Finalize
 python scripts/reindex_errors.py --summary
+python scripts/reindex_errors.py --json
+python scripts/export_reindex_audit.py
+.\scripts\post_reindex_checklist.ps1
+.\scripts\post_reindex_checklist.ps1 -ExportAudit
 # → artifacts/regulations-import/chunks-v2.json
 python scripts/benchmark_regulations_search.py
 python scripts/run_mvp_regulations.py "промбезопасность кран" --hybrid

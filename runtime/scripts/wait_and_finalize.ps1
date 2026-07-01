@@ -21,4 +21,8 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+Write-Host "=== Export audit ===" -ForegroundColor Cyan
+python scripts/export_reindex_audit.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 & $PSScriptRoot\finalize_regulations_index.ps1 -Query $Query

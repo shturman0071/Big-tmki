@@ -86,16 +86,20 @@ def _run(args: argparse.Namespace) -> int:
     started = time.perf_counter()
 
     def progress(payload: dict) -> None:
+        from tmki_runtime.cli_encoding import safe_console_text
+
         if payload.get("phase") == "scan_done":
             print(f"  Кандидатов: {payload['total_candidates']}", flush=True)
             return
         s = payload["stats"]
         cur = payload.get("current_file", "")
-        cur_short = f" {cur[-60:]}" if cur else ""
+        cur_short = f" {safe_console_text(cur[-60:])}" if cur else ""
         print(
-            f"  [{payload['file_index']}/{payload['total_candidates']}] "
-            f"imported={s['imported']} skip_temp={s.get('skip_temp', 0)} "
-            f"ocr_failed={s['ocr_failed']} err={s['errors']}{cur_short}",
+            safe_console_text(
+                f"  [{payload['file_index']}/{payload['total_candidates']}] "
+                f"imported={s['imported']} skip_temp={s.get('skip_temp', 0)} "
+                f"ocr_failed={s['ocr_failed']} err={s['errors']}{cur_short}"
+            ),
             flush=True,
         )
 

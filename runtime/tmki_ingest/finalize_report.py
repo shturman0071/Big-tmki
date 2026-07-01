@@ -60,5 +60,6 @@ def build_post_finalize_report(artifacts_dir: Path, *, dsn: str | None = None) -
             "quality": str(artifacts_dir / "quality-benchmark-final.json"),
             "summary": str(artifacts_dir / "finalize-summary-latest.json"),
             "ops_bundle": str(artifacts_dir / "reindex-ops-bundle-latest.json"),
+            "finalize_ops_bundle": str(artifacts_dir / "finalize-ops-bundle-latest.json"),
         },
     }

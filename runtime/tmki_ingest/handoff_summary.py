@@ -79,5 +79,7 @@ def format_finalize_handoff(report: dict[str, Any]) -> str:
     if artifacts.get("summary"):
         lines.append("")
         lines.append(f"Summary: {artifacts['summary']}")
+    if artifacts.get("finalize_ops_bundle"):
+        lines.append(f"Bundle: {artifacts['finalize_ops_bundle']}")
 
     return "\n".join(lines)

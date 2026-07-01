@@ -392,6 +392,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `--finalize` handoff, `finalize-handoff.txt`, preflight partial quality/ops bundle
 
+### #79 [phase-4] [runtime] Finalize ops bundle export
+
+**Статус:** MVP (v0.3) — `export_finalize_ops_bundle.py`, `finalize-ops-bundle-latest.json` в pipeline
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

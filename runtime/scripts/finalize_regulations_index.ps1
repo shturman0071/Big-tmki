@@ -36,5 +36,6 @@ python scripts/benchmark_regulations_search.py --variant v2 --hybrid --backend p
 python scripts/run_mvp_regulations.py --variant v2 --backend pgvector --hybrid
 python scripts/post_finalize_report.py
 python scripts/print_reindex_handoff.py --finalize --save (Join-Path $runtime "artifacts\regulations-import\finalize-handoff.txt")
+python scripts/export_finalize_ops_bundle.py
 @{ done_at = (Get-Date).ToUniversalTime().ToString("o") } | ConvertTo-Json | Set-Content (Join-Path $runtime "artifacts\regulations-import\finalize-done.json") -Encoding utf8
 Write-Host "Done."

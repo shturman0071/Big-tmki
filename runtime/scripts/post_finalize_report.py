@@ -48,6 +48,9 @@ def main() -> int:
             print(f"  partial quality trend: {trend.get('count', 0)} snapshots")
             for p in points[-3:]:
                 print(f"    {p.get('percent')}%  v2={p.get('v2_count')}  avg={p.get('avg_score')}")
+        bundle_path = args.artifacts / "finalize-ops-bundle-latest.json"
+        if bundle_path.is_file():
+            print(f"  finalize ops bundle: {bundle_path}")
         print(f"\nsaved: {out_path}")
     return 0
 

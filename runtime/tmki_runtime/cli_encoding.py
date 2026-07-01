@@ -27,3 +27,15 @@ def fix_windows_cli_text(text: str) -> str:
 def resolve_cli_message(*, positional: str | None, env_key: str = "TMKI_MVP_MESSAGE", default: str) -> str:
     raw = (positional or "").strip() or os.environ.get(env_key) or default
     return fix_windows_cli_text(raw)
+
+
+def safe_console_text(text: str) -> str:
+    """Сделать строку безопасной для stdout/stderr (cp1251 и др.)."""
+    if not text:
+        return text
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    try:
+        text.encode(encoding)
+        return text
+    except UnicodeEncodeError:
+        return text.encode(encoding, errors="backslashreplace").decode(encoding)

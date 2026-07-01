@@ -40,6 +40,10 @@ if ($Handoff) {
     Write-Host ""
     python scripts/print_reindex_handoff.py
 }
+if (Test-Path "artifacts\regulations-import\reindex-complete-latest.json") {
+    Write-Host ""
+    Write-Host "reindex complete snapshot: artifacts\regulations-import\reindex-complete-latest.json"
+}
 if (Test-Path "artifacts\regulations-import\quality-partial-p*.json") {
     Write-Host ""
     python scripts/compare_partial_quality.py

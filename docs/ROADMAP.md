@@ -396,6 +396,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `export_finalize_ops_bundle.py`, `finalize-ops-bundle-latest.json` в pipeline
 
+### #80 [phase-4] [runtime] Re-index complete snapshot
+
+**Статус:** MVP (v0.3) — `export_reindex_complete.py`, preflight+ops bundle+handoff в `reindex-complete-latest.json`
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

@@ -125,6 +125,10 @@ def main() -> int:
         for p in points[-3:]:
             print(f"    {p.get('percent')}%  v2={p.get('v2_count')}  avg={p.get('avg_score')}")
 
+    complete_path = args.state.parent / "reindex-complete-latest.json"
+    if complete_path.is_file():
+        print(f"  reindex complete snapshot: yes")
+
     if not args.json and save_path is not None:
         print(f"\nsaved: {save_path}")
     return 0

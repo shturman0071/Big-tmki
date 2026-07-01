@@ -45,11 +45,18 @@ def build_preflight_finalize(
             with psycopg.connect(db_url, connect_timeout=5) as conn:
                 with conn.cursor() as cur:
                     cur.execute("SELECT 1")
-            add("database_url", True, "connected")
+            add("database_url", True, "connected", blocking=False)
+        except ImportError:
+            add(
+                "database_url",
+                False,
+                "psycopg not installed (setup_pgvector / pip install psycopg)",
+                blocking=False,
+            )
         except Exception as exc:
-            add("database_url", False, str(exc))
+            add("database_url", False, str(exc), blocking=False)
     else:
-        add("database_url", False, "DATABASE_URL not set (finalize needs Docker/pgvector)", blocking=False)
+        add("database_url", False, "DATABASE_URL not set (finalize sets via setup_pgvector)", blocking=False)
 
     trend = summarize_quality_trend(load_partial_quality_files(state_path.parent))
     add(
@@ -61,6 +68,11 @@ def build_preflight_finalize(
 
     ops_bundle = state_path.parent / "reindex-ops-bundle-latest.json"
     add("ops_bundle", ops_bundle.is_file(), str(ops_bundle), blocking=False)
+
+    from tmki_runtime.docker_check import docker_daemon_ready
+
+    docker_ok, docker_detail = docker_daemon_ready()
+    add("docker_daemon", docker_ok, docker_detail, blocking=False)
 
     error_audit = None
     if report.get("errors", 0):

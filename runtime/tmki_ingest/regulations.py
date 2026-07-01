@@ -306,6 +306,8 @@ def import_regulations_full(
     errors: list[dict[str, str]] = list(state.get("recent_errors") or [])
     candidates = _iter_ingest_candidates(root, allowed)
     started = _now_iso()
+    if not state.get("started_at"):
+        state["started_at"] = started
 
     if on_progress:
         on_progress({"phase": "scan_done", "total_candidates": len(candidates), "stats": dict(stats)})

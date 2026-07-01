@@ -308,6 +308,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `rag_search_with_index`, `watch_reindex.ps1`, benchmark `--backend pgvector`
 
+### #58 [phase-4] [runtime] Re-index report + pgvector auto-sync
+
+**Статус:** MVP (v0.3) — `reindex_report.py`, `watch_reindex.ps1 -SyncPgvector`, `started_at` в state
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

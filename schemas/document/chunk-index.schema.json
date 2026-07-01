@@ -26,6 +26,11 @@
     "company_id": { "type": "string" },
     "project_id": { "type": "string" },
     "department_id": { "type": "string" },
+    "folder_id": {
+      "type": "string",
+      "pattern": "^folder_[a-z][a-z0-9_]{1,63}$",
+      "description": "Physical folder binding (FolderCatalog); см. ORG_MODEL §Делегирование"
+    },
     "classification": {
       "type": "string",
       "enum": ["public", "internal", "restricted", "confidential"]

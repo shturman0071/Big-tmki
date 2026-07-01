@@ -12,6 +12,7 @@ _ROLE_DEPARTMENT_SCOPE: dict[str, str] = {
     "Главный инженер проекта": "S_dept_tree",
     "Hauptingenieur": "S_dept_tree",
     "Chefmarkscheider": "S_dept",
+    "Сотрудник подразделения": "S_dept",
     "Начальник участка": "S_dept",
     "Подрядчик (external)": "S_dept",
     "group_admin": "S_project",

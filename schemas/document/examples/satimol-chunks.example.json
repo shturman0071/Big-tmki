@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1",
-  "description": "Тестовые chunks для RAG Сатимол (маркшейдерия)",
+  "description": "Тестовые chunks для RAG Сатимол (маркшейдерия + folder ACL)",
   "chunks": [
     {
       "schema_version": "0.1",
@@ -9,6 +9,7 @@
       "company_id": "company_tmki_ru",
       "project_id": "project_satimol",
       "department_id": "dept_markscheider",
+      "folder_id": "folder_ms_open",
       "classification": "restricted",
       "language": "ru",
       "page": 3,
@@ -16,6 +17,23 @@
       "end_offset": 480,
       "embedding_model": "text-embedding-3-small",
       "content_preview": "Маркшейдерская съёмка на участке КС: отметки выработок, нормативы съёмки.",
+      "indexed_at": "2025-09-15T10:00:00Z"
+    },
+    {
+      "schema_version": "0.1",
+      "chunk_id": "chunk_ms_contracts_01",
+      "doc_id": "doc_ms_subcontract_ks",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "department_id": "dept_markscheider",
+      "folder_id": "folder_ms_contracts",
+      "classification": "confidential",
+      "language": "ru",
+      "page": 1,
+      "start_offset": 0,
+      "end_offset": 220,
+      "embedding_model": "text-embedding-3-small",
+      "content_preview": "Договор субподряда КС: маркшейдерская съёмка, условия NDA.",
       "indexed_at": "2025-09-15T10:00:00Z"
     },
     {

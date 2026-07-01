@@ -219,9 +219,9 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #21 [phase-2] [security] FolderCatalog + EmployeeFolderGrant + delete policy
 
-**Статус:** правила утверждены (v0.3 — `ORG_MODEL.md` §Делегирование); схемы и примеры — v0.1
+**Статус:** runtime v0.1 — `tmki_rag/folders.py` (grant/deny + delete policy); UI SharePoint sync — backlog
 
 - `schemas/document/folder-catalog.schema.json`, `employee-folder-grant.schema.json`
+- ~~Расширение RLS в `tmki_rag` по `folder_id`~~ ✅
 - UI галочек deny/grant для начальника подразделения
 - Синхронизация ACL SharePoint / API delete guard
-- Расширение RLS в `tmki_rag` по `folder_id`

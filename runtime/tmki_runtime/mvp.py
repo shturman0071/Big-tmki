@@ -36,7 +36,7 @@ def _stub_llm_generate(request: dict[str, Any], _decision: Any) -> dict[str, Any
     }
 
 
-def _rag_handler(chunks: list[dict[str, Any]]):
+def _rag_handler(chunks: list[dict[str, Any]], folder_acl: Any | None = None):
     def handler(request: dict[str, Any], _decision: Any) -> dict[str, Any]:
         inp = request["input"]
         search_req = {
@@ -46,7 +46,7 @@ def _rag_handler(chunks: list[dict[str, Any]]):
             "top_k": inp.get("top_k", 8),
             "policy_context": request["policy_context"],
         }
-        resp = rag_search(search_req, chunks)
+        resp = rag_search(search_req, chunks, folder_acl=folder_acl)
         return {
             **resp,
             "summary": f"rag results={len(resp.get('results', []))}",
@@ -55,10 +55,15 @@ def _rag_handler(chunks: list[dict[str, Any]]):
     return handler
 
 
-def build_registry(chunks: list[dict[str, Any]], rules_path: Path | None = None) -> ToolRegistry:
+def build_registry(
+    chunks: list[dict[str, Any]],
+    rules_path: Path | None = None,
+    *,
+    folder_acl: Any | None = None,
+) -> ToolRegistry:
     rules = load_gating_rules(rules_path or GATING_RULES)
     registry = ToolRegistry(rules)
-    registry.register("rag_search", _rag_handler(chunks))
+    registry.register("rag_search", _rag_handler(chunks, folder_acl))
     registry.register("llm_openai", _stub_llm_generate)
     return registry
 
@@ -78,6 +83,7 @@ def run_mvp(
     chunks: list[dict[str, Any]],
     trace_id: str | None = None,
     run_id: str | None = None,
+    folder_acl: Any | None = None,
 ) -> dict[str, Any]:
     """
     MVP flow: schemas/runtime/mvp-flow.json (стадии 1–8, без реального LLM).
@@ -87,7 +93,7 @@ def run_mvp(
     env = policy_context.get("env", "production")
 
     engine = LoopEngine(run_id=run_id, trace_id=trace_id, env=env)
-    registry = build_registry(chunks)
+    registry = build_registry(chunks, folder_acl=folder_acl)
     audit_events: list[dict[str, Any]] = [
         _audit("run_started", trace_id, {"run_id": run_id}),
     ]

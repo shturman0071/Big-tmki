@@ -227,6 +227,7 @@ Audit: `document_ingested` payload **MUST** включать `parser_version`, `
    - project_id = :project_id
    - classification <= :user.clearance
    - department_id IN allowed_departments (по scope)
+   - folder_id: access_tier + EmployeeFolderGrant (deny > grant > default) — референс `runtime/tmki_rag/folders.py`
    - contractor_id IS NULL OR contractor_id IN user.shared_contractors
 4. Vector search + optional BM25 hybrid ВНУТРИ filter
 5. Вернуть top_k цитируемых chunks

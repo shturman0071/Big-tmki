@@ -25,7 +25,7 @@
       "department_id": "dept_markscheider",
       "granted_by_employee_id": "emp_litovsky_d",
       "actions": ["read"],
-      "valid_from": "2025-09-15",
+      "valid_from": "2025-09-01",
       "status": "active",
       "reason": "Временное отстранение от общих материалов участка"
     }

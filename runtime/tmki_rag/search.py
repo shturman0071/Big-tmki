@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Callable
 
+from tmki_rag.folders import FolderAclContext
 from tmki_rag.rls import passes_rls
 from tmki_rag.scope import resolve_department_scope
 
@@ -45,6 +46,7 @@ def rag_search(
     chunks: list[dict[str, Any]],
     *,
     score_fn: Callable[[str, dict[str, Any]], float] | None = None,
+    folder_acl: FolderAclContext | None = None,
 ) -> dict[str, Any]:
     """
     RAG retrieval: RLS-фильтр до ранжирования (MUST server-side).
@@ -82,7 +84,13 @@ def rag_search(
     candidates_before = len(chunks)
     allowed: list[tuple[float, dict[str, Any]]] = []
     for chunk in chunks:
-        if passes_rls(chunk, policy_context, department_scope=department_scope, extra_filters=extra_filters):
+        if passes_rls(
+            chunk,
+            policy_context,
+            department_scope=department_scope,
+            extra_filters=extra_filters,
+            folder_acl=folder_acl,
+        ):
             allowed.append((score_fn(query, chunk), chunk))
 
     allowed.sort(key=lambda x: x[0], reverse=True)

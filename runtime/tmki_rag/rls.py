@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from tmki_rag.clearance import clearance_allows
+from tmki_rag.folders import FolderAclContext
 
 
 def _department_allowed(
@@ -41,6 +42,7 @@ def passes_rls(
     *,
     department_scope: str,
     extra_filters: dict[str, Any] | None = None,
+    folder_acl: FolderAclContext | None = None,
 ) -> bool:
     """Проверка RLS-метаданных chunk до vector/BM25 ранжирования."""
     if chunk.get("company_id") != policy_context.get("company_id"):
@@ -57,6 +59,9 @@ def passes_rls(
             return False
 
     if not _department_allowed(chunk, policy_context, department_scope):
+        return False
+
+    if folder_acl is not None and not folder_acl.allows_read(chunk, policy_context):
         return False
 
     if extra_filters:

@@ -5,7 +5,7 @@
 | Модуль | Назначение |
 |--------|------------|
 | `tmki_policy` | `policy_context` из org-снимка |
-| `tmki_rag` | `rag_search()` — RLS + keyword-score (MVP без pgvector) |
+| `tmki_rag` | `rag_search()` — RLS + folder ACL + keyword-score (MVP без pgvector) |
 | `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
 | `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
 | `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
@@ -35,13 +35,19 @@ ctx = build_policy_context(snapshot, employee_id="emp_litovsky_d", env="producti
 ```python
 import json
 from pathlib import Path
-from tmki_rag import rag_search
+from tmki_rag import FolderAclContext, load_folder_catalog, load_folder_grants, rag_search
 from tmki_policy import build_policy_context, load_org_snapshot
 
 snapshot = load_org_snapshot(Path("../schemas/org/examples/satimol-snapshot.example.json"))
 ctx = build_policy_context(snapshot, employee_id="emp_litovsky_d", env="production")
 chunks = json.loads(Path("../schemas/document/examples/satimol-chunks.example.json").read_text())["chunks"]
 resp = rag_search({"trace_id": "t1", "query": "маркшейдерская съёмка", "policy_context": ctx}, chunks)
+
+# С folder ACL (#21):
+folders = load_folder_catalog(Path("../schemas/document/examples/satimol-folders.example.json"))
+grants = load_folder_grants(Path("../schemas/org/examples/satimol-folder-grants.example.json"))
+acl = FolderAclContext.from_catalog(folders, grants)
+resp = rag_search({...}, chunks, folder_acl=acl)
 ```
 
 Контракты: `search-request` / `search-response` / `chunk-index` в `schemas/document/`.

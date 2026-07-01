@@ -122,7 +122,8 @@ python scripts/reindex_dashboard.py
 python scripts/snapshot_partial_quality.py
 python scripts/compare_partial_quality.py
 python scripts/export_reindex_ops_bundle.py
-.\scripts\post_reindex_checklist.ps1 -Bundle -QualitySnapshot
+python scripts/print_reindex_handoff.py
+.\scripts\wait_and_finalize.ps1
 python scripts/reindex_stats.py
 python scripts/record_reindex_snapshot.py
 python scripts/analyze_reindex_progress_log.py

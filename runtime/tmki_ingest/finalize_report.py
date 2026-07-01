@@ -36,6 +36,11 @@ def build_post_finalize_report(artifacts_dir: Path, *, dsn: str | None = None) -
     quality = _read_json(artifacts_dir / "quality-benchmark-final.json")
     partial_quality = _read_json(artifacts_dir / "quality-partial-latest.json")
     finalize_marker = _read_json(artifacts_dir / "finalize-done.json")
+    ops_bundle = _read_json(artifacts_dir / "reindex-ops-bundle-latest.json")
+
+    from tmki_ingest.quality_trend import load_partial_quality_files, summarize_quality_trend
+
+    partial_trend = summarize_quality_trend(load_partial_quality_files(artifacts_dir))
 
     reindex_report = (audit or {}).get("report")
     pg_rows = pgvector_row_count(dsn)
@@ -46,11 +51,14 @@ def build_post_finalize_report(artifacts_dir: Path, *, dsn: str | None = None) -
         "errors_total": (audit or {}).get("errors", {}).get("errors_total"),
         "quality_benchmark": quality,
         "partial_quality_latest": partial_quality,
+        "partial_quality_trend": partial_trend,
+        "ops_bundle": ops_bundle,
         "pgvector_rows": pg_rows,
         "finalize_marker": finalize_marker,
         "artifacts": {
             "audit": str(artifacts_dir / "reindex-audit-latest.json"),
             "quality": str(artifacts_dir / "quality-benchmark-final.json"),
             "summary": str(artifacts_dir / "finalize-summary-latest.json"),
+            "ops_bundle": str(artifacts_dir / "reindex-ops-bundle-latest.json"),
         },
     }

@@ -39,6 +39,9 @@ def main() -> int:
         if report.get("quality_benchmark"):
             qb = report["quality_benchmark"]
             print(f"  quality benchmark: v1={qb.get('v1_count')} v2={qb.get('v2_count')}")
+        pq = report.get("partial_quality_latest")
+        if pq and report.get("quality_benchmark"):
+            print(f"  partial→final v2: {pq.get('v2_count')} → {report['quality_benchmark'].get('v2_count')}")
         print(f"\nsaved: {out_path}")
     return 0
 

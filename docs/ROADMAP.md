@@ -380,6 +380,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `compare_partial_quality.py`, `export_reindex_ops_bundle.py`, trend в finalize report
 
+### #76 [phase-4] [runtime] Handoff summary + finalize pipeline
+
+**Статус:** MVP (v0.3) — `print_reindex_handoff.py`, `ops_bundle` module, handoff в wait/finalize
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

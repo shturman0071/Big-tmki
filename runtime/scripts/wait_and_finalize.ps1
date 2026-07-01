@@ -30,4 +30,9 @@ Write-Host "=== Export audit ===" -ForegroundColor Cyan
 python scripts/export_reindex_audit.py
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+Write-Host "=== Ops bundle + handoff ===" -ForegroundColor Cyan
+python scripts/export_reindex_ops_bundle.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+python scripts/print_reindex_handoff.py --save (Join-Path $runtime "artifacts\regulations-import\reindex-handoff.txt")
+
 & $PSScriptRoot\finalize_regulations_index.ps1 -Query $Query

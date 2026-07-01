@@ -231,7 +231,7 @@ pgvector + RLS-поля до выдачи в RAG.
 39. ~~#39 Regulations MVP + search benchmark + chunks-v2 auto~~ ✅
 40. ~~#40 Production stack + re-index hardening~~ ✅ (docker-compose.full, health check, pypdf noise fix, skip ~$ temp)
 41. ~~#41 Re-index progress + PDF hardening~~ ✅ (max_pages, heartbeat progress, reindex_status, check_ocr_http)
-42. **Следующий фокус:** завершить re-index → chunks-v2; load pgvector; HTTP MinerU/Mistral
+42. **Следующий фокус:** re-index (~42%+) → chunks-v2; pgvector; HTTP MinerU/Mistral
 43. ~~#45 Desktop sync~~ ✅ | ~~#46 Legal Corpus Curator~~ ✅ | ~~#47 Document policy~~ ✅
 44. ~~#43–#50~~ ✅ MVP | **#51:** `setup_pgvector_v2.ps1`, partial load v2, weekly legal curator
 
@@ -331,6 +331,10 @@ pgvector + RLS-поля до выдачи в RAG.
 ### #63 [phase-4] [runtime] Milestone sync + pgvector health
 
 **Статус:** MVP (v0.3) — `reindex_milestone.ps1`, pgvector rows в health check, `--save` в compare_chunks_quality
+
+### #64 [phase-4] [runtime] Full stack demo + watchdog milestones
+
+**Статус:** MVP (v0.3) — `run_full_stack_demo.ps1`, `watch_reindex.ps1 -Milestone`
 
 ---
 

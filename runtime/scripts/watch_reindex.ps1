@@ -3,7 +3,8 @@ param(
     [int]$StaleMinutes = 20,
     [int]$PollSeconds = 120,
     [switch]$SyncPgvector,
-    [switch]$Finalize
+    [switch]$Finalize,
+    [switch]$Milestone
 )
 
 $runtime = Resolve-Path $PSScriptRoot\..
@@ -66,6 +67,11 @@ function Invoke-FinalizeIfNeeded {
     }
 }
 
+function Invoke-MilestoneIfNeeded {
+    if (-not $Milestone) { return }
+    & $PSScriptRoot\reindex_milestone.ps1
+}
+
 Set-Location $runtime
 Write-Host "watch_reindex: poll every ${PollSeconds}s, stale>${StaleMinutes}m"
 
@@ -85,6 +91,7 @@ while ($true) {
     else {
         python scripts/reindex_report.py 2>$null
         Invoke-PgvectorSyncIfNeeded
+        Invoke-MilestoneIfNeeded
         Invoke-FinalizeIfNeeded
     }
     Start-Sleep -Seconds $PollSeconds

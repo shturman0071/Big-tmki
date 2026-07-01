@@ -231,8 +231,8 @@ pgvector + RLS-поля до выдачи в RAG.
 39. ~~#39 Regulations MVP + search benchmark + chunks-v2 auto~~ ✅
 40. ~~#40 Production stack + re-index hardening~~ ✅ (docker-compose.full, health check, pypdf noise fix, skip ~$ temp)
 41. ~~#41 Re-index progress + PDF hardening~~ ✅ (max_pages, heartbeat progress, reindex_status, check_ocr_http)
-42. **Следующий фокус:** завершить полный re-index → chunks-v2; load pgvector; HTTP MinerU/Mistral
-43. **Новый эпик v0.3:** `20_product_requirements_v0_3.md` — рабочее место, нормативная база, голос (#43–#50)
+42. **Следующий фокус:** завершить re-index → chunks-v2; load pgvector; HTTP MinerU/Mistral
+43. ~~#45 Desktop sync agent~~ ✅ MVP | ~~#46 Legal Corpus Curator~~ ✅ MVP | ~~#47 Document policy~~ ✅ MVP
 
 ---
 
@@ -254,21 +254,21 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #45 [phase-4] [runtime] Desktop sync agent (5 с → локальный сервер)
 
-**Статус:** spec (v0.3) — `schemas/document/desktop-sync-manifest.schema.json`
+**Статус:** MVP (v0.3) — `tmki_desktop_sync/`, `run_desktop_sync.py`
 
 - Watch folder → server copy → ingest; `TMKI_DESKTOP_SYNC_INTERVAL_SEC=5`
 - **Критерий:** `runtime/tmki_desktop_sync/`; audit `desktop_sync_file_uploaded`
 
 ### #46 [phase-4] [runtime] Внешняя нормативная база РФ + Legal Corpus Curator
 
-**Статус:** spec (v0.3) — `schemas/document/legal-corpus-catalog.json`, `regulatory-update.schema.json`
+**Статус:** MVP (v0.3) — `tmki_legal/`, `run_legal_corpus_curator.py`
 
 - Первичная загрузка 16+ актов; еженедельный мониторинг официальных сайтов
 - **Критерий:** агент diff → ingest → notify; skill в `13_ai_skills_registry.md`
 
 ### #47 [phase-4] [docs] Политика создания документов
 
-**Статус:** spec (v0.3) — `schemas/document/document-creation-policy.schema.json`, `09_document_processing.md` §Создание
+**Статус:** MVP (v0.3) — `tmki_ingest/document_policy.py`, `document-creation-policy.schema.json`
 
 - Внутренние шаблоны; договоры — проверка по РФ всегда; прочее — только по запросу
 - **Критерий:** guardrail в runtime document author flow

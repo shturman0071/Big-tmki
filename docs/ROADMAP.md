@@ -211,7 +211,7 @@ pgvector + RLS-поля до выдачи в RAG.
 19. ~~#7 RLS open questions (Сатимол)~~ ✅ (v0.2)
 20. ~~#8 Схема сущностей org model~~ ✅ (v0.1)
 21. ~~#9 Актуализировать вакансии оргсхемы~~ ✅ (v0.1)
-22. **Следующий фокус:** реализация runtime (`tmki_policy`, `tmki_rag`); Phase 2.5 — folder grants + SharePoint sync (backlog)
+22. **Следующий фокус:** folder grants (#21) в runtime + SharePoint sync; реальный LLM provider
 
 ---
 

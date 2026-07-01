@@ -87,6 +87,7 @@ Components:
 
 - **MUST**: описывать интерфейс инструмента (вход/выход, side-effects, auth scope) — см. `16_tool_registry.md`.
 - **MUST**: уметь отключать/ограничивать инструмент по policy (org, role, env) — см. `07_security_addendum.md`, `ORG_MODEL.md`.
+- **Референс**: `runtime/tmki_tools` (`ToolRegistry`, `check_policy` + `schemas/tools/tool-gating.rules.json`).
 
 ### Document Intelligence
 
@@ -110,6 +111,7 @@ Retrieval + формирование “evidence pack” для генераци
 - **MUST**: прекращать цикл при повторяющихся ошибках (circuit breaker).
 - **MUST**: записывать каждый переход состояния в Audit (`event_type` см. `schemas/runtime/event.schema.json`).
 - **Schema**: `schemas/runtime/loop-state.schema.json`
+- **Референс**: `runtime/tmki_loop` (`LoopEngine`), оркестрация MVP — `runtime/tmki_runtime` (`run_mvp`).
 
 #### Состояния Loop Engine
 

@@ -6,6 +6,9 @@
 |--------|------------|
 | `tmki_policy` | `policy_context` из org-снимка |
 | `tmki_rag` | `rag_search()` — RLS + keyword-score (MVP без pgvector) |
+| `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
+| `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
+| `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 
 ## Запуск тестов
 
@@ -42,3 +45,18 @@ resp = rag_search({"trace_id": "t1", "query": "маркшейдерская съ
 ```
 
 Контракты: `search-request` / `search-response` / `chunk-index` в `schemas/document/`.
+
+### MVP Run
+
+```python
+from datetime import date
+from tmki_policy import build_policy_context, load_org_snapshot
+from tmki_runtime import run_mvp
+from tmki_runtime.mvp import load_chunks
+from pathlib import Path
+
+snapshot = load_org_snapshot(Path("../schemas/org/examples/satimol-snapshot.example.json"))
+ctx = build_policy_context(snapshot, employee_id="emp_litovsky_d", env="production", as_of=date(2025, 9, 10))
+chunks = load_chunks(Path("../schemas/document/examples/satimol-chunks.example.json"))
+result = run_mvp(message="маркшейдерская съёмка", policy_context=ctx, chunks=chunks)
+```

@@ -21,7 +21,9 @@ def test_reindex_status_script(tmp_path):
         cwd=RUNTIME,
         capture_output=True,
         text=True,
-        env={**dict(__import__("os").environ), "PYTHONPATH": "."},
+        encoding="utf-8",
+        errors="replace",
+        env={**dict(__import__("os").environ), "PYTHONPATH": ".", "PYTHONIOENCODING": "utf-8"},
     )
     assert proc.returncode == 0
     assert "processed: 2/10" in proc.stdout
@@ -58,7 +60,9 @@ def test_reindex_status_shows_heartbeat(tmp_path):
         cwd=RUNTIME,
         capture_output=True,
         text=True,
-        env={**dict(__import__("os").environ), "PYTHONPATH": "."},
+        encoding="utf-8",
+        errors="replace",
+        env={**dict(__import__("os").environ), "PYTHONPATH": ".", "PYTHONIOENCODING": "utf-8"},
     )
     assert proc.returncode == 0
     assert "current:" in proc.stdout

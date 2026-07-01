@@ -1,10 +1,13 @@
 # Полный локальный стек: Docker Postgres + pgvector sync + demo
 param(
     [string]$Query = "промбезопасность кран",
-    [switch]$SkipDocker
+    [switch]$SkipDocker,
+    [switch]$Experience,
+    [switch]$Milestone
 )
 
 $runtime = Resolve-Path $PSScriptRoot\..
+$env:TMKI_MVP_MESSAGE = $Query
 Set-Location $runtime
 
 if (-not $SkipDocker) {
@@ -15,4 +18,7 @@ if (-not $SkipDocker) {
 & $PSScriptRoot\sync_pgvector_incremental.ps1
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-& $PSScriptRoot\run_tmki_demo.ps1 -Query $Query -Backend pgvector
+$demoArgs = @("-Query", $Query, "-Backend", "pgvector")
+if ($Experience) { $demoArgs += "-Experience" }
+if ($Milestone) { $demoArgs += "-Milestone" }
+& $PSScriptRoot\run_tmki_demo.ps1 @demoArgs

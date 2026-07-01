@@ -102,6 +102,8 @@ python scripts/compare_chunks_quality.py --save artifacts/regulations-import/qua
 .\scripts\setup_http_ocr.ps1
 .\scripts\run_tmki_demo.ps1
 .\scripts\run_tmki_demo.ps1 -Experience
+.\scripts\run_tmki_demo.ps1 -Milestone
+.\scripts\run_full_stack_demo.ps1 -Experience -Milestone
 .\scripts\run_tmki_demo.ps1 -Backend pgvector
 .\scripts\finalize_regulations_index.ps1
 python scripts/reindex_status.py

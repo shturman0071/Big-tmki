@@ -340,6 +340,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `--tts`/`--cast` в MVP, `TMKI_OCR_HTTP_RETRIES`, `run_tmki_demo -Experience`
 
+### #66 [phase-4] [runtime] Re-index milestones UX + full-stack Experience
+
+**Статус:** MVP (v0.3) — `reindex_milestones`, milestone hints в report/health, `-Milestone`/`-Experience` в demo, OCR backoff
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

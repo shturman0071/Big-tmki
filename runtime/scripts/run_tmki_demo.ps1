@@ -3,7 +3,8 @@ param(
     [string]$Query = "промбезопасность кран",
     [ValidateSet("json", "pgvector")]
     [string]$Backend = "json",
-    [switch]$Experience
+    [switch]$Experience,
+    [switch]$Milestone
 )
 
 $runtime = Resolve-Path $PSScriptRoot\..
@@ -26,3 +27,6 @@ if ($Experience) {
     $mvpArgs += @("--tts", "--cast", "tv")
 }
 python @mvpArgs
+if ($Milestone) {
+    & $PSScriptRoot\reindex_milestone.ps1
+}

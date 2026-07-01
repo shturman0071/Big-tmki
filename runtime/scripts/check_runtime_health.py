@@ -106,6 +106,22 @@ def main() -> int:
             f"  [info] re-index: {live}/{total} ({pct:.1f}%), "
             f"imported={stats.get('imported', 0)}, errors={stats.get('errors', 0)}"
         )
+        from tmki_ingest.reindex_milestones import milestone_summary
+
+        ms = milestone_summary(pct, state.parent / "milestones")
+        if ms.get("milestone_ready"):
+            print(f"  [info] milestone ready: {ms['milestone_ready']}%")
+        elif ms.get("next_milestone"):
+            print(f"  [info] next milestone: {ms['next_milestone']}%")
+
+    cast_port = int(os.environ.get("TMKI_CAST_PORT", "8766"))
+    if os.environ.get("TMKI_DISPLAY_PROVIDER", "").lower() == "http_cast":
+        from tmki_voice.cast_server import probe_cast_server
+
+        if probe_cast_server(port=cast_port):
+            print(f"  [ok] cast server :{cast_port}")
+        else:
+            print(f"  [info] cast server :{cast_port} not running (starts on first --cast)")
 
     return 0 if ok else 1
 

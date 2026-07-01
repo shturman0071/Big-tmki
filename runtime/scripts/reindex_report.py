@@ -91,6 +91,11 @@ def main() -> int:
 
     recent_errors = state.get("recent_errors") or []
 
+    markers_dir = args.state.parent / "milestones"
+    from tmki_ingest.reindex_milestones import milestone_summary
+
+    milestones = milestone_summary(pct, markers_dir)
+
     lock_pid = None
     if args.lock.is_file():
         from tmki_ingest.reindex_lock import process_alive, read_lock
@@ -116,6 +121,7 @@ def main() -> int:
         "eta_hours": round(eta_hours, 1) if eta_hours is not None else None,
         "recent_errors_count": len(recent_errors),
         "lock_pid": lock_pid,
+        **milestones,
     }
 
     if args.json:
@@ -130,6 +136,14 @@ def main() -> int:
         print(f"  too_large: {stats.get('too_large', 0)}")
     if eta_hours is not None:
         print(f"  ETA: ~{eta_hours:.1f} h")
+    done = milestones.get("milestones_done") or []
+    if done:
+        print(f"  milestones done: {', '.join(str(m) for m in done)}%")
+    ready = milestones.get("milestone_ready")
+    if ready:
+        print(f"  milestone ready: {ready}% — run .\\scripts\\reindex_milestone.ps1")
+    elif milestones.get("next_milestone"):
+        print(f"  next milestone: {milestones['next_milestone']}%")
     if current_file:
         print(f"  current: [{hb_index}/{total}] {current_file}")
     if lock_pid:

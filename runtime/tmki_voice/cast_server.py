@@ -53,3 +53,16 @@ def reset_cast_server() -> None:
             _server.shutdown()
             _server.server_close()
             _server = None
+
+
+def probe_cast_server(*, host: str = "127.0.0.1", port: int = 8766, timeout: float = 1.0) -> bool:
+    """Проверить, отвечает ли cast HTTP на GET /."""
+    import urllib.error
+    import urllib.request
+
+    url = f"http://{host}:{port}/"
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as resp:
+            return resp.status == 200
+    except (urllib.error.URLError, OSError, TimeoutError):
+        return False

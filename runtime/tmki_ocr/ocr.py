@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -63,6 +64,7 @@ def _http_post_with_retry(
     retries: int | None = None,
 ) -> dict[str, Any]:
     max_retries = retries if retries is not None else int(os.environ.get("TMKI_OCR_HTTP_RETRIES", "1"))
+    delay_ms = int(os.environ.get("TMKI_OCR_HTTP_RETRY_DELAY_MS", "500"))
     last_exc: Exception | None = None
     for attempt in range(max_retries + 1):
         try:
@@ -71,6 +73,8 @@ def _http_post_with_retry(
             last_exc = exc
             if attempt >= max_retries:
                 raise
+            if delay_ms > 0:
+                time.sleep((delay_ms / 1000.0) * (attempt + 1))
     if last_exc:
         raise last_exc
     return {}

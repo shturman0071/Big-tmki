@@ -416,6 +416,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `pipeline_status.py`, phase/next_step, интеграция в checklists
 
+### #85 [phase-4] [runtime] Master ops archive export
+
+**Статус:** MVP (v0.3) — `export_ops_archive.py`, `tmki-ops-archive-latest.json`, `--save` pipeline status
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

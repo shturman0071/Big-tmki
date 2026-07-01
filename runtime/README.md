@@ -132,6 +132,8 @@ python scripts/verify_post_finalize.py
 .\scripts\run_finalize.ps1 -WaitDocker
 python scripts/wait_for_docker.py --once
 python scripts/pipeline_status.py
+python scripts/pipeline_status.py --save
+python scripts/export_ops_archive.py
 .\scripts\wait_docker_and_finalize.ps1
 python scripts/check_docker.py
 .\scripts\wait_and_finalize.ps1

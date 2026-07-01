@@ -21,6 +21,12 @@ def main() -> int:
     parser.add_argument("--heartbeat", type=Path, default=DEFAULT_HEARTBEAT)
     parser.add_argument("--lock", type=Path, default=DEFAULT_LOCK)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument(
+        "--save",
+        nargs="?",
+        const=DEFAULT_STATE.parent / "pipeline-status-latest.json",
+        type=Path,
+    )
     args = parser.parse_args()
 
     if not args.state.is_file():
@@ -35,6 +41,11 @@ def main() -> int:
         heartbeat_path=args.heartbeat,
         lock_path=args.lock,
     )
+
+    save_path = args.save
+    if save_path is not None:
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        save_path.write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
 
     if args.json:
         print(json.dumps(status, ensure_ascii=False, indent=2))
@@ -58,6 +69,8 @@ def main() -> int:
     if arts:
         print(f"  artifacts: {', '.join(arts)}")
     print(f"\n  next: .\\scripts\\{status['next_step']}")
+    if save_path is not None and not args.json:
+        print(f"\nsaved: {save_path}")
     return 0
 
 

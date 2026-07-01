@@ -37,6 +37,7 @@ python scripts/run_mvp_regulations.py --variant v2 --backend pgvector --hybrid
 python scripts/post_finalize_report.py
 python scripts/print_reindex_handoff.py --finalize --save (Join-Path $runtime "artifacts\regulations-import\finalize-handoff.txt")
 python scripts/export_finalize_ops_bundle.py
+python scripts/export_ops_archive.py
 python scripts/verify_post_finalize.py
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 @{ done_at = (Get-Date).ToUniversalTime().ToString("o") } | ConvertTo-Json | Set-Content (Join-Path $runtime "artifacts\regulations-import\finalize-done.json") -Encoding utf8

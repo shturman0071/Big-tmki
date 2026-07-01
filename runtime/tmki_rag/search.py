@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 
 from tmki_rag.folders import FolderAclContext
 from tmki_rag.rls import passes_rls
 from tmki_rag.scope import resolve_department_scope
+
+if TYPE_CHECKING:
+    from tmki_rag.vector import VectorChunkIndex
 
 
 def _token_in_text(word: str, text: str) -> bool:
@@ -119,3 +122,26 @@ def rag_search(
         },
         "occurred_at": now,
     }
+
+
+def rag_search_with_index(
+    request: dict[str, Any],
+    index: "VectorChunkIndex",
+    *,
+    score_fn: Callable[[str, dict[str, Any]], float] | None = None,
+    folder_acl: FolderAclContext | None = None,
+    candidate_pool: int | None = None,
+) -> dict[str, Any]:
+    """RAG через VectorChunkIndex/PgVectorChunkIndex (vector pre-filter, затем RLS)."""
+    score_fn = score_fn or _default_score
+    policy_context = request["policy_context"]
+    top_k = request.get("top_k", 8)
+    pool = candidate_pool or max(top_k * 5, 20)
+    similar = index.search_similar(
+        request["query"],
+        company_id=policy_context["company_id"],
+        project_id=policy_context["project_id"],
+        top_k=pool,
+    )
+    chunks = [chunk for _, chunk in similar]
+    return rag_search(request, chunks, score_fn=score_fn, folder_acl=folder_acl)

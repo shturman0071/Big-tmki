@@ -304,6 +304,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `reindex-heartbeat.json`, `--backend pgvector` в `run_mvp_regulations.py`
 
+### #57 [phase-4] [runtime] pgvector-native RAG + re-index watchdog
+
+**Статус:** MVP (v0.3) — `rag_search_with_index`, `watch_reindex.ps1`, benchmark `--backend pgvector`
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

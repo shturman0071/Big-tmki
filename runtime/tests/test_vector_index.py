@@ -1,6 +1,6 @@
 import os
 
-from tmki_rag import ChunkIndex, VectorChunkIndex, get_chunk_index, hybrid_score_fn, rag_search
+from tmki_rag import ChunkIndex, VectorChunkIndex, get_chunk_index, hybrid_score_fn, rag_search, rag_search_with_index
 from tmki_rag.search import _default_score
 
 
@@ -73,3 +73,36 @@ def test_get_chunk_index_pgvector_fallback(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     index = get_chunk_index()
     assert isinstance(index, VectorChunkIndex)
+
+
+def test_rag_search_with_index():
+    index = VectorChunkIndex()
+    chunk = {
+        "chunk_id": "c1",
+        "doc_id": "d1",
+        "company_id": "company_tmki_ru",
+        "project_id": "project_satimol",
+        "department_id": "dept_markscheider",
+        "classification": "restricted",
+        "content_preview": "промбезопасность кран",
+        "language": "ru",
+        "page": 1,
+        "start_offset": 0,
+        "end_offset": 20,
+    }
+    index.add([chunk])
+    resp = rag_search_with_index(
+        {
+            "trace_id": "t-idx",
+            "query": "промбезопасность",
+            "policy_context": {
+                "company_id": "company_tmki_ru",
+                "project_id": "project_satimol",
+                "department_id": "dept_markscheider",
+                "clearance": "restricted",
+            },
+            "top_k": 3,
+        },
+        index,
+    )
+    assert len(resp["results"]) >= 1

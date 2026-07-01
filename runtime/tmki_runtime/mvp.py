@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from tmki_loop import LoopEngine
 from tmki_rag.folders import FolderAclContext, load_folder_catalog, load_folder_grants
-from tmki_rag.search import _default_score, rag_search
+from tmki_rag.search import _default_score, rag_search, rag_search_with_index
 from tmki_rag.vector import VectorChunkIndex, hybrid_score_fn
 from tmki_llm import get_llm_provider
 from tmki_tools import ToolRegistry, load_gating_rules
@@ -62,6 +62,7 @@ def _rag_handler(
     chunks: list[dict[str, Any]],
     folder_acl: Any | None = None,
     score_fn: Any | None = None,
+    index: VectorChunkIndex | None = None,
 ):
     def handler(request: dict[str, Any], _decision: Any) -> dict[str, Any]:
         inp = request["input"]
@@ -72,7 +73,10 @@ def _rag_handler(
             "top_k": inp.get("top_k", 8),
             "policy_context": request["policy_context"],
         }
-        resp = rag_search(search_req, chunks, folder_acl=folder_acl, score_fn=score_fn)
+        if index is not None:
+            resp = rag_search_with_index(search_req, index, folder_acl=folder_acl, score_fn=score_fn)
+        else:
+            resp = rag_search(search_req, chunks, folder_acl=folder_acl, score_fn=score_fn)
         return {
             **resp,
             "summary": f"rag results={len(resp.get('results', []))}",
@@ -88,10 +92,11 @@ def build_registry(
     folder_acl: Any | None = None,
     score_fn: Any | None = None,
     llm_provider: str = "stub",
+    index: VectorChunkIndex | None = None,
 ) -> ToolRegistry:
     rules = load_gating_rules(rules_path or GATING_RULES)
     registry = ToolRegistry(rules)
-    registry.register("rag_search", _rag_handler(chunks, folder_acl, score_fn))
+    registry.register("rag_search", _rag_handler(chunks, folder_acl, score_fn, index=index))
     registry.register("llm_openai", _llm_handler(llm_provider))
     return registry
 
@@ -129,17 +134,17 @@ def run_mvp(
     if folder_acl is None and use_satimol_folder_acl:
         folder_acl = load_satimol_folder_acl()
 
-    chunk_source = index.list() if index is not None else chunks
     score_fn = None
-    if use_hybrid_search and index is not None:
+    if index is not None and use_hybrid_search:
         score_fn = hybrid_score_fn(index, _default_score)
 
     engine = LoopEngine(run_id=run_id, trace_id=trace_id, env=env)
     registry = build_registry(
-        chunk_source,
+        chunks if index is None else [],
         folder_acl=folder_acl,
         score_fn=score_fn,
         llm_provider=llm_provider,
+        index=index,
     )
     audit_events: list[dict[str, Any]] = [
         _audit("run_started", trace_id, {"run_id": run_id}),

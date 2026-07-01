@@ -16,7 +16,7 @@ from tmki_rag.embedding_providers import (
     get_embedding_provider,
 )
 from tmki_rag.index import ChunkIndex
-from tmki_rag.search import rag_search
+from tmki_rag.search import rag_search, rag_search_with_index
 from tmki_rag.vector import VectorChunkIndex, get_chunk_index, hybrid_score_fn
 
 __all__ = [
@@ -39,4 +39,5 @@ __all__ = [
     "load_folder_grants",
     "resolve_folder_id",
     "rag_search",
+    "rag_search_with_index",
 ]

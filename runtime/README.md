@@ -118,6 +118,8 @@ python scripts/reindex_ops_status.py
 python scripts/reindex_ops_status.py --json
 python scripts/reindex_stats.py
 python scripts/record_reindex_snapshot.py
+python scripts/analyze_reindex_progress_log.py
+.\scripts\watch_to_finalize.ps1 -RecordSnapshot
 .\scripts\post_reindex_checklist.ps1 -RecordSnapshot
 python scripts/preflight_finalize.py
 python scripts/wait_reindex_complete.py --once

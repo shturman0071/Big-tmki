@@ -33,11 +33,19 @@ def build_ops_status(
 
     ingest_stats = build_ingest_stats(state, report)
 
+    progress_log_path = artifacts_dir / "reindex-progress-log.jsonl"
+    progress_log_analysis = None
+    if progress_log_path.is_file():
+        from tmki_ingest.reindex_progress_log import analyze_progress_log, load_progress_log
+
+        progress_log_analysis = analyze_progress_log(load_progress_log(progress_log_path))
+
     ready_for_finalize = bool(report.get("complete")) and report.get("lock_pid") is None
 
     return {
         "report": report,
         "ingest_stats": ingest_stats,
+        "progress_log_analysis": progress_log_analysis,
         "errors": errors,
         "ready_for_finalize": ready_for_finalize,
         "finalize_done": finalize_marker.is_file(),

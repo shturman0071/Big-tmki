@@ -19,6 +19,10 @@ if ($RecordSnapshot) {
     Write-Host ""
     python scripts/record_reindex_snapshot.py
 }
+if (Test-Path "artifacts\regulations-import\reindex-progress-log.jsonl") {
+    Write-Host ""
+    python scripts/analyze_reindex_progress_log.py
+}
 if ($ExportAudit) {
     Write-Host ""
     python scripts/export_reindex_audit.py

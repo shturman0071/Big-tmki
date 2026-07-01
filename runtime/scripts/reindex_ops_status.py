@@ -51,6 +51,9 @@ def main() -> int:
             f"  yield: {ing.get('import_yield_pct')}%  skip_temp: {ing.get('skip_temp')}  "
             f"too_large: {ing.get('too_large')}"
         )
+    pla = status.get("progress_log_analysis")
+    if pla and pla.get("eta_hours_from_log") is not None:
+        print(f"  ETA (log): ~{pla['eta_hours_from_log']} h ({pla.get('points')} points)")
     if status["ready_for_finalize"]:
         print("  ready_for_finalize: yes")
     elif r.get("complete"):

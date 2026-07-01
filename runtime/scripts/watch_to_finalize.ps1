@@ -1,7 +1,8 @@
 # Hands-off: ждать 100% re-index и запустить finalize (без milestone/pgvector sync/restart)
 param(
     [int]$PollSeconds = 120,
-    [string]$Query = "промбезопасность кран"
+    [string]$Query = "промбезопасность кран",
+    [switch]$RecordSnapshot
 )
 
 $runtime = Resolve-Path $PSScriptRoot\..
@@ -42,7 +43,13 @@ while ($true) {
     }
     else {
         $eta = if ($r.eta_hours) { " ETA ~$($r.eta_hours)h" } else { "" }
+        $logEta = $status.progress_log_analysis.eta_hours_from_log
+        if ($logEta) { $eta = " ETA ~${logEta}h (log)" }
         Write-Host "[$(Get-Date -Format HH:mm:ss)] $($r.live_progress)/$($r.total) ($($r.percent)%)$eta"
+    }
+
+    if ($RecordSnapshot) {
+        python scripts/record_reindex_snapshot.py 2>$null
     }
 
     Start-Sleep -Seconds $PollSeconds

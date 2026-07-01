@@ -96,10 +96,75 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 
 - **Primary**: MinerU
 - **Fallback**: Mistral OCR 4
+- **Schema**: `schemas/document/ocr-result.schema.json`
 
-Правила выбора (SHOULD):
-- если MinerU не смог извлечь текст (ошибка/таймаут/низкая уверенность) → пробовать fallback
-- фиксировать причину fallback в `metadata.errors/warnings`
+#### Порядок провайдеров (MUST)
+
+1. Всегда начинать с **MinerU** (`provider=mineru`).
+2. При срабатывании fallback-условий — **одна** попытка **Mistral OCR 4**.
+3. Если fallback тоже failed → `ocr_status=failed`, pipeline останавливается с partial artifacts (если есть).
+
+#### Условия fallback (MUST)
+
+| Условие | `fallback_reason` | Порог (default) |
+|---------|-------------------|-----------------|
+| Таймаут MinerU | `primary_timeout` | 120 s на документ (production) |
+| Ошибка API/парсера MinerU | `primary_error` | любой non-retryable error |
+| Средняя уверенность ниже порога | `low_confidence` | `avg_confidence < 0.65` |
+| Извлечённый текст пуст/слишком мал | `empty_text` | `< 50` символов при `page_count > 1` |
+| Слишком много пустых страниц | `partial_pages` | `> 30%` страниц без текста |
+
+**MUST**: записывать `primary_attempt` и `fallback_reason` в `ocr-result` и `metadata.errors/warnings`.
+
+#### SLA / таймауты (SHOULD)
+
+| Параметр | Production | Development |
+|----------|------------|-------------|
+| MinerU timeout | 120 s | 180 s |
+| Mistral OCR 4 timeout | 180 s | 240 s |
+| Max pages per job | 500 | 500 |
+| Retry на primary | 1 (только transient errors) | 2 |
+
+#### Качество и статусы
+
+| `ocr_status` | Критерий | Дальше по pipeline |
+|--------------|----------|-------------------|
+| `completed` | Все страницы OK или допустимые warnings | → Normalize to Markdown |
+| `partial` | Есть пропуски страниц / warnings, но текст пригоден | → Markdown + `warnings` |
+| `failed` | Нет пригодного текста после fallback | Stop, audit error |
+
+**SHOULD**: `avg_confidence` и per-page `confidence` сохранять в `ocr-result.pages[]`.
+
+#### `parser_version` (MUST)
+
+Формат: `{provider}@{version}` — примеры:
+
+- `mineru@2.1.0`
+- `mistral-ocr-4@2026-06`
+
+При fallback финальный `parser_version` **MUST** отражать фактически использованный провайдер.
+
+#### Метрики и audit (MUST)
+
+| Метрика | Описание |
+|---------|----------|
+| `ocr_duration_ms` | Время по провайдеру |
+| `ocr_fallback_rate` | Доля `fallback_used=true` |
+| `ocr_partial_rate` | Доля `ocr_status=partial` |
+| `ocr_error_rate` | Доля `ocr_status=failed` |
+
+Audit: `document_ingested` payload **MUST** включать `parser_version`, `fallback_used`, `warnings_count` (см. `audit-event-catalog.json`).
+
+#### Коды ошибок OCR
+
+| Код | Описание |
+|-----|----------|
+| `OCR_PRIMARY_TIMEOUT` | MinerU timeout |
+| `OCR_PRIMARY_ERROR` | MinerU error |
+| `OCR_LOW_CONFIDENCE` | Ниже порога уверенности |
+| `OCR_EMPTY_TEXT` | Пустой результат |
+| `OCR_FALLBACK_FAILED` | Оба провайдера не справились |
+| `OCR_PAGE_LIMIT_EXCEEDED` | Слишком много страниц |
 
 ### 3) Normalize to Markdown
 
@@ -135,6 +200,7 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 |----------|--------|--------|
 | Ingest Request | `schemas/document/ingest-request.schema.json` | `schemas/document/examples/ingest-request.example.json` |
 | Ingest Response | `schemas/document/ingest-response.schema.json` | `schemas/document/examples/ingest-response-duplicate.example.json` |
+| OCR Result | `schemas/document/ocr-result.schema.json` | `schemas/document/examples/ocr-result-fallback.example.json` |
 
 ## SLA и деградация (SHOULD)
 

@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.1",
+  "doc_id": "doc_grd_0142",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440100",
+  "ocr_status": "partial",
+  "provider_used": "mistral_ocr_4",
+  "fallback_used": true,
+  "fallback_reason": "low_confidence",
+  "primary_attempt": {
+    "provider": "mineru",
+    "status": "failed",
+    "duration_ms": 118400,
+    "error_code": "OCR_LOW_CONFIDENCE"
+  },
+  "parser_version": "mistral-ocr-4@2026-06",
+  "page_count": 24,
+  "extracted_char_count": 48210,
+  "avg_confidence": 0.78,
+  "pages": [
+    { "page": 1, "char_count": 2104, "confidence": 0.92 },
+    { "page": 2, "char_count": 1890, "confidence": 0.85 },
+    { "page": 3, "char_count": 0, "confidence": 0.12, "skipped": true, "warning": "scan_noise" }
+  ],
+  "markdown_path": "/storage/satimol/doc_grd_0142/markdown/v1.md",
+  "assets_count": 3,
+  "warnings": ["page_3_skipped_low_confidence", "fallback_from_mineru"],
+  "errors": [],
+  "duration_ms": 156200,
+  "occurred_at": "2026-07-01T11:02:36Z"
+}

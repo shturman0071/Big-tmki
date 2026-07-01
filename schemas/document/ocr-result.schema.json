@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/ocr-result.schema.json",
+  "title": "TMKI Document OCR Result",
+  "description": "OCR/Extract stage output (MinerU primary, Mistral OCR 4 fallback) v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "doc_id",
+    "trace_id",
+    "ocr_status",
+    "provider_used",
+    "fallback_used",
+    "parser_version",
+    "page_count",
+    "duration_ms",
+    "occurred_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "doc_id": { "type": "string" },
+    "trace_id": { "type": "string", "format": "uuid" },
+    "ocr_status": {
+      "type": "string",
+      "enum": ["completed", "partial", "failed"]
+    },
+    "provider_used": {
+      "type": "string",
+      "enum": ["mineru", "mistral_ocr_4"]
+    },
+    "fallback_used": { "type": "boolean" },
+    "fallback_reason": {
+      "type": "string",
+      "enum": [
+        "none",
+        "primary_timeout",
+        "primary_error",
+        "low_confidence",
+        "empty_text",
+        "partial_pages"
+      ]
+    },
+    "primary_attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "const": "mineru" },
+        "status": { "type": "string", "enum": ["completed", "failed", "skipped"] },
+        "duration_ms": { "type": "integer", "minimum": 0 },
+        "error_code": { "type": "string" }
+      }
+    },
+    "parser_version": {
+      "type": "string",
+      "description": "e.g. mineru@2.1.0 or mistral-ocr-4@2026-06"
+    },
+    "page_count": { "type": "integer", "minimum": 0 },
+    "extracted_char_count": { "type": "integer", "minimum": 0 },
+    "avg_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["page", "char_count"],
+        "properties": {
+          "page": { "type": "integer", "minimum": 1 },
+          "char_count": { "type": "integer", "minimum": 0 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "skipped": { "type": "boolean" },
+          "warning": { "type": "string" }
+        }
+      }
+    },
+    "markdown_path": {
+      "type": "string",
+      "description": "Storage path to normalized markdown artifact"
+    },
+    "assets_count": { "type": "integer", "minimum": 0 },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "duration_ms": { "type": "integer", "minimum": 0 },
+    "occurred_at": { "type": "string", "format": "date-time" }
+  }
+}

@@ -139,6 +139,8 @@ gh label create phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6 security
 
 ### #14 [phase-4] [runtime] OCR pipeline MinerU → fallback Mistral OCR 4
 
+**Статус:** done (v0.1 — `09_document_processing.md`, `schemas/document/ocr-result.schema.json`)
+
 Метрики fallback, warnings в metadata.
 
 ---
@@ -171,5 +173,6 @@ pgvector + RLS-поля до выдачи в RAG.
 4. ~~#11 State machine Loop Engine~~ ✅ (v0.1)
 5. ~~#12 Каталог audit events~~ ✅ (v0.1)
 6. ~~#13 Ingest + dedup (Document Intelligence)~~ ✅ (v0.1)
-7. **#14 OCR pipeline MinerU + fallback**
-8. **#3 Установить gh + создать issues на GitHub**
+7. ~~#14 OCR pipeline MinerU + fallback~~ ✅ (v0.1)
+8. **#15 Индексация с server-side фильтрацией**
+9. **#3 Установить gh + создать issues на GitHub**

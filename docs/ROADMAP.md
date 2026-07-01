@@ -44,13 +44,17 @@
 
 ### #3 [phase-0] Установить GitHub CLI и завести labels
 
+**Статус:** done — `gh` v2.95.0, labels, 19 issues на GitHub (7 open, 12 closed)
+
 ```powershell
 winget install GitHub.cli
-gh auth login
-gh label create phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6 security runtime docs --repo shturman0071/Big-tmki
+# Перезапустите терминал ИЛИ обновите PATH в текущей сессии:
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+& "C:\Program Files\GitHub CLI\gh.exe" auth login -h github.com -p https -w
+.\scripts\create-github-issues.ps1 -IncludeDone
 ```
 
-Затем: `.\scripts\create-github-issues.ps1`
+Issues: https://github.com/shturman0071/Big-tmki/issues
 
 ---
 
@@ -199,4 +203,6 @@ pgvector + RLS-поля до выдачи в RAG.
 11. ~~#18 MVP runtime end-to-end~~ ✅ (v0.1)
 12. ~~#19 Security-review перед MVP-релизом~~ ✅ (v0.1)
 13. ~~#20 CI: markdown lint + secret scan~~ ✅ (v0.1)
-14. **#3 Установить gh + создать issues на GitHub**
+14. ~~#3 Установить gh + создать issues на GitHub~~ ✅
+15. **#2 Закрепить владельцев и процесс апрува хэндбука**
+16. **#4–#6 Phase 1 docs** (owners, Approved-карточки, импорт регламентов)

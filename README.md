@@ -34,6 +34,7 @@
 
 ## CI
 
+GitHub CLI: `winget install GitHub.cli` → `gh auth login` → `.\scripts\create-github-issues.ps1`  
 GitHub Actions: `.github/workflows/handbook-ci.yml` — markdown lint + secret scan (gitleaks) на каждый push/PR в `main`.
 
 ## Roadmap

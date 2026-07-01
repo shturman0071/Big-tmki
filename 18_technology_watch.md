@@ -1,6 +1,7 @@
 # Technology Watch
 
 ## Approved
+
 - MinerU
 - Mistral OCR 4
 - Harness Engineering Guide
@@ -36,6 +37,7 @@
 - при инциденте/уязвимости — внеплановый пересмотр и возможный “демоут” из `Approved`
 
 ## Watchlist
+
 - zvec
 - Camofox
 - Gemma 4 12B

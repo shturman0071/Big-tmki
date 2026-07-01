@@ -21,7 +21,7 @@
 
 ### Архитектура
 
-```
+```text
 Loop Engine → Tool Registry → Provider → External Service
                   ↓
             Guardrails (pre/post)

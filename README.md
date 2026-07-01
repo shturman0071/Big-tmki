@@ -32,8 +32,11 @@
 - **Provider pattern**: внешние интеграции оформляются как провайдеры со стабильным интерфейсом.
 - **Аудитируемость**: существенные действия runtime (tool calls, доступы к данным, выдача ответов) должны оставлять след в аудит-логах.
 
+## CI
+
+GitHub Actions: `.github/workflows/handbook-ci.yml` — markdown lint + secret scan (gitleaks) на каждый push/PR в `main`.
+
 ## Roadmap
 
 План работ и backlog задач: `docs/ROADMAP.md`.  
 MVP runtime flow: `schemas/runtime/mvp-flow.json`.
-

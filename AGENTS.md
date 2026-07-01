@@ -4,7 +4,7 @@
 
 Операционный инженерный хэндбук TMKI v0.2: runtime, безопасность, обработка документов, реестры инструментов и скиллов, оргмодель.
 
-- **Репозиторий:** https://github.com/shturman0071/Big-tmki
+- **Репозиторий:** <https://github.com/shturman0071/Big-tmki>
 - **Ветка по умолчанию:** `main`
 - **Статус хэндбука:** APPROVED (см. `README.md`)
 
@@ -52,6 +52,10 @@ branch  main
 ```
 
 Формат коммита: краткий заголовок + 1–2 предложения «зачем».
+
+## CI
+
+Workflow `.github/workflows/handbook-ci.yml`: markdownlint + gitleaks на push/PR в `main`.
 
 ## Skills проекта
 

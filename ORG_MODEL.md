@@ -2,7 +2,7 @@
 
 ## Базовая модель (абстракция)
 
-```
+```text
 Company -> Department -> Position -> Employee
 Project -> ProjectRole -> Employee
 ```

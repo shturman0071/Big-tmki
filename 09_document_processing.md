@@ -215,7 +215,7 @@ Audit: `document_ingested` payload **MUST** включать `parser_version`, `
 
 Фильтры применяются **в запросе к pgvector** (WHERE / metadata filter), **не** post-filter в приложении.
 
-```
+```text
 1. policy_context из Run/Search request (server-side, не от LLM)
 2. Resolve department_scope по project_role (ORG_MODEL.md матрица)
 3. Построить filter:
@@ -239,7 +239,7 @@ Audit: `document_ingested` payload **MUST** включать `parser_version`, `
 
 #### Clearance ordering (MUST)
 
-```
+```text
 public < internal < restricted < confidential
 ```
 

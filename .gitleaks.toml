@@ -1,0 +1,14 @@
+title = "TMKI Handbook gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Schema/docs references to secret_ref names, not actual secrets"
+paths = [
+  '''schemas/tools/providers\.registry\.json''',
+  '''schemas/runtime/audit-event-catalog\.json''',
+  '''schemas/security/''',
+  '''10_ai_runtime\.md''',
+  '''07_security_addendum\.md''',
+]

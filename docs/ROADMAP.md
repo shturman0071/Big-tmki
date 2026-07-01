@@ -2,7 +2,7 @@
 
 План работ по фазам. Каждый пункт ниже — кандидат в GitHub Issue.
 
-**Репозиторий:** https://github.com/shturman0071/Big-tmki
+**Репозиторий:** <https://github.com/shturman0071/Big-tmki>
 
 ## Метки (labels)
 
@@ -177,6 +177,11 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #20 [phase-0] CI: markdown lint + secret scan
 
+**Статус:** done (v0.1 — `.github/workflows/handbook-ci.yml`, `.markdownlint.jsonc`, `.gitleaks.toml`)
+
+- `markdown-lint` — markdownlint-cli2 на все `*.md`
+- `secret-scan` — gitleaks с allowlist для schema/docs references
+
 ---
 
 ## Текущий фокус (эта неделя)
@@ -193,5 +198,5 @@ pgvector + RLS-поля до выдачи в RAG.
 10. ~~#17 Tool gating по org/role/env~~ ✅ (v0.1)
 11. ~~#18 MVP runtime end-to-end~~ ✅ (v0.1)
 12. ~~#19 Security-review перед MVP-релизом~~ ✅ (v0.1)
-13. **#20 CI: markdown lint + secret scan**
+13. ~~#20 CI: markdown lint + secret scan~~ ✅ (v0.1)
 14. **#3 Установить gh + создать issues на GitHub**

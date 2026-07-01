@@ -412,6 +412,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `wait_for_docker.py`, `wait_docker_and_finalize.ps1`, `-WaitDocker` в run_finalize
 
+### #84 [phase-4] [runtime] Pipeline status (re-index → finalize)
+
+**Статус:** MVP (v0.3) — `pipeline_status.py`, phase/next_step, интеграция в checklists
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

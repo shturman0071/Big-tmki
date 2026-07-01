@@ -25,8 +25,13 @@ def main() -> int:
     parser.add_argument("--top-k", type=int, default=3)
     parser.add_argument("--backend", choices=["json", "pgvector"], default="json")
     parser.add_argument("--hybrid", action="store_true")
-    parser.add_argument("queries", nargs="*", default=DEFAULT_QUERIES)
+    parser.add_argument("queries", nargs="*", default=None)
     args = parser.parse_args()
+
+    from tmki_runtime.cli_encoding import resolve_cli_message
+
+    raw = args.queries if args.queries else DEFAULT_QUERIES
+    queries = [resolve_cli_message(positional=q, default=q) for q in raw]
 
     from tmki_policy import build_policy_context, load_org_snapshot
     from tmki_rag import (
@@ -76,7 +81,7 @@ def main() -> int:
         as_of=date(2025, 9, 10),
     )
 
-    for query in args.queries:
+    for query in queries:
         req = {
             "trace_id": "bench",
             "query": query,

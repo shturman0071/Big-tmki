@@ -19,13 +19,17 @@ QUERIES = [
 ]
 
 
-def _hits(chunks, ctx, query: str, top_k: int = 3) -> tuple[int, float]:
-    from tmki_rag import rag_search
+def _hits(chunks, ctx, query: str, top_k: int = 3, *, hybrid: bool = False) -> tuple[int, float]:
+    from tmki_rag import VectorChunkIndex, hybrid_score_fn, rag_search, rag_search_with_index
+    from tmki_rag.search import _default_score
 
-    resp = rag_search(
-        {"trace_id": "cmp", "query": query, "policy_context": ctx, "top_k": top_k},
-        chunks,
-    )
+    req = {"trace_id": "cmp", "query": query, "policy_context": ctx, "top_k": top_k}
+    if hybrid and chunks:
+        index = VectorChunkIndex()
+        index.add(chunks)
+        resp = rag_search_with_index(req, index, score_fn=hybrid_score_fn(index, _default_score))
+    else:
+        resp = rag_search(req, chunks)
     results = resp["results"]
     avg_score = sum(r["score"] for r in results) / len(results) if results else 0.0
     return len(results), avg_score
@@ -41,6 +45,7 @@ def main() -> int:
         default=None,
         help="Сохранить JSON-отчёт (например artifacts/regulations-import/quality-benchmark.json)",
     )
+    parser.add_argument("--hybrid", action="store_true", help="Hybrid vector+keyword для v2")
     args = parser.parse_args()
 
     from tmki_policy import build_policy_context, load_org_snapshot
@@ -72,7 +77,7 @@ def main() -> int:
     print("-" * 52)
     for q in QUERIES:
         h1, s1 = _hits(v1, ctx, q, args.top_k)
-        h2, s2 = (_hits(v2, ctx, q, args.top_k) if v2 else (0, 0.0))
+        h2, s2 = (_hits(v2, ctx, q, args.top_k, hybrid=args.hybrid) if v2 else (0, 0.0))
         rows.append({"query": q, "v1_hits": h1, "v1_score": s1, "v2_hits": h2, "v2_score": s2})
         print(f"{q:<25} {h1:>5} {s1:>6.3f} {h2:>5} {s2:>6.3f}")
 

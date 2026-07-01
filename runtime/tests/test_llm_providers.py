@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 from tmki_llm import StubLlmProvider, get_llm_provider
@@ -26,6 +24,14 @@ def test_get_llm_provider_default_stub(monkeypatch):
     monkeypatch.delenv("TMKI_LLM_PROVIDER", raising=False)
     provider = get_llm_provider()
     assert isinstance(provider, StubLlmProvider)
+
+
+def test_get_llm_provider_ollama(monkeypatch):
+    monkeypatch.setenv("TMKI_LLM_PROVIDER", "ollama")
+    from tmki_llm import OllamaLlmProvider
+
+    provider = get_llm_provider()
+    assert isinstance(provider, OllamaLlmProvider)
 
 
 def test_get_llm_provider_openai_requires_key(monkeypatch):

@@ -126,10 +126,70 @@ class OpenAiLlmProvider:
         )
 
 
+class OllamaLlmProvider:
+    """Локальный Ollama (http://127.0.0.1:11434)."""
+
+    def __init__(
+        self,
+        *,
+        base_url: str | None = None,
+        model: str | None = None,
+    ) -> None:
+        self._base_url = (base_url or os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")).rstrip("/")
+        self._model = model or os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+
+    def generate(
+        self,
+        *,
+        query: str,
+        citations: list[dict[str, Any]],
+        read_only_mode: bool = False,
+    ) -> LlmGenerateResult:
+        context = "\n".join(f"- {c.get('snippet', '')}" for c in citations[:6]) or "Нет цитат."
+        system = (
+            "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
+            "Если цитат недостаточно — скажи об этом."
+        )
+        if read_only_mode:
+            system += " Режим read-only: не предлагай действий с side-effects."
+
+        payload = {
+            "model": self._model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": f"Вопрос: {query}\n\nЦитаты:\n{context}"},
+            ],
+            "stream": False,
+        }
+        req = urllib.request.Request(
+            f"{self._base_url}/api/chat",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Ollama API error {exc.code}: {body}") from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f"Ollama недоступен ({self._base_url}): {exc.reason}") from exc
+
+        answer = (data.get("message") or {}).get("content", "").strip()
+        confidence = "high" if citations and answer else "low"
+        return LlmGenerateResult(
+            answer=answer or "Пустой ответ Ollama.",
+            confidence=confidence,
+            citations=citations,
+            provider="ollama",
+            model=self._model,
+        )
+
+
 def get_llm_provider() -> LlmProvider:
     """
-    TMKI_LLM_PROVIDER=stub|openai (default stub).
-    OpenAI: нужен OPENAI_API_KEY.
+    TMKI_LLM_PROVIDER=stub|openai|ollama (default stub).
     """
     name = os.environ.get("TMKI_LLM_PROVIDER", "stub").lower()
     if name == "openai":
@@ -137,4 +197,6 @@ def get_llm_provider() -> LlmProvider:
         if not key:
             raise RuntimeError("OPENAI_API_KEY не задан для TMKI_LLM_PROVIDER=openai")
         return OpenAiLlmProvider(key)
+    if name == "ollama":
+        return OllamaLlmProvider()
     return StubLlmProvider()

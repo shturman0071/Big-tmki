@@ -10,6 +10,7 @@ from tmki_ingest.dedup import DedupResult, DedupStore, check_dedup, compute_cont
 from tmki_ingest.gate import validate_ingest
 from tmki_ocr import run_ocr
 from tmki_rag.folders import FolderAclContext, resolve_folder_id
+from tmki_rag.index import ChunkIndex
 
 
 def _now_iso() -> str:
@@ -181,3 +182,25 @@ def process_document(
         ocr_result=ocr_result,
         chunks=chunks,
     )
+
+
+def ingest_and_index(
+    request: dict[str, Any],
+    index: ChunkIndex,
+    *,
+    folder_acl: FolderAclContext,
+    dedup_store: DedupStore,
+    raw_bytes: bytes | None = None,
+    mineru_mode: str = "ok",
+) -> DocumentPipelineResult:
+    """Ingest → OCR → добавить chunks в ChunkIndex."""
+    result = process_document(
+        request,
+        folder_acl=folder_acl,
+        dedup_store=dedup_store,
+        raw_bytes=raw_bytes,
+        mineru_mode=mineru_mode,
+    )
+    if result.chunks:
+        index.add(result.chunks)
+    return result

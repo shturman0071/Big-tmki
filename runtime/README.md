@@ -5,14 +5,14 @@
 | Модуль | Назначение |
 |--------|------------|
 | `tmki_policy` | `policy_context` из org-снимка |
-| `tmki_rag` | `rag_search()` — RLS + folder ACL + keyword-score (MVP без pgvector) |
+| `tmki_rag` | `rag_search()` + `ChunkIndex` (in-memory до pgvector) |
 | `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
 | `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
-| `tmki_ingest` | `validate_ingest` / `accept_ingest` / `process_document` |
+| `tmki_ingest` | `validate_ingest` / `accept_ingest` / `process_document` / `ingest_and_index` |
 | `tmki_ocr` | OCR stub MinerU → Mistral fallback (`run_ocr`) |
 | `tmki_admin` | UI + API галочек grant/deny (`python -m tmki_admin`) |
-| `tmki_sharepoint` | stub + Graph adapter (`TMKI_SHAREPOINT_ADAPTER`, `AZURE_*`) |
-| `tmki_llm` | LLM providers: `stub` (default) / `openai` (`OPENAI_API_KEY`) |
+| `tmki_sharepoint` | stub + Graph adapter (`TMKI_SHAREPOINT_ADAPTER`, `AZURE_*`, `TMKI_GRAPH_DRY_RUN`) |
+| `tmki_llm` | LLM: `stub` / `openai` / `ollama` (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`) |
 | `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 
 ## Запуск тестов
@@ -53,6 +53,14 @@ folders = load_folder_catalog(Path("../schemas/document/examples/satimol-folders
 grants = load_folder_grants(Path("../schemas/org/examples/satimol-folder-grants.example.json"))
 acl = FolderAclContext.from_catalog(folders, grants)
 resp = rag_search({...}, chunks, folder_acl=acl)
+
+# Ingest → index → search:
+from tmki_ingest import DedupStore, ingest_and_index
+from tmki_rag import ChunkIndex
+
+index = ChunkIndex()
+ingest_and_index(request, index, folder_acl=acl, dedup_store=DedupStore(), raw_bytes=b"...")
+resp = rag_search({...}, index.list(), folder_acl=acl)
 ```
 
 Контракты: `search-request` / `search-response` / `chunk-index` в `schemas/document/`.

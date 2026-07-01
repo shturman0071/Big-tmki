@@ -213,15 +213,12 @@ pgvector + RLS-поля до выдачи в RAG.
 21. ~~#9 Актуализировать вакансии оргсхемы~~ ✅ (v0.1)
 22. ~~#21 Folder grants~~ ✅
 23. ~~#22–#24 ingest dedup, LLM, CI pytest~~ ✅
-24. **Следующий фокус:** production Graph permissions API; локальный LLM (watchlist); импорт регламентов (#6)
-
-### #25 [phase-4] [runtime] OCR stub pipeline (MinerU → Mistral)
-
-**Статус:** done (v0.1 — `tmki_ocr/ocr.py`, `process_document` в `tmki_ingest`)
-
-### #26 [phase-2] [runtime] SharePoint Graph adapter (каркас)
-
-**Статус:** done (v0.1 — `tmki_sharepoint/graph.py`, env `AZURE_*`); production driveItem permissions — backlog
+24. ~~#25 OCR stub pipeline~~ ✅
+25. ~~#26 SharePoint Graph adapter (каркас)~~ ✅
+26. ~~#27 Ollama LLM provider~~ ✅
+27. ~~#28 Graph permissions dry_run operations~~ ✅
+28. ~~#29 ChunkIndex + ingest_and_index~~ ✅
+29. **Следующий фокус:** production Graph permissions API; реальный MinerU/Mistral OCR; pgvector; импорт регламентов (#6)
 
 ---
 
@@ -240,6 +237,26 @@ pgvector + RLS-поля до выдачи в RAG.
 **Статус:** done — job `runtime-tests` в `.github/workflows/handbook-ci.yml`
 
 ---
+
+### #25 [phase-4] [runtime] OCR stub pipeline (MinerU → Mistral)
+
+**Статус:** done (v0.1 — `tmki_ocr/ocr.py`, `process_document` в `tmki_ingest`)
+
+### #26 [phase-2] [runtime] SharePoint Graph adapter (каркас)
+
+**Статус:** done (v0.1 — `tmki_sharepoint/graph.py`, env `AZURE_*`); production driveItem permissions — backlog
+
+### #27 [phase-5] [runtime] Ollama LLM provider
+
+**Статус:** done (v0.2 — `OllamaLlmProvider`, env `TMKI_LLM_PROVIDER=ollama`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL`)
+
+### #28 [phase-2] [runtime] Graph permissions operations (dry_run)
+
+**Статус:** done (v0.2 — `_build_operation` invite/revoke, `TMKI_GRAPH_DRY_RUN=1` по умолчанию)
+
+### #29 [phase-4] [runtime] ChunkIndex + ingest → RAG
+
+**Статус:** done (v0.2 — `tmki_rag/index.py`, `ingest_and_index()` в pipeline)
 
 ## Phase 2.5 — Делегирование папок (backlog)
 

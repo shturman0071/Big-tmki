@@ -85,12 +85,14 @@ resp = rag_search({"trace_id": "t1", "query": "промбезопасность"
 $env:PYTHONPATH = "."
 pip install -e ".[ocr]"   # pypdf для PDF
 python scripts/reindex_regulations_local.py --checkpoint-every 200
+.\scripts\resume_reindex.ps1
 # → artifacts/regulations-import/chunks-v2.json
 python scripts/benchmark_regulations_search.py
 python scripts/run_mvp_regulations.py "промбезопасность кран" --hybrid
 python scripts/compare_chunks_quality.py
 python scripts/reindex_status.py
 python scripts/run_legal_corpus_curator.py --dry-run
+python scripts/run_legal_corpus_curator.py --apply-ingest
 python scripts/run_desktop_sync.py --once --display-name "Литовский Д." --ingest
 python scripts/load_regulations_pgvector.py --variant v2
 ```
@@ -101,6 +103,7 @@ python scripts/load_regulations_pgvector.py --variant v2
 .\scripts\tmki_stack_up.ps1
 # env: docker/env.production.example
 python scripts/check_runtime_health.py
+.\scripts\setup_pgvector_v2.ps1
 python scripts/load_regulations_pgvector.py
 ```
 

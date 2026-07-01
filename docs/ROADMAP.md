@@ -233,7 +233,7 @@ pgvector + RLS-поля до выдачи в RAG.
 41. ~~#41 Re-index progress + PDF hardening~~ ✅ (max_pages, heartbeat progress, reindex_status, check_ocr_http)
 42. **Следующий фокус:** завершить re-index → chunks-v2; load pgvector; HTTP MinerU/Mistral
 43. ~~#45 Desktop sync~~ ✅ | ~~#46 Legal Corpus Curator~~ ✅ | ~~#47 Document policy~~ ✅
-44. ~~#43–#44, #48–#49~~ ✅ MVP | ~~#50 display cast~~ ✅ MVP | **Следующий:** re-index; pgvector v2; TV cast
+44. ~~#43–#50~~ ✅ MVP | **#51:** `setup_pgvector_v2.ps1`, partial load v2, weekly legal curator
 
 ---
 
@@ -279,6 +279,14 @@ pgvector + RLS-поля до выдачи в RAG.
 ### #50 [phase-6] [runtime] TTS Piper + вывод на устройства
 
 **Статус:** MVP (v0.3) — `tmki_voice/tts.py`, `display.py` (stub/browser); TV cast — backlog
+
+### #51 [phase-4] [runtime] pgvector v2 partial load + ops scripts
+
+**Статус:** MVP (v0.3) — `setup_pgvector_v2.ps1`, `weekly_legal_corpus.ps1`, `resume_reindex.ps1`, re-index stats в health check
+
+### #52 [phase-4] [runtime] Legal curator → ingest pipeline
+
+**Статус:** MVP (v0.3) — `tmki_legal/ingest_hook.py`, `--apply-ingest` в `run_legal_corpus_curator.py`
 
 ---
 

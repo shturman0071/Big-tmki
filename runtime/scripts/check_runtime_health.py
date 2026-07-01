@@ -58,11 +58,24 @@ def main() -> int:
     try:
         chunks_path = resolve_regulations_chunks_path("auto")
         if chunks_path.is_file():
-            print(f"  [ok] chunks: {chunks_path}")
+            import json
+
+            data = json.loads(chunks_path.read_text(encoding="utf-8"))
+            n = len(data.get("chunks", []))
+            print(f"  [ok] chunks: {chunks_path} ({n} records)")
         else:
             print("  [info] chunks file not found (run import/reindex)")
     except FileNotFoundError:
         print("  [info] chunks file not found")
+
+    state = Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import" / "reindex-state.json"
+    if state.is_file():
+        import json
+
+        st = json.loads(state.read_text(encoding="utf-8"))
+        stats = st.get("stats", {})
+        proc = len(st.get("processed", []))
+        print(f"  [info] re-index: {proc}/10089 processed, imported={stats.get('imported', 0)}")
 
     return 0 if ok else 1
 

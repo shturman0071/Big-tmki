@@ -53,7 +53,8 @@ def main() -> int:
         s = payload["stats"]
         print(
             f"  [{payload['file_index']}/{payload['total_candidates']}] "
-            f"imported={s['imported']} ocr_failed={s['ocr_failed']} err={s['errors']}",
+            f"imported={s['imported']} skip_temp={s.get('skip_temp', 0)} "
+            f"ocr_failed={s['ocr_failed']} err={s['errors']}",
             flush=True,
         )
 

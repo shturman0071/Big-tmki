@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: tmki-pgvector
+    environment:
+      POSTGRES_USER: tmki
+      POSTGRES_PASSWORD: tmki_dev
+      POSTGRES_DB: tmki
+    ports:
+      - "5432:5432"
+    volumes:
+      - tmki_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tmki -d tmki"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: tmki-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - tmki_ollama:/root/.ollama
+    profiles:
+      - llm
+
+volumes:
+  tmki_pgdata:
+  tmki_ollama:

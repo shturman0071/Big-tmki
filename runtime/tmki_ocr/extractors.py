@@ -40,10 +40,16 @@ def extract_docx(raw_bytes: bytes) -> str:
 
 def extract_pdf(raw_bytes: bytes) -> tuple[str, int] | None:
     try:
+        import logging
+
+        logging.getLogger("pypdf").setLevel(logging.ERROR)
         from pypdf import PdfReader
     except ImportError:
         return None
-    reader = PdfReader(io.BytesIO(raw_bytes))
+    try:
+        reader = PdfReader(io.BytesIO(raw_bytes), strict=False)
+    except Exception:
+        return None
     pages: list[str] = []
     for page in reader.pages:
         pages.append(page.extract_text() or "")

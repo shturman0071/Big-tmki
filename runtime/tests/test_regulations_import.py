@@ -71,6 +71,27 @@ def test_import_regulations_batch(tmp_path: Path):
     assert len(index.list()) == 2
 
 
+def test_import_regulations_skip_temp_office_files(tmp_path: Path):
+    (tmp_path / "~$draft.docx").write_bytes(b"PK fake temp")
+    (tmp_path / "ok.txt").write_text("нормальный документ", encoding="utf-8")
+    out = tmp_path / "out"
+    index = ChunkIndex()
+    result = import_regulations_batch(
+        tmp_path,
+        policy_context=_policy_context(),
+        classification="restricted",
+        folder_id="folder_ms_open",
+        folder_acl=_folder_acl(),
+        dedup_store=DedupStore(),
+        index=index,
+        extensions={".txt", ".docx"},
+        state_path=out / "state.json",
+        chunks_path=out / "chunks.json",
+    )
+    assert result["imported_count"] == 1
+    assert result["skip_temp_count"] == 1
+
+
 def test_import_regulations_resume(tmp_path: Path):
     (tmp_path / "a.txt").write_text("документ a", encoding="utf-8")
     (tmp_path / "b.txt").write_text("документ b", encoding="utf-8")

@@ -88,6 +88,16 @@ python scripts/reindex_regulations_local.py --checkpoint-every 200
 # → artifacts/regulations-import/chunks-v2.json
 python scripts/benchmark_regulations_search.py
 python scripts/run_mvp_regulations.py "промбезопасность кран" --hybrid
+python scripts/compare_chunks_quality.py
+```
+
+### Production-like stack (Docker)
+
+```powershell
+.\scripts\tmki_stack_up.ps1
+# env: docker/env.production.example
+python scripts/check_runtime_health.py
+python scripts/load_regulations_pgvector.py
 ```
 
 ## Использование

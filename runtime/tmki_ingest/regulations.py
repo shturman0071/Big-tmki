@@ -175,8 +175,13 @@ def _empty_import_stats() -> dict[str, int]:
         "rejected": 0,
         "ocr_failed": 0,
         "too_large": 0,
+        "skip_temp": 0,
         "errors": 0,
     }
+
+
+def _is_temp_office_file(path: Path) -> bool:
+    return path.name.startswith("~$")
 
 
 def _save_import_state(state_path: Path, state: dict[str, Any]) -> None:
@@ -282,6 +287,11 @@ def import_regulations_full(
         if rel in processed:
             continue
 
+        if _is_temp_office_file(path):
+            stats["skip_temp"] += 1
+            processed.add(rel)
+            continue
+
         size = path.stat().st_size
         if size > max_file_bytes:
             stats["too_large"] += 1
@@ -356,6 +366,7 @@ def import_regulations_full(
         "rejected_count": stats["rejected"],
         "ocr_failed_count": stats["ocr_failed"],
         "too_large_count": stats["too_large"],
+        "skip_temp_count": stats["skip_temp"],
         "error_count": stats["errors"],
         "chunks_in_index": len(index.list()),
         "state_path": str(state_file),

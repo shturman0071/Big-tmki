@@ -30,6 +30,16 @@ def main() -> int:
         print(f"Архив не найден: {args.archive}", file=sys.stderr)
         return 1
 
+    state_path = args.output / "reindex-state.json"
+    if state_path.is_file() and not args.no_resume:
+        import json
+
+        prev = json.loads(state_path.read_text(encoding="utf-8"))
+        n = len(prev.get("processed", []))
+        print(f"Resume: {n} файлов уже обработано, stats={prev.get('stats')}", flush=True)
+
+    print("Сканирование архива и re-index (TMKI_OCR_MODE=local)...", flush=True)
+
     from tmki_ingest import reindex_regulations_full
     from tmki_policy import build_policy_context, load_org_snapshot
     from tmki_rag import FolderAclContext, load_folder_catalog, load_folder_grants

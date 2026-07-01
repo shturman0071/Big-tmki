@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 import re
 import zipfile
 import xml.etree.ElementTree as ET
@@ -38,7 +39,16 @@ def extract_docx(raw_bytes: bytes) -> str:
     return re.sub(r"\s+", " ", "".join(parts)).strip()
 
 
-def extract_pdf(raw_bytes: bytes) -> tuple[str, int] | None:
+def _pdf_max_pages() -> int:
+    raw = os.environ.get("TMKI_PDF_MAX_PAGES", "300")
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 300
+
+
+def extract_pdf(raw_bytes: bytes, *, max_pages: int | None = None) -> tuple[str, int] | None:
+    limit = max_pages if max_pages is not None else _pdf_max_pages()
     try:
         import logging
 
@@ -51,10 +61,16 @@ def extract_pdf(raw_bytes: bytes) -> tuple[str, int] | None:
     except Exception:
         return None
     pages: list[str] = []
-    for page in reader.pages:
-        pages.append(page.extract_text() or "")
+    total = len(reader.pages)
+    for i, page in enumerate(reader.pages):
+        if i >= limit:
+            break
+        try:
+            pages.append(page.extract_text() or "")
+        except Exception:
+            pages.append("")
     text = "\n".join(pages).strip()
-    return text, len(reader.pages)
+    return text, min(total, limit)
 
 
 def extract_local_text(raw_bytes: bytes, *, suffix: str) -> dict[str, Any]:

@@ -89,6 +89,7 @@ python scripts/reindex_regulations_local.py --checkpoint-every 200
 python scripts/benchmark_regulations_search.py
 python scripts/run_mvp_regulations.py "промбезопасность кран" --hybrid
 python scripts/compare_chunks_quality.py
+python scripts/reindex_status.py
 ```
 
 ### Production-like stack (Docker)

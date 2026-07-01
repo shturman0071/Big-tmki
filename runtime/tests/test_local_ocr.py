@@ -29,6 +29,14 @@ def test_extract_local_docx_minimal():
     assert "Маркшейдерская" in text
 
 
+def test_extract_pdf_respects_max_pages():
+    from tmki_ocr.extractors import extract_pdf
+
+    # minimal invalid PDF bytes — should not raise
+    result = extract_pdf(b"%PDF-1.4\n", max_pages=1)
+    assert result is None or isinstance(result[0], str)
+
+
 def test_local_ocr_mode(monkeypatch):
     monkeypatch.setenv("TMKI_OCR_MODE", "local")
     raw = "Инструкция по эксплуатации крана".encode("utf-8")

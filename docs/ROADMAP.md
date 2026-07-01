@@ -230,7 +230,8 @@ pgvector + RLS-поля до выдачи в RAG.
 38. ~~#38 Local text extraction + re-index~~ ✅
 39. ~~#39 Regulations MVP + search benchmark + chunks-v2 auto~~ ✅
 40. ~~#40 Production stack + re-index hardening~~ ✅ (docker-compose.full, health check, pypdf noise fix, skip ~$ temp)
-41. **Следующий фокус:** завершить полный re-index → chunks-v2; benchmark v1 vs v2; load pgvector; HTTP MinerU/Mistral
+41. ~~#41 Re-index progress + PDF hardening~~ ✅ (max_pages, heartbeat progress, reindex_status, check_ocr_http)
+42. **Следующий фокус:** завершить полный re-index → chunks-v2; load pgvector; HTTP MinerU/Mistral
 
 ---
 
@@ -317,6 +318,10 @@ pgvector + RLS-поля до выдачи в RAG.
 ### #40 [phase-6] [runtime] Production stack + re-index hardening
 
 **Статус:** done (v0.2 — `docker-compose.full.yml`, `env.production.example`, `check_runtime_health.py`, `compare_chunks_quality.py`, skip `~$` temp files, pypdf warning suppression)
+
+### #41 [phase-6] [runtime] Re-index progress + PDF hardening
+
+**Статус:** done (v0.2 — `TMKI_PDF_MAX_PAGES`, heartbeat progress, `reindex_status.py`, `check_ocr_http.py`)
 
 ## Phase 2.5 — Делегирование папок (backlog)
 

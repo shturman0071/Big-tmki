@@ -338,6 +338,9 @@ def import_regulations_full(
 
         processed.add(rel)
 
+        if on_progress and (i % 25 == 0 or checkpoint_every > 0 and i % checkpoint_every == 0):
+            on_progress({"file_index": i, "total_candidates": len(candidates), "stats": dict(stats)})
+
         if checkpoint_every > 0 and i % checkpoint_every == 0:
             state["processed"] = sorted(processed)
             state["stats"] = stats
@@ -345,8 +348,6 @@ def import_regulations_full(
             state["archive_root"] = str(root)
             _save_import_state(state_file, state)
             _save_chunks_snapshot(chunks_file, index)
-            if on_progress:
-                on_progress({"file_index": i, "total_candidates": len(candidates), "stats": dict(stats)})
 
     state["processed"] = sorted(processed)
     state["stats"] = stats

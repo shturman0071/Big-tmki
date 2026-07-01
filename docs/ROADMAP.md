@@ -227,7 +227,9 @@ pgvector + RLS-поля до выдачи в RAG.
 35. ~~#36 Postgres+pgvector deploy (docker-compose)~~ ✅
 36. ~~#6 Полный stub-импорт архива (8056 chunks)~~ ✅
 37. ~~#37 Regulations RAG + load в pgvector + IVFFlat~~ ✅
-38. **Следующий фокус:** полный re-index архива (local+pypdf); HTTP MinerU/Mistral; production deploy
+38. ~~#38 Local text extraction + re-index~~ ✅
+39. ~~#39 Regulations MVP + search benchmark + chunks-v2 auto~~ ✅
+40. **Следующий фокус:** полный re-index в фоне (chunks-v2); HTTP MinerU/Mistral; production deploy
 
 ---
 
@@ -306,6 +308,10 @@ pgvector + RLS-поля до выдачи в RAG.
 ### #38 [phase-4] [runtime] Local text extraction + re-index
 
 **Статус:** done (v0.2 — `TMKI_OCR_MODE=local`, txt/docx/pdf+pypdf, `reindex_regulations_local.py` → `chunks-v2.json`)
+
+### #39 [phase-6] [runtime] Regulations MVP + search benchmark
+
+**Статус:** done (v0.2 — `run_mvp_regulations.py`, `benchmark_regulations_search.py`, `resolve_regulations_chunks_path`)
 
 ## Phase 2.5 — Делегирование папок (backlog)
 

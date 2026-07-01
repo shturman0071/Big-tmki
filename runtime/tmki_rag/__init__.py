@@ -1,6 +1,12 @@
 """RAG с server-side RLS (до ранжирования)."""
 
-from tmki_rag.chunks_io import DEFAULT_REGULATIONS_CHUNKS, load_chunks_file, load_regulations_chunks
+from tmki_rag.chunks_io import (
+    DEFAULT_REGULATIONS_CHUNKS,
+    DEFAULT_REGULATIONS_CHUNKS_V2,
+    load_chunks_file,
+    load_regulations_chunks,
+    resolve_regulations_chunks_path,
+)
 from tmki_rag.folders import FolderAclContext, load_folder_catalog, load_folder_grants, resolve_folder_id
 from tmki_rag.embedding_providers import (
     EmbeddingProvider,
@@ -16,6 +22,7 @@ from tmki_rag.vector import VectorChunkIndex, get_chunk_index, hybrid_score_fn
 __all__ = [
     "ChunkIndex",
     "DEFAULT_REGULATIONS_CHUNKS",
+    "DEFAULT_REGULATIONS_CHUNKS_V2",
     "EmbeddingProvider",
     "FolderAclContext",
     "LocalHashEmbeddingProvider",
@@ -27,6 +34,7 @@ __all__ = [
     "hybrid_score_fn",
     "load_chunks_file",
     "load_regulations_chunks",
+    "resolve_regulations_chunks_path",
     "load_folder_catalog",
     "load_folder_grants",
     "resolve_folder_id",

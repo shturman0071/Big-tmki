@@ -8,19 +8,24 @@ import sys
 import time
 from pathlib import Path
 
-DEFAULT_CHUNKS = Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import" / "chunks.json"
+DEFAULT_CHUNKS = None  # resolved in main()
 
 
 def main() -> int:
+    global DEFAULT_CHUNKS
+    from tmki_rag.chunks_io import resolve_regulations_chunks_path
+
+    DEFAULT_CHUNKS = resolve_regulations_chunks_path("auto")
     parser = argparse.ArgumentParser(description="Load regulations chunks into pgvector")
-    parser.add_argument("--chunks", type=Path, default=DEFAULT_CHUNKS)
+    parser.add_argument("--chunks", type=Path, default=None)
     parser.add_argument("--batch-size", type=int, default=200)
     parser.add_argument("--ivfflat-lists", type=int, default=None)
     parser.add_argument("--skip-ivfflat", action="store_true")
     args = parser.parse_args()
+    chunks_path = args.chunks or DEFAULT_CHUNKS
 
-    if not args.chunks.is_file():
-        print(f"chunks не найден: {args.chunks}", file=sys.stderr)
+    if not chunks_path.is_file():
+        print(f"chunks не найден: {chunks_path}", file=sys.stderr)
         return 1
 
     import os
@@ -32,8 +37,8 @@ def main() -> int:
     from tmki_rag.chunks_io import load_chunks_file
     from tmki_rag.pgvector import PgVectorChunkIndex
 
-    chunks = load_chunks_file(args.chunks)
-    print(f"Загрузка {len(chunks)} chunks из {args.chunks}")
+    chunks = load_chunks_file(chunks_path)
+    print(f"Загрузка {len(chunks)} chunks из {chunks_path}")
 
     index = PgVectorChunkIndex.from_env()
     if not isinstance(index, PgVectorChunkIndex):

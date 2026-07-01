@@ -3,7 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from tmki_rag.chunks_io import load_chunks_file, load_regulations_chunks
+from tmki_rag.chunks_io import (
+    DEFAULT_REGULATIONS_CHUNKS,
+    DEFAULT_REGULATIONS_CHUNKS_V2,
+    load_chunks_file,
+    load_regulations_chunks,
+    resolve_regulations_chunks_path,
+)
 from tmki_rag.pgvector import PgVectorChunkIndex
 
 
@@ -21,6 +27,26 @@ def test_load_chunks_file(tmp_path: Path):
 def test_load_regulations_chunks_missing():
     with pytest.raises(FileNotFoundError):
         load_regulations_chunks(Path("/nonexistent/chunks.json"))
+
+
+def test_resolve_prefers_v2(tmp_path: Path, monkeypatch):
+    v1 = tmp_path / "chunks.json"
+    v2 = tmp_path / "chunks-v2.json"
+    v1.write_text('{"chunks":[]}', encoding="utf-8")
+    v2.write_text('{"chunks":[]}', encoding="utf-8")
+    monkeypatch.setattr("tmki_rag.chunks_io.DEFAULT_REGULATIONS_CHUNKS", v1)
+    monkeypatch.setattr("tmki_rag.chunks_io.DEFAULT_REGULATIONS_CHUNKS_V2", v2)
+    assert resolve_regulations_chunks_path("auto") == v2
+    assert resolve_regulations_chunks_path("v1") == v1
+
+
+def test_resolve_v1_only(tmp_path: Path, monkeypatch):
+    v1 = tmp_path / "chunks.json"
+    v2 = tmp_path / "chunks-v2.json"
+    v1.write_text('{"chunks":[]}', encoding="utf-8")
+    monkeypatch.setattr("tmki_rag.chunks_io.DEFAULT_REGULATIONS_CHUNKS", v1)
+    monkeypatch.setattr("tmki_rag.chunks_io.DEFAULT_REGULATIONS_CHUNKS_V2", v2)
+    assert resolve_regulations_chunks_path("auto") == v1
 
 
 def test_create_ivfflat_index_mock():

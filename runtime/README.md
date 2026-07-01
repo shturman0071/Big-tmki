@@ -106,6 +106,9 @@ python scripts/compare_chunks_quality.py --save artifacts/regulations-import/qua
 .\scripts\run_full_stack_demo.ps1 -Experience -Milestone
 .\scripts\run_tmki_demo.ps1 -Backend pgvector
 .\scripts\finalize_regulations_index.ps1
+.\scripts\wait_and_finalize.ps1
+python scripts/preflight_finalize.py
+python scripts/wait_reindex_complete.py --once
 python scripts/reindex_status.py
 python scripts/reindex_report.py
 python scripts/reindex_errors.py

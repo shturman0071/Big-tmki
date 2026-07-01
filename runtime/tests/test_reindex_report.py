@@ -38,13 +38,16 @@ def test_reindex_report_script(tmp_path):
         cwd=RUNTIME,
         capture_output=True,
         text=True,
-        env={**dict(__import__("os").environ), "PYTHONPATH": "."},
+        encoding="utf-8",
+        errors="replace",
+        env={**dict(__import__("os").environ), "PYTHONPATH": ".", "PYTHONIOENCODING": "utf-8"},
     )
     assert proc.returncode == 0
     data = json.loads(proc.stdout)
     assert data["processed"] == 30
     assert data["live_progress"] == 30
     assert data["percent"] == 30.0
+    assert data["complete"] is False
     assert data["eta_hours"] is not None
 
 
@@ -80,7 +83,9 @@ def test_reindex_report_shows_heartbeat(tmp_path):
         cwd=RUNTIME,
         capture_output=True,
         text=True,
-        env={**dict(__import__("os").environ), "PYTHONPATH": "."},
+        encoding="utf-8",
+        errors="replace",
+        env={**dict(__import__("os").environ), "PYTHONPATH": ".", "PYTHONIOENCODING": "utf-8"},
     )
     assert proc.returncode == 0
     assert "current:" in proc.stdout

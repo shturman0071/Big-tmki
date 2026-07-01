@@ -344,6 +344,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `reindex_milestones`, milestone hints в report/health, `-Milestone`/`-Experience` в demo, OCR backoff
 
+### #67 [phase-4] [runtime] Wait-and-finalize после 100% re-index
+
+**Статус:** MVP (v0.3) — `wait_reindex_complete.py`, `preflight_finalize.py`, `wait_and_finalize.ps1`, `complete` в report JSON
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

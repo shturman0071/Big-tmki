@@ -356,6 +356,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `post_finalize_report.py`, hybrid quality benchmark, расширенный `finalize_regulations_index.ps1`
 
+### #70 [phase-4] [runtime] Hands-off watch → finalize
+
+**Статус:** MVP (v0.3) — `reindex_ops_status.py`, `watch_to_finalize.ps1`, `wait_and_finalize -PollSeconds 0`
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

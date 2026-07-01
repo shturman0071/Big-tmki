@@ -11,8 +11,13 @@ $env:TMKI_MVP_MESSAGE = $Query
 Set-Location $runtime
 
 Write-Host "=== Wait for re-index 100% ===" -ForegroundColor Cyan
-python scripts/wait_reindex_complete.py --poll-seconds $PollSeconds
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if ($PollSeconds -gt 0) {
+    python scripts/wait_reindex_complete.py --poll-seconds $PollSeconds
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+} else {
+    python scripts/wait_reindex_complete.py --once
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
 
 Write-Host "=== Preflight ===" -ForegroundColor Cyan
 python scripts/preflight_finalize.py

@@ -61,8 +61,8 @@ function Invoke-FinalizeIfNeeded {
     if (Test-Path $finalizeMarker) { return }
     if (-not (Test-ReindexComplete)) { return }
     Write-Host "[$(Get-Date -Format HH:mm:ss)] re-index complete — finalize..."
-    & $PSScriptRoot\finalize_regulations_index.ps1
-    if ($LASTEXITCODE -eq 0) {
+    & $PSScriptRoot\wait_and_finalize.ps1 -PollSeconds 0
+    if ($LASTEXITCODE -eq 0 -and -not (Test-Path $finalizeMarker)) {
         @{ done_at = (Get-Date).ToUniversalTime().ToString("o") } | ConvertTo-Json | Set-Content $finalizeMarker -Encoding utf8
     }
 }

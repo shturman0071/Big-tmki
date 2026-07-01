@@ -113,6 +113,9 @@ python scripts/compare_chunks_quality.py --save artifacts/regulations-import/qua
 python scripts/post_finalize_report.py
 python scripts/compare_chunks_quality.py --hybrid --save artifacts/regulations-import/quality-benchmark-final.json
 .\scripts\wait_and_finalize.ps1
+.\scripts\watch_to_finalize.ps1
+python scripts/reindex_ops_status.py
+python scripts/reindex_ops_status.py --json
 python scripts/preflight_finalize.py
 python scripts/wait_reindex_complete.py --once
 python scripts/reindex_status.py

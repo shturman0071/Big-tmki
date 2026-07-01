@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/runtime/event.schema.json",
+  "title": "TMKI Runtime Audit Event",
+  "description": "Audit log record for runtime decisions and side-effects (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "trace_id",
+    "run_id",
+    "event_type",
+    "severity",
+    "actor",
+    "occurred_at",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "event_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "trace_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "step_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "run_started",
+        "run_completed",
+        "run_failed",
+        "run_cancelled",
+        "step_started",
+        "step_completed",
+        "step_failed",
+        "tool_call_requested",
+        "tool_call_completed",
+        "tool_call_denied",
+        "document_accessed",
+        "document_ingested",
+        "guardrail_block",
+        "guardrail_redact",
+        "guardrail_warn",
+        "judge_pass",
+        "judge_fail",
+        "policy_denied",
+        "budget_exceeded",
+        "circuit_breaker_tripped"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["debug", "info", "warning", "error", "critical"]
+    },
+    "actor": { "$ref": "common.schema.json#/$defs/actor" },
+    "occurred_at": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "payload": {
+      "type": "object",
+      "description": "Sanitized event data. MUST NOT contain secrets or raw PII.",
+      "additionalProperties": true
+    },
+    "policy_version": {
+      "type": "string"
+    }
+  }
+}

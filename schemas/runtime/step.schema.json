@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/runtime/step.schema.json",
+  "title": "TMKI Runtime Step",
+  "description": "Atomic stage within a Run (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "step_id",
+    "run_id",
+    "trace_id",
+    "type",
+    "status",
+    "started_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "step_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "trace_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "context_build",
+        "memory_read",
+        "memory_write",
+        "rag",
+        "tool_call",
+        "llm_generate",
+        "judge",
+        "guardrails",
+        "loop_plan"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["running", "completed", "failed", "skipped"]
+    },
+    "started_at": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "ended_at": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "error": { "$ref": "common.schema.json#/$defs/runtimeError" },
+    "token_usage": { "$ref": "common.schema.json#/$defs/tokenUsage" },
+    "model": {
+      "type": "string",
+      "description": "LLM model id if applicable"
+    },
+    "policy_version": {
+      "type": "string"
+    },
+    "tool_name": {
+      "type": "string",
+      "description": "Required when type=tool_call"
+    },
+    "input_summary": {
+      "type": "string",
+      "description": "Sanitized summary for audit (no secrets)"
+    },
+    "output_summary": {
+      "type": "string",
+      "description": "Sanitized summary for audit"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "type": { "const": "tool_call" } },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["tool_name"]
+      }
+    }
+  ]
+}

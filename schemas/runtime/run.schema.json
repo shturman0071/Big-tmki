@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/runtime/run.schema.json",
+  "title": "TMKI Runtime Run",
+  "description": "One pipeline execution for a user request or background job (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "trace_id",
+    "status",
+    "created_at",
+    "input"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "trace_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "running", "completed", "failed", "cancelled"]
+    },
+    "created_at": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "updated_at": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["message", "policy_context"],
+      "properties": {
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "description": "User or system prompt"
+        },
+        "session_id": { "type": "string" },
+        "policy_context": { "$ref": "common.schema.json#/$defs/policyContext" },
+        "feature_flags": {
+          "type": "object",
+          "additionalProperties": { "type": "boolean" }
+        },
+        "budget": { "$ref": "common.schema.json#/$defs/budget" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "response": {
+          "type": "string",
+          "description": "Final natural-language answer"
+        },
+        "structured_result": {
+          "type": "object",
+          "description": "Optional structured output (action plan, JSON)",
+          "additionalProperties": true
+        },
+        "citations": {
+          "type": "array",
+          "items": { "$ref": "common.schema.json#/$defs/citation" }
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low", "unknown"]
+        },
+        "read_only_mode": {
+          "type": "boolean",
+          "description": "True when tools unavailable (degradation)"
+        }
+      }
+    },
+    "error": { "$ref": "common.schema.json#/$defs/runtimeError" },
+    "policy_version": {
+      "type": "string",
+      "description": "Guardrails policy version applied to this run"
+    },
+    "step_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "token_usage": { "$ref": "common.schema.json#/$defs/tokenUsage" }
+  }
+}

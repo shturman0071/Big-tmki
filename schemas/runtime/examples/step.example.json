@@ -1,0 +1,20 @@
+{
+  "schema_version": "0.1",
+  "step_id": "550e8400-e29b-41d4-a716-446655440002",
+  "run_id": "550e8400-e29b-41d4-a716-446655440001",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "tool_call",
+  "status": "completed",
+  "started_at": "2026-07-01T10:00:05Z",
+  "ended_at": "2026-07-01T10:00:07Z",
+  "tool_name": "rag_search",
+  "model": "gpt-4.1",
+  "policy_version": "guardrails-2026-06-01",
+  "input_summary": "query=маркшейдерская съёмка КС; filters=project_id:satimol",
+  "output_summary": "3 chunks retrieved",
+  "token_usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0
+  }
+}

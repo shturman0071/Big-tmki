@@ -1,0 +1,21 @@
+{
+  "schema_version": "0.1",
+  "event_id": "550e8400-e29b-41d4-a716-446655440003",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "run_id": "550e8400-e29b-41d4-a716-446655440001",
+  "step_id": "550e8400-e29b-41d4-a716-446655440002",
+  "event_type": "tool_call_completed",
+  "severity": "info",
+  "actor": {
+    "type": "service",
+    "service_name": "tmki-runtime"
+  },
+  "occurred_at": "2026-07-01T10:00:07Z",
+  "policy_version": "guardrails-2026-06-01",
+  "payload": {
+    "tool_name": "rag_search",
+    "duration_ms": 1842,
+    "result_count": 3,
+    "project_id": "satimol"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": "0.1",
+  "run_id": "550e8400-e29b-41d4-a716-446655440001",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "created_at": "2026-07-01T10:00:00Z",
+  "updated_at": "2026-07-01T10:00:12Z",
+  "input": {
+    "message": "Какие требования к маркшейдерской съёмке на участке КС?",
+    "session_id": "sess_abc123",
+    "policy_context": {
+      "company_id": "tmki",
+      "project_id": "satimol",
+      "department_id": "markscheider",
+      "project_role": "Chefmarkscheider",
+      "employee_id": "emp_litovsky",
+      "clearance": "internal",
+      "env": "production"
+    },
+    "budget": {
+      "max_steps": 10,
+      "max_tokens": 32000,
+      "max_cost_usd": 2.5,
+      "timeout_ms": 120000
+    }
+  },
+  "output": {
+    "response": "Согласно проектной документации...",
+    "confidence": "high",
+    "read_only_mode": false,
+    "citations": [
+      {
+        "doc_id": "doc_grd_0142",
+        "page": 12,
+        "start_offset": 1024,
+        "end_offset": 1456,
+        "snippet": "..."
+      }
+    ]
+  },
+  "policy_version": "guardrails-2026-06-01",
+  "step_count": 4,
+  "token_usage": {
+    "prompt_tokens": 4200,
+    "completion_tokens": 890,
+    "total_tokens": 5090,
+    "estimated_cost_usd": 0.18
+  }
+}

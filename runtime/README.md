@@ -128,7 +128,9 @@ python scripts/reindex_stats.py
 python scripts/record_reindex_snapshot.py
 python scripts/analyze_reindex_progress_log.py
 .\scripts\watch_to_finalize.ps1 -RecordSnapshot
-.\scripts\post_reindex_checklist.ps1 -RecordSnapshot
+.\scripts\watch_to_finalize.ps1 -RecordSnapshot -QualitySnapshot -Bundle
+python scripts/maybe_snapshot_partial_quality.py
+.\scripts\post_reindex_checklist.ps1 -RecordSnapshot -Handoff -Bundle
 python scripts/preflight_finalize.py
 python scripts/wait_reindex_complete.py --once
 python scripts/reindex_status.py

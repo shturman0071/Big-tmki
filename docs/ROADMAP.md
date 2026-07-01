@@ -384,6 +384,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `print_reindex_handoff.py`, `ops_bundle` module, handoff в wait/finalize
 
+### #77 [phase-4] [runtime] Scheduled partial quality + watch bundle
+
+**Статус:** MVP (v0.3) — `maybe_snapshot_partial_quality.py`, пороги 75–95%, `-QualitySnapshot`/`-Bundle` в watch
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

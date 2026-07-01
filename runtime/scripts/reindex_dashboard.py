@@ -116,6 +116,15 @@ def main() -> int:
     if log_a and log_a.get("points"):
         print(f"  log points: {log_a['points']}  rate: {log_a.get('rate_per_hour')} files/h")
 
+    from tmki_ingest.quality_trend import load_partial_quality_files, summarize_quality_trend
+
+    trend = summarize_quality_trend(load_partial_quality_files(args.state.parent))
+    points = trend.get("points") or []
+    if points:
+        print(f"  partial quality snapshots: {trend.get('count', 0)}")
+        for p in points[-3:]:
+            print(f"    {p.get('percent')}%  v2={p.get('v2_count')}  avg={p.get('avg_score')}")
+
     if not args.json and save_path is not None:
         print(f"\nsaved: {save_path}")
     return 0

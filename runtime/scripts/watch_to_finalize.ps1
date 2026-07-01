@@ -2,7 +2,9 @@
 param(
     [int]$PollSeconds = 120,
     [string]$Query = "промбезопасность кран",
-    [switch]$RecordSnapshot
+    [switch]$RecordSnapshot,
+    [switch]$QualitySnapshot,
+    [switch]$Bundle
 )
 
 $runtime = Resolve-Path $PSScriptRoot\..
@@ -50,6 +52,13 @@ while ($true) {
 
     if ($RecordSnapshot) {
         python scripts/record_reindex_snapshot.py 2>$null
+    }
+    if ($QualitySnapshot) {
+        python scripts/maybe_snapshot_partial_quality.py --quiet 2>$null
+    }
+    if ($Bundle) {
+        python scripts/export_reindex_ops_bundle.py 2>$null
+        python scripts/print_reindex_handoff.py --save (Join-Path $runtime "artifacts\regulations-import\reindex-handoff.txt") 2>$null
     }
 
     Start-Sleep -Seconds $PollSeconds

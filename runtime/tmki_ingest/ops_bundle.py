@@ -39,10 +39,12 @@ def build_ops_bundle(
         "partial_quality_latest": _read("quality-partial-latest.json"),
         "partial_quality_trend": summarize_quality_trend(partial),
         "dashboard_saved": _read("reindex-dashboard-latest.json"),
+        "finalize_summary": _read("finalize-summary-latest.json"),
         "paths": {
             "artifacts_dir": str(artifacts_dir),
             "progress_log": str(artifacts_dir / "reindex-progress-log.jsonl"),
             "finalize_summary": str(artifacts_dir / "finalize-summary-latest.json"),
+            "finalize_handoff": str(artifacts_dir / "finalize-handoff.txt"),
             "ops_bundle": str(artifacts_dir / "reindex-ops-bundle-latest.json"),
         },
     }

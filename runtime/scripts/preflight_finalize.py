@@ -63,6 +63,19 @@ def main() -> int:
     else:
         add("database_url", False, "DATABASE_URL not set (finalize needs Docker/pgvector)", blocking=False)
 
+    from tmki_ingest.quality_trend import load_partial_quality_files, summarize_quality_trend
+
+    trend = summarize_quality_trend(load_partial_quality_files(args.state.parent))
+    add(
+        "partial_quality_snapshots",
+        trend.get("count", 0) > 0,
+        f"{trend.get('count', 0)} snapshots",
+        blocking=False,
+    )
+
+    ops_bundle = args.state.parent / "reindex-ops-bundle-latest.json"
+    add("ops_bundle", ops_bundle.is_file(), str(ops_bundle), blocking=False)
+
     error_audit = None
     if report.get("errors", 0):
         state = json.loads(args.state.read_text(encoding="utf-8"))

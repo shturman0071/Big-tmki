@@ -48,3 +48,36 @@ def format_handoff(bundle: dict[str, Any]) -> str:
         lines.append(f"Bundle: {paths['ops_bundle']}")
 
     return "\n".join(lines)
+
+
+def format_finalize_handoff(report: dict[str, Any]) -> str:
+    lines = ["TMKI finalize handoff", ""]
+    r = report.get("reindex") or {}
+    if r:
+        lines.append(f"Re-index: {r.get('live_progress')}/{r.get('total')}  chunks_v2={r.get('chunks_v2')}")
+    if report.get("errors_total") is not None:
+        lines.append(f"Errors: {report['errors_total']}")
+    if report.get("pgvector_rows") is not None:
+        lines.append(f"Pgvector rows: {report['pgvector_rows']}")
+
+    qb = report.get("quality_benchmark")
+    pq = report.get("partial_quality_latest")
+    if qb:
+        lines.append(f"Quality benchmark: v1={qb.get('v1_count')} v2={qb.get('v2_count')}")
+    if pq and qb:
+        lines.append(f"Partial→final v2: {pq.get('v2_count')} → {qb.get('v2_count')}")
+
+    trend = report.get("partial_quality_trend") or {}
+    points = trend.get("points") or []
+    if points:
+        lines.append("")
+        lines.append("Partial quality trend:")
+        for p in points:
+            lines.append(f"  {p.get('percent', 0):.1f}%  v2={p.get('v2_count')}  avg={p.get('avg_score')}")
+
+    artifacts = report.get("artifacts") or {}
+    if artifacts.get("summary"):
+        lines.append("")
+        lines.append(f"Summary: {artifacts['summary']}")
+
+    return "\n".join(lines)

@@ -388,6 +388,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `maybe_snapshot_partial_quality.py`, пороги 75–95%, `-QualitySnapshot`/`-Bundle` в watch
 
+### #78 [phase-4] [runtime] Finalize handoff + preflight quality
+
+**Статус:** MVP (v0.3) — `--finalize` handoff, `finalize-handoff.txt`, preflight partial quality/ops bundle
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

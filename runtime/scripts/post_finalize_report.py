@@ -42,6 +42,12 @@ def main() -> int:
         pq = report.get("partial_quality_latest")
         if pq and report.get("quality_benchmark"):
             print(f"  partial→final v2: {pq.get('v2_count')} → {report['quality_benchmark'].get('v2_count')}")
+        trend = report.get("partial_quality_trend") or {}
+        points = trend.get("points") or []
+        if points:
+            print(f"  partial quality trend: {trend.get('count', 0)} snapshots")
+            for p in points[-3:]:
+                print(f"    {p.get('percent')}%  v2={p.get('v2_count')}  avg={p.get('avg_score')}")
         print(f"\nsaved: {out_path}")
     return 0
 

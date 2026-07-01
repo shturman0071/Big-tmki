@@ -123,6 +123,7 @@ python scripts/snapshot_partial_quality.py
 python scripts/compare_partial_quality.py
 python scripts/export_reindex_ops_bundle.py
 python scripts/print_reindex_handoff.py
+python scripts/print_reindex_handoff.py --finalize
 .\scripts\wait_and_finalize.ps1
 python scripts/reindex_stats.py
 python scripts/record_reindex_snapshot.py

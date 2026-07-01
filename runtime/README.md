@@ -8,6 +8,7 @@
 | `tmki_rag` | `rag_search()` — RLS + folder ACL + keyword-score (MVP без pgvector) |
 | `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
 | `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
+| `tmki_ingest` | `validate_ingest` / `validate_delete` — gate до OCR pipeline |
 | `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 
 ## Запуск тестов

@@ -223,5 +223,6 @@ pgvector + RLS-поля до выдачи в RAG.
 
 - `schemas/document/folder-catalog.schema.json`, `employee-folder-grant.schema.json`
 - ~~Расширение RLS в `tmki_rag` по `folder_id`~~ ✅
+- ~~`tmki_ingest` — resolve `source_path` + gate upload/delete~~ ✅
 - UI галочек deny/grant для начальника подразделения
 - Синхронизация ACL SharePoint / API delete guard

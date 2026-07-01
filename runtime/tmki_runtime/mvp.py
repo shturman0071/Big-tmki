@@ -1,16 +1,30 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from tmki_loop import LoopEngine
-from tmki_rag import rag_search
+from tmki_rag.folders import FolderAclContext, load_folder_catalog, load_folder_grants
+from tmki_rag.search import rag_search
 from tmki_tools import ToolRegistry, load_gating_rules
 
 ROOT = Path(__file__).resolve().parents[2]
 GATING_RULES = ROOT / "schemas/tools/tool-gating.rules.json"
+FOLDERS_FILE = ROOT / "schemas/document/examples/satimol-folders.example.json"
+GRANTS_FILE = ROOT / "schemas/org/examples/satimol-folder-grants.example.json"
+
+
+def load_satimol_folder_acl(as_of: date | None = None) -> FolderAclContext:
+    from datetime import date as date_cls
+
+    return FolderAclContext.from_catalog(
+        load_folder_catalog(FOLDERS_FILE),
+        load_folder_grants(GRANTS_FILE),
+        as_of=as_of or date_cls(2025, 9, 10),
+    )
 
 
 def _audit(event_type: str, trace_id: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -84,6 +98,7 @@ def run_mvp(
     trace_id: str | None = None,
     run_id: str | None = None,
     folder_acl: Any | None = None,
+    use_satimol_folder_acl: bool = True,
 ) -> dict[str, Any]:
     """
     MVP flow: schemas/runtime/mvp-flow.json (стадии 1–8, без реального LLM).
@@ -91,6 +106,9 @@ def run_mvp(
     trace_id = trace_id or str(uuid4())
     run_id = run_id or str(uuid4())
     env = policy_context.get("env", "production")
+
+    if folder_acl is None and use_satimol_folder_acl:
+        folder_acl = load_satimol_folder_acl()
 
     engine = LoopEngine(run_id=run_id, trace_id=trace_id, env=env)
     registry = build_registry(chunks, folder_acl=folder_acl)

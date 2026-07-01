@@ -26,6 +26,26 @@ _LEADERSHIP_ROLES = frozenset(
 )
 
 
+def _normalize_path(path: str) -> str:
+    return path.replace("\\", "/").rstrip("/")
+
+
+def resolve_folder_id(source_path: str, folders: list[dict[str, Any]]) -> str | None:
+    """Longest prefix match physical_path → folder_id (ingest / SharePoint)."""
+    normalized = _normalize_path(source_path)
+    best_id: str | None = None
+    best_len = -1
+    for folder in folders:
+        if folder.get("status", "active") != "active":
+            continue
+        prefix = _normalize_path(folder["physical_path"])
+        if normalized == prefix or normalized.startswith(prefix + "/"):
+            if len(prefix) > best_len:
+                best_id = folder["folder_id"]
+                best_len = len(prefix)
+    return best_id
+
+
 def load_folder_catalog(path: Path) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
     return data.get("folders", data if isinstance(data, list) else [])
@@ -103,10 +123,14 @@ class FolderAclContext:
     def has_grant(self, employee_id: str, folder_id: str, action: str = "read") -> bool:
         return bool(self._matching_entries(employee_id, folder_id, "grant", action))
 
-    def allows_read(self, chunk: dict[str, Any], policy_context: dict[str, Any]) -> bool:
-        folder_id = chunk.get("folder_id")
-        if not folder_id:
-            return True
+    def allows_folder_action(
+        self,
+        folder_id: str,
+        policy_context: dict[str, Any],
+        action: str,
+    ) -> bool:
+        if action == "delete":
+            return self.allows_delete(folder_id, policy_context)
 
         folder = self.folders_by_id.get(folder_id)
         if not folder:
@@ -117,6 +141,8 @@ class FolderAclContext:
 
         if self.has_deny(employee_id, folder_id, "read"):
             return False
+        if action == "write" and self.has_deny(employee_id, folder_id, "write"):
+            return False
 
         if role in _LEADERSHIP_ROLES:
             return True
@@ -124,14 +150,37 @@ class FolderAclContext:
         if role in _DEPT_HEAD_ROLES and policy_context.get("department_id") == folder.get("department_id"):
             return True
 
-        tier = folder.get("access_tier", "department_open")
-        if tier == "department_open":
-            return True
+        user_dept = policy_context.get("department_id")
+        folder_dept = folder.get("department_id")
+        if user_dept != folder_dept:
+            return False
 
-        if tier in ("department_restricted", "grant_only"):
-            return self.has_grant(employee_id, folder_id, "read")
+        tier = folder.get("access_tier", "department_open")
+
+        if action == "read":
+            if tier == "department_open":
+                return True
+            if tier in ("department_restricted", "grant_only"):
+                return self.has_grant(employee_id, folder_id, "read")
+            return False
+
+        if action == "write":
+            if tier == "department_open":
+                return True
+            if tier in ("department_restricted", "grant_only"):
+                return self.has_grant(employee_id, folder_id, "write")
+            return False
 
         return False
+
+    def allows_read(self, chunk: dict[str, Any], policy_context: dict[str, Any]) -> bool:
+        folder_id = chunk.get("folder_id")
+        if not folder_id:
+            return True
+        return self.allows_folder_action(folder_id, policy_context, "read")
+
+    def allows_write(self, folder_id: str, policy_context: dict[str, Any]) -> bool:
+        return self.allows_folder_action(folder_id, policy_context, "write")
 
     def allows_delete(self, folder_id: str, policy_context: dict[str, Any]) -> bool:
         """Delete: рядовой сотрудник — запрещён; начальник dept — разрешён (ORG_MODEL §Делегирование)."""

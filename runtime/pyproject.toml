@@ -10,7 +10,7 @@ dev = ["pytest>=8.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["tmki_policy*", "tmki_rag*", "tmki_tools*", "tmki_loop*", "tmki_runtime*"]
+include = ["tmki_policy*", "tmki_rag*", "tmki_tools*", "tmki_loop*", "tmki_runtime*", "tmki_ingest*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

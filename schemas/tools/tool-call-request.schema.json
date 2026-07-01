@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/tools/tool-call-request.schema.json",
+  "title": "TMKI Tool Call Request",
+  "description": "Runtime tool invocation request (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "trace_id",
+    "run_id",
+    "step_id",
+    "tool_id",
+    "policy_context",
+    "input"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "trace_id": { "$ref": "../runtime/common.schema.json#/$defs/uuid" },
+    "run_id": { "$ref": "../runtime/common.schema.json#/$defs/uuid" },
+    "step_id": { "$ref": "../runtime/common.schema.json#/$defs/uuid" },
+    "tool_id": { "type": "string" },
+    "policy_context": { "$ref": "../runtime/common.schema.json#/$defs/policyContext" },
+    "input": {
+      "type": "object",
+      "description": "Tool-specific input; validated against tool input schema",
+      "additionalProperties": true
+    },
+    "confirmed_by_user": {
+      "type": "boolean",
+      "default": false,
+      "description": "Required when tool.policy.requires_confirmation=true"
+    }
+  }
+}

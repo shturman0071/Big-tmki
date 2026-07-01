@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/tools/tool-call-response.schema.json",
+  "title": "TMKI Tool Call Response",
+  "description": "Runtime tool invocation response (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "trace_id",
+    "tool_id",
+    "status",
+    "occurred_at"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "trace_id": { "$ref": "../runtime/common.schema.json#/$defs/uuid" },
+    "tool_id": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "denied", "failed"]
+    },
+    "deny_reason": {
+      "type": "string",
+      "enum": [
+        "tool_disabled",
+        "env_not_allowed",
+        "insufficient_role",
+        "guardrail_block",
+        "confirmation_required",
+        "rate_limited"
+      ]
+    },
+    "output": {
+      "type": "object",
+      "description": "Sanitized tool output",
+      "additionalProperties": true
+    },
+    "output_summary": {
+      "type": "string",
+      "description": "For audit logs"
+    },
+    "duration_ms": { "type": "integer", "minimum": 0 },
+    "error": { "$ref": "../runtime/common.schema.json#/$defs/runtimeError" },
+    "occurred_at": { "$ref": "../runtime/common.schema.json#/$defs/dateTime" }
+  }
+}

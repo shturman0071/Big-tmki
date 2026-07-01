@@ -1,0 +1,148 @@
+{
+  "schema_version": "0.1",
+  "registry_version": "2026-07-01",
+  "tools": [
+    {
+      "tool_id": "rag_search",
+      "name": "RAG Vector Search",
+      "version": "0.1.0",
+      "category": "vector",
+      "provider": "pgvector",
+      "capabilities": ["read"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "service_account", "secret_ref": "PGVECTOR_DSN" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call"]
+      },
+      "observability": {
+        "metrics": ["latency", "error_rate", "result_count"],
+        "audit_events": ["tool_call_requested", "tool_call_completed", "document_accessed"]
+      },
+      "input_schema_ref": "schemas/document/search-request.schema.json",
+      "output_schema_ref": "schemas/document/search-response.schema.json",
+      "status": "approved"
+    },
+    {
+      "tool_id": "ocr_mineru",
+      "name": "MinerU OCR",
+      "version": "2.1.0",
+      "category": "ocr",
+      "provider": "mineru",
+      "capabilities": ["read", "network"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "api_key", "secret_ref": "MINERU_API_KEY" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call", "pii_scan"]
+      },
+      "observability": {
+        "metrics": ["latency", "error_rate", "fallback_rate"],
+        "audit_events": ["tool_call_requested", "tool_call_completed"]
+      },
+      "status": "approved"
+    },
+    {
+      "tool_id": "ocr_mistral",
+      "name": "Mistral OCR 4",
+      "version": "2026-06",
+      "category": "ocr",
+      "provider": "mistral_ocr_4",
+      "capabilities": ["read", "network"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "api_key", "secret_ref": "MISTRAL_OCR_API_KEY" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call", "pii_scan"]
+      },
+      "status": "approved"
+    },
+    {
+      "tool_id": "llm_openai",
+      "name": "OpenAI LLM",
+      "version": "1.0",
+      "category": "llm",
+      "provider": "openai",
+      "capabilities": ["read", "network"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "api_key", "secret_ref": "OPENAI_API_KEY" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call", "pii_scan", "secret_scan"]
+      },
+      "observability": {
+        "metrics": ["latency", "token_usage", "cost_usd"],
+        "audit_events": ["tool_call_requested", "tool_call_completed"]
+      },
+      "status": "approved"
+    },
+    {
+      "tool_id": "llm_anthropic",
+      "name": "Anthropic LLM",
+      "version": "1.0",
+      "category": "llm",
+      "provider": "anthropic",
+      "capabilities": ["read", "network"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "api_key", "secret_ref": "ANTHROPIC_API_KEY" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call", "pii_scan", "secret_scan"]
+      },
+      "status": "approved"
+    },
+    {
+      "tool_id": "web_searxng",
+      "name": "SearXNG Search",
+      "version": "1.0",
+      "category": "web",
+      "provider": "searxng",
+      "capabilities": ["read", "network"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "none" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call"]
+      },
+      "status": "approved"
+    },
+    {
+      "tool_id": "web_firecrawl",
+      "name": "Firecrawl",
+      "version": "1.0",
+      "category": "web",
+      "provider": "firecrawl",
+      "capabilities": ["read", "network"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "api_key", "secret_ref": "FIRECRAWL_API_KEY" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call"]
+      },
+      "status": "approved"
+    },
+    {
+      "tool_id": "web_camofox",
+      "name": "Camofox",
+      "version": "1.0",
+      "category": "web",
+      "provider": "camofox",
+      "capabilities": ["read", "network"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "api_key", "secret_ref": "CAMOFOX_API_KEY" },
+      "policy": {
+        "env_allowlist": ["development"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call"]
+      },
+      "status": "watchlist"
+    }
+  ]
+}

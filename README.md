@@ -23,6 +23,7 @@
 - `18_technology_watch.md` — approved/watchlist и процесс принятия/пересмотра технологий.
 - `schemas/runtime/` — JSON Schema контрактов Run, Step, Event, Loop State (v0.1).
 - `schemas/document/` — JSON Schema ingest/dedup Document Intelligence (v0.1).
+- `schemas/tools/` — Tool Registry, provider pattern, tool call contracts (v0.1).
 
 ## Конвенции
 

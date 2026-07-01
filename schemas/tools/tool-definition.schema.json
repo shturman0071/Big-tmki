@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/tools/tool-definition.schema.json",
+  "title": "TMKI Tool Definition",
+  "description": "Registry entry for an approved tool/provider (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tool_id",
+    "name",
+    "version",
+    "category",
+    "capabilities",
+    "side_effects",
+    "auth",
+    "status"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "tool_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "Stable id, e.g. rag_search, ocr_mineru"
+    },
+    "name": { "type": "string" },
+    "version": { "type": "string" },
+    "category": {
+      "type": "string",
+      "enum": ["web", "ocr", "vector", "llm", "storage", "db", "internal"]
+    },
+    "provider": {
+      "type": "string",
+      "description": "Implementation vendor, e.g. mineru, openai, pgvector"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["read", "write", "admin", "network", "filesystem"]
+      },
+      "minItems": 1
+    },
+    "side_effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["has_side_effects"],
+      "properties": {
+        "has_side_effects": { "type": "boolean" },
+        "description": { "type": "string" }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["none", "api_key", "oauth", "service_account"]
+        },
+        "secret_ref": {
+          "type": "string",
+          "description": "Vault/env key name, never inline secret"
+        },
+        "scopes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "env_allowlist": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["development", "staging", "production"] }
+        },
+        "min_capability": {
+          "type": "string",
+          "enum": ["T_r", "T_w"],
+          "description": "Minimum tool permission from ORG_MODEL matrix"
+        },
+        "requires_confirmation": {
+          "type": "boolean",
+          "default": false
+        },
+        "guardrails_hooks": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["pre_call", "post_call", "pii_scan", "secret_scan"] }
+        }
+      }
+    },
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "audit_events": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "input_schema_ref": { "type": "string" },
+    "output_schema_ref": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["approved", "watchlist", "disabled"]
+    }
+  }
+}

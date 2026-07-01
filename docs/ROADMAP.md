@@ -157,6 +157,8 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #16 [phase-5] [runtime] Каркас Tool Registry + provider pattern
 
+**Статус:** done (v0.1 — `16_tool_registry.md`, `schemas/tools/`)
+
 ### #17 [phase-5] [security] Tool gating по org/role/env
 
 ### #18 [phase-6] [runtime] MVP: Context → RAG → Loop → Judge → Audit
@@ -177,5 +179,6 @@ pgvector + RLS-поля до выдачи в RAG.
 6. ~~#13 Ingest + dedup (Document Intelligence)~~ ✅ (v0.1)
 7. ~~#14 OCR pipeline MinerU + fallback~~ ✅ (v0.1)
 8. ~~#15 Индексация с server-side фильтрацией~~ ✅ (v0.1)
-9. **Phase 5: Tool Registry каркас (#16)**
-10. **#3 Установить gh + создать issues на GitHub**
+9. ~~#16 Tool Registry каркас~~ ✅ (v0.1)
+10. **#17 Tool gating по org/role/env**
+11. **#3 Установить gh + создать issues на GitHub**

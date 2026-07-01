@@ -320,6 +320,7 @@ stateDiagram-v2
 | `07_security_addendum.md` | RLS, guardrails, audit, rate limits, tool gating |
 | `09_document_processing.md` | Document Intelligence, чанки, embeddings |
 | `16_tool_registry.md` | контракты и approved-инструменты |
+| `schemas/tools/` | tool-definition, providers.registry.json |
 | `ORG_MODEL.md` | org/project/role context, RLS-поля |
 | `13_ai_skills_registry.md` | процедуры Loop Engine, Security Review |
 | `18_technology_watch.md` | approved модели, провайдеры, пересмотр стека |

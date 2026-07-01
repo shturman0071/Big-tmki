@@ -3,6 +3,7 @@
   "policy_version": "tool-gating-2026-07-01",
   "role_groups": {
     "leadership": ["Direktor", "Projektleiter"],
+    "group_executive": ["group_admin"],
     "engineering_leads": [
       "ГИП",
       "Главный инженер проекта",
@@ -19,12 +20,13 @@
   "gates": [
     {
       "tool_id": "rag_search",
-      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "support_mto", "it", "contractor"],
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "support_mto", "it", "contractor", "group_executive"],
       "env_allowlist": ["development", "staging", "production"],
       "min_capability": "T_r",
       "default_department_scope": "S_project",
       "scoped_department_overrides": {
         "engineering_leads": "S_dept_tree",
+        "design": "S_project",
         "site_ops": "S_dept",
         "contractor": "S_dept"
       },
@@ -53,7 +55,7 @@
     },
     {
       "tool_id": "llm_openai",
-      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "contractor"],
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "contractor", "group_executive"],
       "deny_role_groups": ["finance_hr"],
       "env_allowlist": ["development", "staging", "production"],
       "min_capability": "T_r",
@@ -63,7 +65,7 @@
     },
     {
       "tool_id": "llm_anthropic",
-      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "contractor"],
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "contractor", "group_executive"],
       "deny_role_groups": ["finance_hr"],
       "env_allowlist": ["development", "staging", "production"],
       "min_capability": "T_r",

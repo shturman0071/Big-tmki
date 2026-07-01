@@ -39,6 +39,14 @@
         "env": {
           "type": "string",
           "enum": ["development", "staging", "production"]
+        },
+        "contractor_id": {
+          "type": "string",
+          "description": "Required when project_role is contractor guest (see ORG_MODEL.md)"
+        },
+        "company_group_id": {
+          "type": "string",
+          "description": "SchBK group scope; required for group_admin"
         }
       }
     },

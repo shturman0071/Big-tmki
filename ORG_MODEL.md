@@ -100,13 +100,15 @@ Project -> ProjectRole -> Employee
 | Project | `project_id` | проект «Сатимол» и др. |
 | ProjectRole | `project_role` | права на инструменты и документы |
 | Employee | `employee_id` / `user_id` | субъект доступа |
-| Classification | `access_label` | уровень конфиденциальности документов |
+| Classification | `access_label` / `classification` | уровень конфиденциальности документов (см. ниже) |
+| Contractor org | `contractor_id` | юрлицо/контрагент подрядчика (MAY ≠ `company_id` TMKI) |
+| Company group | `company_group_id` | группа SchBK (сквозной scope для `group_admin`) |
 
 **MUST**: доступ к документам и tool calls фильтруется по `company_id`, `project_id`, `department_id` и роли сотрудника (см. `07_security_addendum.md`, `10_ai_runtime.md`).
 
 ## Матрица «роль → права → RLS» (проект «Сатимол»)
 
-> Статус: **DRAFT v0.1** — для согласования с Директором / РП / ИБ.  
+> Статус: **v0.2** — матрица + решения по открытым вопросам (roadmap #7).  
 > Основа: оргсхема 10.09.2025. Реализация — **server-side** (RLS + policy engine).
 
 ### Легенда действий
@@ -153,7 +155,7 @@ Project -> ProjectRole -> Employee
 |-------------|:-----------:|:--------------:|:----------------:|:------------:|:------------:|:---:|:---:|:---:|:-------------:|:---------------:|
 | **Direktor** | R+W `S_project`+`S_label` | R `S_project` | R `S_company`+`S_label` | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_project` | A `S_project` |
 | **Projektleiter** | R+W `S_project` | R+W `S_dept_tree` | R `S_company`† | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_project` | W‡ |
-| **Projektleiter (Design)** | R+W `S_project` | R+W `S_dept` | — | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_dept` | — |
+| **Projektleiter (Design)** | R+W `S_project` | R `S_project`¹ / W `S_dept` | — | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_dept` | — |
 | **ГИП / Гл. инж. проекта** | R+W `S_project` | R+W `S_dept_tree` | — | R `S_project` | R+W | ✓ | ✓* | ✓ | R `S_dept_tree` | — |
 | **Generalprojektant (КГЦМ)** | R+W `S_project` | R `S_project` | — | R `S_project` | R+W | ✓ | — | ✓ | — | — |
 | **Начальник подразделения**§ | R `S_project` | R+W `S_dept` | — | R `S_dept` | R+W | ✓ | ✓* | ✓ `S_dept` | R `S_dept` | — |
@@ -164,8 +166,11 @@ Project -> ProjectRole -> Employee
 | **ИТ / Связь** | R `S_project` | R `S_dept` | — | — | R+W | ✓ | ✓** | ✓ | R `S_project` | W** |
 | **Секретариат / АУП** | R `S_project` | R `S_dept` | — | — | R | ✓ | — | R | — | — |
 | **Подрядчик (external)** | R‖ | R‖ | — | R‖ | R | ✓ | — | — | — | — |
+| **group_admin** (SchBK) | R `S_project`² | R `S_project`² | R `S_company`²†† | R `S_project`² | R | ✓ | — | — | R `S_company` | A `S_company` |
 
 **Примечания к матрице:**
+
+- ¹ **Projektleiter (Design)**: read `doc.department` по всему проекту (`S_project`); write — только своё подразделение (`S_dept`). Смешанные чертежи — через `doc.project`, не через чужие `department_id`.
 
 - \* **T_w** — только с guardrails + audit; write-операции MAY требовать подтверждения пользователя (см. `07_security_addendum.md`).
 - † Projektleiter: финансы/HR — read сводных отчётов, без персональных данных уровня `restricted`.
@@ -194,21 +199,68 @@ Project -> ProjectRole -> Employee
 ```json
 {
   "company_id": "...",
+  "company_group_id": "schbk",
   "project_id": "satimol",
   "department_id": "...",
   "project_role": "Projektleiter",
   "employee_id": "...",
+  "contractor_id": null,
   "clearance": "internal",
   "env": "production"
 }
 ```
 
-### Открытые вопросы для согласования (SHOULD)
+`contractor_id` — MUST для `project_role` = `Подрядчик (external)`.  
+`company_group_id` — MUST для `group_admin`.
 
-1. Уровни `access_label` (например: `public`, `internal`, `restricted`, `confidential`) — утвердить перечень.
-2. Доступ Projektleiter (Design) к документам смежных подразделений — read-only на весь проект или только `S_dept`?
-3. Права SchBK / Gen. Direktor (группа) — отдельная роль `group_admin` вне `project_id`?
-4. Подрядчики — отдельный `company_id` и guest `project_role`?
+- ‖ Подрядчик: доступ только при `contractor_id` + явный share (см. §Подрядчики).
+- †† **group_admin**: сводные HR/финансы без построчного PII; детализация — по отдельному grant.
+
+### Уровни `access_label` / `classification` (MUST)
+
+Синонимы в коде: поле документа `access_label` = `classification` в ingest (см. `schemas/document/`).
+
+| Уровень | Порядок | Примеры (Сатимол) | Кто MAY видеть (min clearance) |
+|---------|---------|-------------------|--------------------------------|
+| `public` | 0 | публичные справки, общие ГОСТ без ограничений | все роли проекта |
+| `internal` | 1 | внутренняя переписка, ПТО, производственные отчёты | `internal`+ |
+| `restricted` | 2 | маркшейдерия, геология, сметы с коммерческими условиями | `restricted`+ |
+| `confidential` | 3 | HR, персональные данные, зарплата, договоры с NDA | `confidential`+ |
+
+**MUST**: ordering `public < internal < restricted < confidential` (см. `09_document_processing.md` §7).  
+**MUST**: `user.clearance` в `policy_context` — тот же enum; назначается Security owner при онбординге.
+
+### Подрядчики (MUST)
+
+| Поле | Правило |
+|------|---------|
+| `contractor_id` | Стабильный ID юрлица подрядчика (MAY ≠ `company_id` TMKI) |
+| `project_role` | `Подрядчик (external)` — guest-роль в проекте |
+| `company_id` в сессии | Юрлицо подрядчика (для audit), `project_id` обязателен |
+| Доступ к `doc.*` | `doc.contractor_id = user.contractor_id` **OR** `user.contractor_id IN doc.shared_with_contractor_ids` |
+| RLS | `project_id` совпадает; **без** `S_dept_tree`; ingest/OCR — запрещены (см. матрицу) |
+| Share | Выдача документа подрядчику — явное действие Projektleiter+ с audit `document_shared` |
+
+### Роль `group_admin` (SchBK) (MUST)
+
+| Аспект | Решение |
+|--------|---------|
+| Назначение | SchBK / Gen. Direktor — `project_role`: `group_admin`, `company_group_id`: `schbk` |
+| Scope | Сквозной read по юрлицам группы (ТМКИ, Thyssen Schachtbau) **в рамках выданных проектов** |
+| Ограничение | Нет автоматического доступа ко всем `confidential` / всем проектам; cross-project — через `org.assignments` grant |
+| T_w / ingest | Запрещены по умолчанию; только read + audit сводок |
+| Пример | Хюбшер С. — `group_admin`, clearance `restricted` (не `confidential` без отдельного grant) |
+
+### Решения по открытым вопросам (v0.2)
+
+| # | Вопрос | Решение |
+|---|--------|---------|
+| 1 | Уровни `access_label` | Утверждены 4 уровня (таблица выше); aligned с ingest schema |
+| 2 | Projektleiter (Design) и смежные подразделения | Read `doc.department` = `S_project`; write = `S_dept` only |
+| 3 | SchBK / group_admin | Отдельная роль `group_admin` + `company_group_id`; project grants обязательны |
+| 4 | Подрядчики | Отдельный `contractor_id`, guest `project_role`, share-list на документе |
+
+**SHOULD**: пересмотр решений при смене оргсхемы или инциденте доступа — owner: Security + Projektleiter.
 
 ## Связанные документы
 

@@ -75,11 +75,7 @@ Issues: <https://github.com/shturman0071/Big-tmki/issues>
 
 ### #6 [phase-1] [docs] Импорт регламентов из `ТМКИ оригнал`
 
-**Статус:** in progress — инвентарь ~1200+ файлов в `d:\Курсор\ТМКИ оригнал\` (не коммитить)
-
-- Инвентаризация: vsdx импортирован в `ORG_MODEL.md`; остальное — backlog по категориям
-- Выжимка в markdown (без бинарников)
-- Skill: `vsdx-org-import` для оргсхем
+**Статус:** deferred — локальный архив ~1200+ файлов; vsdx → `ORG_MODEL.md` уже импортирован
 
 ---
 
@@ -87,11 +83,9 @@ Issues: <https://github.com/shturman0071/Big-tmki/issues>
 
 ### #7 [phase-2] [security] Матрица «роль → права → RLS»
 
-**Статус:** done (DRAFT v0.1 в `ORG_MODEL.md`)
+**Статус:** done (v0.2 — `ORG_MODEL.md`: матрица + решения по access_label, Design scope, group_admin, подрядчики)
 
 На базе `ORG_MODEL.md` (проект Сатимол). Выход: таблица role × resource × action × RLS-поля.
-
-**Осталось:** согласовать открытые вопросы (access_label, подрядчики, group_admin).
 
 ---
 
@@ -209,5 +203,7 @@ pgvector + RLS-поля до выдачи в RAG.
 15. ~~#2 Закрепить владельцев и процесс апрува хэндбука~~ ✅ (v0.1)
 16. ~~#4 Owners в 13_ai_skills_registry.md~~ ✅ (v0.1)
 17. ~~#5 Карточки Approved в 18_technology_watch.md~~ ✅ (v0.1)
-18. **#6 Импорт регламентов из ТМКИ оригнал** (in progress)
-19. **#7–#9 Phase 2** — RLS open questions, org schema, вакансии
+18. ~~#6 Импорт регламентов~~ — отложено
+19. ~~#7 RLS open questions (Сатимол)~~ ✅ (v0.2)
+20. **#8 Схема сущностей org model**
+21. **#9 Актуализировать вакансии оргсхемы**

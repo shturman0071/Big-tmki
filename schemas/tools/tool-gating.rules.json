@@ -74,6 +74,35 @@
       "project_scope": "same_project"
     },
     {
+      "tool_id": "llm_ollama",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "it", "group_executive"],
+      "deny_role_groups": ["contractor", "finance_hr"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "none",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
+      "tool_id": "tts_piper",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "it"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "none",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
+      "tool_id": "stt_whisper",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "it"],
+      "deny_role_groups": ["contractor"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "none",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
       "tool_id": "web_searxng",
       "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "support_mto", "it"],
       "deny_role_groups": ["contractor", "finance_hr"],

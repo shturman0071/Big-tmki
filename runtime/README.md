@@ -91,7 +91,8 @@ python scripts/run_mvp_regulations.py "промбезопасность кран
 python scripts/compare_chunks_quality.py
 python scripts/reindex_status.py
 python scripts/run_legal_corpus_curator.py --dry-run
-python scripts/run_desktop_sync.py --once --display-name "Литовский Д."
+python scripts/provision_employee_desktop.py --display-name "Литовский Д."
+python scripts/load_regulations_pgvector.py --variant v2
 ```
 
 ### Production-like stack (Docker)

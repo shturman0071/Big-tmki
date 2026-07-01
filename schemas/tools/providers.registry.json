@@ -81,6 +81,26 @@
       "status": "approved"
     },
     {
+      "tool_id": "llm_ollama",
+      "name": "Ollama LLM (LAN)",
+      "version": "1.0",
+      "category": "llm",
+      "provider": "ollama",
+      "capabilities": ["read", "network"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "none" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call", "pii_scan"]
+      },
+      "observability": {
+        "metrics": ["latency", "token_usage"],
+        "audit_events": ["tool_call_requested", "tool_call_completed"]
+      },
+      "status": "approved"
+    },
+    {
       "tool_id": "llm_anthropic",
       "name": "Anthropic LLM",
       "version": "1.0",
@@ -143,6 +163,38 @@
         "guardrails_hooks": ["pre_call", "post_call"]
       },
       "status": "watchlist"
+    },
+    {
+      "tool_id": "tts_piper",
+      "name": "Piper TTS",
+      "version": "1.4.2",
+      "category": "voice",
+      "provider": "piper",
+      "capabilities": ["read"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "none" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call"]
+      },
+      "status": "approved"
+    },
+    {
+      "tool_id": "stt_whisper",
+      "name": "Faster Whisper STT",
+      "version": "1.0",
+      "category": "voice",
+      "provider": "faster_whisper",
+      "capabilities": ["read"],
+      "side_effects": { "has_side_effects": false },
+      "auth": { "type": "none" },
+      "policy": {
+        "env_allowlist": ["development", "staging", "production"],
+        "min_capability": "T_r",
+        "guardrails_hooks": ["pre_call", "post_call", "pii_scan"]
+      },
+      "status": "approved"
     }
   ]
 }

@@ -232,7 +232,8 @@ pgvector + RLS-поля до выдачи в RAG.
 40. ~~#40 Production stack + re-index hardening~~ ✅ (docker-compose.full, health check, pypdf noise fix, skip ~$ temp)
 41. ~~#41 Re-index progress + PDF hardening~~ ✅ (max_pages, heartbeat progress, reindex_status, check_ocr_http)
 42. **Следующий фокус:** завершить re-index → chunks-v2; load pgvector; HTTP MinerU/Mistral
-43. ~~#45 Desktop sync agent~~ ✅ MVP | ~~#46 Legal Corpus Curator~~ ✅ MVP | ~~#47 Document policy~~ ✅ MVP
+43. ~~#45 Desktop sync~~ ✅ | ~~#46 Legal Corpus Curator~~ ✅ | ~~#47 Document policy~~ ✅
+44. ~~#43–#44, #48–#49~~ ✅ MVP | **Следующий:** re-index → pgvector `--variant v2`; #50 display cast
 
 ---
 
@@ -240,17 +241,11 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #43 [phase-6] [runtime] Сетевая политика LLM (local + internet)
 
-**Статус:** spec (v0.3) — `20_product_requirements_v0_3.md` §1
-
-- Единый provider pattern; gating по env/role; аудит egress
-- **Критерий:** политика в `16_tool_registry.md` + `tool-gating.rules.json`; Ollama/OpenAI переключение без смены кода
+**Статус:** MVP (v0.3) — `llm_ollama` в registry + tool-gating; OpenAI/Ollama через `TMKI_LLM_PROVIDER`
 
 ### #44 [phase-2] [runtime] Папка сотрудника на рабочем столе
 
-**Статус:** spec (v0.3) — `20_product_requirements_v0_3.md` §2
-
-- `%USERPROFILE%\Desktop\{surname}\` → `folder_id` в FolderCatalog
-- **Критерий:** provisioning при onboarding; привязка к `employee_id`
+**Статус:** MVP (v0.3) — `provision_employee_desktop()`, `provision_employee_desktop.py`
 
 ### #45 [phase-4] [runtime] Desktop sync agent (5 с → локальный сервер)
 
@@ -275,17 +270,11 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #48 [phase-2] [security] HR-карточка: голос и антропометрия
 
-**Статус:** spec (v0.3) — `schemas/org/employee-hr-card.schema.json`
-
-- Consent 152-ФЗ; изолированное хранилище; доступ HR + Security
-- **Критерий:** security-review sign-off перед production
+**Статус:** MVP (v0.3) — `tmki_hr/cards.py`, consent gate, изолированное хранилище
 
 ### #49 [phase-6] [runtime] Voice STT: to-do и планёрки
 
-**Статус:** spec (v0.3) — `schemas/voice/voice-session.schema.json`
-
-- Speaker ID по voice profile; todo/meeting action items
-- **Критерий:** `runtime/tmki_voice/stt.py`; enrollment flow
+**Статус:** MVP (v0.3) — `tmki_voice/stt.py`, `meeting.py`, `TMKI_STT_PROVIDER=stub|whisper`
 
 ### #50 [phase-6] [runtime] TTS Piper + вывод на устройства
 

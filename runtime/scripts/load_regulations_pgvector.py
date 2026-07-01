@@ -18,11 +18,12 @@ def main() -> int:
     DEFAULT_CHUNKS = resolve_regulations_chunks_path("auto")
     parser = argparse.ArgumentParser(description="Load regulations chunks into pgvector")
     parser.add_argument("--chunks", type=Path, default=None)
+    parser.add_argument("--variant", choices=["auto", "v1", "v2"], default="auto")
     parser.add_argument("--batch-size", type=int, default=200)
     parser.add_argument("--ivfflat-lists", type=int, default=None)
     parser.add_argument("--skip-ivfflat", action="store_true")
     args = parser.parse_args()
-    chunks_path = args.chunks or DEFAULT_CHUNKS
+    chunks_path = args.chunks or resolve_regulations_chunks_path(args.variant)
 
     if not chunks_path.is_file():
         print(f"chunks не найден: {chunks_path}", file=sys.stderr)

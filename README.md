@@ -21,7 +21,7 @@
 - `13_ai_skills_registry.md` — реестр “скиллов” (повторно используемых паттернов/процедур).
 - `16_tool_registry.md` — реестр инструментов и провайдеров, которые допускаются к использованию.
 - `18_technology_watch.md` — approved/watchlist и процесс принятия/пересмотра технологий.
-- `schemas/runtime/` — JSON Schema контрактов Run, Step, Event (v0.1).
+- `schemas/runtime/` — JSON Schema контрактов Run, Step, Event, Loop State (v0.1).
 
 ## Конвенции
 

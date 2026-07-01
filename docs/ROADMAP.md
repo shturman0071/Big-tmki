@@ -113,6 +113,8 @@ gh label create phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6 security
 
 ### #11 [phase-3] [runtime] State machine Loop Engine
 
+**Статус:** done (v0.1 в `10_ai_runtime.md` + `schemas/runtime/loop-state.schema.json`)
+
 Лимиты шагов, таймауты, budget, circuit breaker, stop conditions.
 
 ---
@@ -162,5 +164,6 @@ pgvector + RLS-поля до выдачи в RAG.
 1. ~~#1 Синхронизация ссылок~~ ✅
 2. ~~#7 Матрица роль → права → RLS~~ ✅ (DRAFT v0.1)
 3. ~~#10 JSON-схемы Run/Step/Event~~ ✅ (v0.1)
-4. **#11 State machine Loop Engine**
-5. **#3 Установить gh + создать issues на GitHub**
+4. ~~#11 State machine Loop Engine~~ ✅ (v0.1)
+5. **#12 Каталог audit events**
+6. **#3 Установить gh + создать issues на GitHub**

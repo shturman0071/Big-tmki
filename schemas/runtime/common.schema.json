@@ -57,10 +57,27 @@
       "description": "Run-level limits (Loop Engine)",
       "additionalProperties": false,
       "properties": {
-        "max_steps": { "type": "integer", "minimum": 1 },
-        "max_tokens": { "type": "integer", "minimum": 1 },
-        "max_cost_usd": { "type": "number", "minimum": 0 },
-        "timeout_ms": { "type": "integer", "minimum": 1 }
+        "max_steps": { "type": "integer", "minimum": 1, "default": 10 },
+        "max_tokens": { "type": "integer", "minimum": 1, "default": 32000 },
+        "max_cost_usd": { "type": "number", "minimum": 0, "default": 2.5 },
+        "timeout_ms": { "type": "integer", "minimum": 1, "default": 120000 },
+        "max_step_duration_ms": { "type": "integer", "minimum": 1, "default": 60000 },
+        "max_retries_per_step": { "type": "integer", "minimum": 0, "default": 2 }
+      }
+    },
+    "circuitBreakerConfig": {
+      "type": "object",
+      "description": "Circuit breaker thresholds (Loop Engine)",
+      "additionalProperties": false,
+      "properties": {
+        "consecutive_step_failures": { "type": "integer", "minimum": 1, "default": 3 },
+        "same_error_code_threshold": { "type": "integer", "minimum": 1, "default": 2 },
+        "same_tool_failure_threshold": { "type": "integer", "minimum": 1, "default": 2 },
+        "recovery_mode": {
+          "type": "string",
+          "enum": ["degraded_readonly", "fail_run"],
+          "default": "degraded_readonly"
+        }
       }
     },
     "citation": {

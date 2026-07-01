@@ -1,0 +1,31 @@
+{
+  "schema_version": "0.1",
+  "run_id": "550e8400-e29b-41d4-a716-446655440001",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "loop_state": "step_running",
+  "previous_state": "plan_ready",
+  "step_index": 2,
+  "updated_at": "2026-07-01T10:00:05Z",
+  "budget": {
+    "max_steps": 10,
+    "max_tokens": 32000,
+    "max_cost_usd": 2.5,
+    "timeout_ms": 120000,
+    "max_step_duration_ms": 60000,
+    "max_retries_per_step": 2
+  },
+  "budget_consumed": {
+    "steps": 2,
+    "tokens": 5100,
+    "cost_usd": 0.18,
+    "elapsed_ms": 5200
+  },
+  "circuit_breaker": {
+    "consecutive_step_failures": 3,
+    "same_error_code_threshold": 2,
+    "same_tool_failure_threshold": 2,
+    "recovery_mode": "degraded_readonly"
+  },
+  "circuit_breaker_tripped": false,
+  "consecutive_failures": 0
+}

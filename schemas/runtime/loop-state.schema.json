@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/runtime/loop-state.schema.json",
+  "title": "TMKI Loop Engine State",
+  "description": "Loop Engine state snapshot within a Run (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "trace_id",
+    "loop_state",
+    "step_index",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "trace_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "loop_state": {
+      "type": "string",
+      "enum": [
+        "init",
+        "context_ready",
+        "plan_ready",
+        "step_running",
+        "step_done",
+        "judge_pending",
+        "loop_complete",
+        "degraded_readonly",
+        "circuit_open",
+        "budget_exceeded",
+        "cancelled",
+        "failed"
+      ]
+    },
+    "previous_state": {
+      "type": "string",
+      "description": "Prior loop_state before last transition"
+    },
+    "step_index": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Current step number (0-based)"
+    },
+    "updated_at": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "budget": { "$ref": "common.schema.json#/$defs/budget" },
+    "budget_consumed": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "steps": { "type": "integer", "minimum": 0 },
+        "tokens": { "type": "integer", "minimum": 0 },
+        "cost_usd": { "type": "number", "minimum": 0 },
+        "elapsed_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "circuit_breaker": { "$ref": "common.schema.json#/$defs/circuitBreakerConfig" },
+    "circuit_breaker_tripped": {
+      "type": "boolean",
+      "default": false
+    },
+    "consecutive_failures": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "last_error_code": { "type": "string" },
+    "stop_reason": {
+      "type": "string",
+      "enum": [
+        "judge_pass",
+        "user_cancel",
+        "budget_exceeded",
+        "circuit_breaker",
+        "guardrail_block",
+        "timeout",
+        "max_steps",
+        "unrecoverable_error"
+      ]
+    },
+    "pending_plan": {
+      "type": "object",
+      "description": "Optional structured plan from loop_plan step",
+      "additionalProperties": true
+    }
+  }
+}

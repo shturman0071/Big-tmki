@@ -53,6 +53,38 @@ def _default_http_post(url: str, payload: dict[str, Any], headers: dict[str, str
         raise RuntimeError(f"OCR HTTP unavailable: {exc.reason}") from exc
 
 
+from tmki_ocr.extractors import extract_local_text, guess_suffix
+
+
+class LocalMinerUProvider:
+    """Локальное извлечение текста (txt/docx/pdf+pypdf) без внешнего API."""
+
+    name = "mineru"
+    parser_version = "local-text@1.0"
+
+    def __init__(self, *, source_name: str | None = None) -> None:
+        self._source_name = source_name
+
+    def extract(self, raw_bytes: bytes) -> OcrAttempt:
+        started = datetime.now(timezone.utc)
+        suffix = guess_suffix(raw_bytes, self._source_name)
+        result = extract_local_text(raw_bytes, suffix=suffix)
+        text = result["text"]
+        page_count = int(result["page_count"] or 1)
+        confidence = float(result["confidence"])
+        status = "completed" if text else "failed"
+        duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
+        return OcrAttempt(
+            provider=self.name,
+            status=status,
+            duration_ms=duration_ms,
+            text=text,
+            page_count=page_count,
+            avg_confidence=confidence,
+            error_code=None if status == "completed" else "LOCAL_EXTRACT_EMPTY",
+        )
+
+
 class StubMinerUProvider:
     name = "mineru"
     parser_version = MINERU_PARSER_VERSION
@@ -235,9 +267,12 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def get_mineru_provider(*, mode: str = "ok") -> OcrProvider:
-    if os.environ.get("TMKI_OCR_MODE", "stub").lower() == "http":
+def get_mineru_provider(*, mode: str = "ok", source_name: str | None = None) -> OcrProvider:
+    ocr_mode = os.environ.get("TMKI_OCR_MODE", "stub").lower()
+    if ocr_mode == "http":
         return HttpMinerUProvider()
+    if ocr_mode == "local":
+        return LocalMinerUProvider(source_name=source_name)
     return StubMinerUProvider(mode=mode)
 
 
@@ -255,14 +290,15 @@ def run_ocr(
     mineru_mode: str = "ok",
     mineru_provider: OcrProvider | None = None,
     mistral_provider: OcrProvider | None = None,
+    source_name: str | None = None,
 ) -> dict[str, Any]:
     """
     OCR pipeline: MinerU → Mistral fallback.
-    TMKI_OCR_MODE=stub|http (default stub).
-    Контракт: schemas/document/ocr-result.schema.json
+    TMKI_OCR_MODE=stub|local|http (default stub).
+    source_name — имя файла для local extractor (.docx/.pdf/...).
     """
     started = datetime.now(timezone.utc)
-    primary = (mineru_provider or get_mineru_provider(mode=mineru_mode)).extract(raw_bytes)
+    primary = (mineru_provider or get_mineru_provider(mode=mineru_mode, source_name=source_name)).extract(raw_bytes)
     fallback_reason = _needs_fallback(primary)
     fallback_used = False
     provider_used = "mineru"

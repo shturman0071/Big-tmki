@@ -247,6 +247,7 @@ def import_regulations_full(
     checkpoint_every: int = 100,
     on_progress: Callable[[dict[str, Any]], None] | None = None,
     resume: bool = True,
+    force_reprocess: bool = False,
 ) -> dict[str, Any]:
     """
     Полный импорт архива регламентов (stub OCR → ChunkIndex).
@@ -295,6 +296,8 @@ def import_regulations_full(
                 classification=classification,
                 folder_id=folder_id,
             )
+            if force_reprocess:
+                request["force_reprocess"] = True
             result = ingest_and_index(
                 request,
                 index,
@@ -361,3 +364,40 @@ def import_regulations_full(
         "errors": errors[-20:],
         "occurred_at": _now_iso(),
     }
+
+
+def reindex_regulations_full(
+    root: Path,
+    *,
+    policy_context: dict[str, Any],
+    classification: str,
+    folder_id: str,
+    folder_acl: FolderAclContext,
+    output_dir: Path,
+    limit: int | None = None,
+    resume: bool = True,
+    checkpoint_every: int = 100,
+    on_progress: Callable[[dict[str, Any]], None] | None = None,
+) -> dict[str, Any]:
+    """
+    Re-index архива с TMKI_OCR_MODE=local (реальный текст txt/docx/pdf).
+    Пишет chunks-v2.json и reindex-state.json в output_dir.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    index = ChunkIndex()
+    return import_regulations_full(
+        root,
+        policy_context=policy_context,
+        classification=classification,
+        folder_id=folder_id,
+        folder_acl=folder_acl,
+        dedup_store=DedupStore(),
+        index=index,
+        limit=limit,
+        state_path=output_dir / "reindex-state.json",
+        chunks_path=output_dir / "chunks-v2.json",
+        checkpoint_every=checkpoint_every,
+        on_progress=on_progress,
+        resume=resume,
+        force_reprocess=True,
+    )

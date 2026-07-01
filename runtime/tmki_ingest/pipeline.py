@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from tmki_ingest.chunking import build_chunks_from_ocr
@@ -15,6 +16,14 @@ from tmki_rag.index import ChunkIndex
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _source_name_from_request(request: dict[str, Any]) -> str | None:
+    provenance = request.get("provenance") or {}
+    source_path = provenance.get("source_path")
+    if not source_path:
+        return None
+    return Path(str(source_path)).name
 
 
 @dataclass(frozen=True)
@@ -159,6 +168,7 @@ def process_document(
         trace_id=request["trace_id"],
         raw_bytes=raw_bytes,
         mineru_mode=mineru_mode,
+        source_name=_source_name_from_request(request),
     )
     markdown = ocr_result.pop("_markdown", "")
 

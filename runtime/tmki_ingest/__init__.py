@@ -4,7 +4,13 @@ from tmki_ingest.dedup import DedupStore, check_dedup, compute_content_hash, ded
 from tmki_ingest.gate import IngestGateResult, validate_delete, validate_ingest
 from tmki_rag.index import ChunkIndex
 from tmki_ingest.pipeline import DocumentPipelineResult, IngestAcceptResult, accept_ingest, ingest_and_index, process_document
-from tmki_ingest.regulations import build_ingest_request, import_regulations_batch, import_regulations_full, scan_regulations_archive
+from tmki_ingest.regulations import (
+    build_ingest_request,
+    import_regulations_batch,
+    import_regulations_full,
+    reindex_regulations_full,
+    scan_regulations_archive,
+)
 
 __all__ = [
     "ChunkIndex",
@@ -19,6 +25,7 @@ __all__ = [
     "dedup_key",
     "import_regulations_batch",
     "import_regulations_full",
+    "reindex_regulations_full",
     "ingest_and_index",
     "process_document",
     "scan_regulations_archive",

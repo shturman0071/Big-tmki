@@ -10,7 +10,7 @@
 | `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
 | `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
 | `tmki_ingest` | gate / dedup / pipeline / `scan_regulations_archive` / `import_regulations_batch` |
-| `tmki_ocr` | OCR stub/HTTP MinerU → Mistral (`TMKI_OCR_MODE`, `MINERU_API_URL`) |
+| `tmki_ocr` | OCR stub/local/HTTP MinerU → Mistral (`TMKI_OCR_MODE`, `pip install -e ".[ocr]"` для PDF) |
 | `tmki_admin` | UI + API галочек grant/deny (`python -m tmki_admin`) |
 | `tmki_sharepoint` | stub + Graph adapter (`TMKI_GRAPH_DRY_RUN`, production resolve→invite/revoke) |
 | `tmki_llm` | LLM: `stub` / `openai` / `ollama` (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`) |
@@ -77,6 +77,15 @@ from tmki_rag import load_regulations_chunks, rag_search
 
 chunks = load_regulations_chunks()  # artifacts/regulations-import/chunks.json
 resp = rag_search({"trace_id": "t1", "query": "промбезопасность", "policy_context": ctx}, chunks)
+```
+
+### Re-index с реальным текстом (local OCR)
+
+```powershell
+$env:PYTHONPATH = "."
+pip install -e ".[ocr]"   # pypdf для PDF
+python scripts/reindex_regulations_local.py --checkpoint-every 200
+# → artifacts/regulations-import/chunks-v2.json
 ```
 
 ## Использование

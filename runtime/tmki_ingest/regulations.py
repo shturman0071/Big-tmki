@@ -277,7 +277,7 @@ def import_regulations_full(
         _load_chunks_into_index(chunks_file, index)
 
     imported: list[dict[str, Any]] = []
-    errors: list[dict[str, str]] = []
+    errors: list[dict[str, str]] = list(state.get("recent_errors") or [])
     candidates = _iter_ingest_candidates(root, allowed)
     started = _now_iso()
 
@@ -350,6 +350,7 @@ def import_regulations_full(
             state["processed"] = sorted(processed)
             state["stats"] = stats
             state["total_candidates"] = len(candidates)
+            state["recent_errors"] = errors[-50:]
             state["updated_at"] = _now_iso()
             state["archive_root"] = str(root)
             _save_import_state(state_file, state)
@@ -358,6 +359,7 @@ def import_regulations_full(
     state["processed"] = sorted(processed)
     state["stats"] = stats
     state["total_candidates"] = len(candidates)
+    state["recent_errors"] = errors[-50:]
     state["updated_at"] = _now_iso()
     state["archive_root"] = str(root)
     state["started_at"] = state.get("started_at") or started

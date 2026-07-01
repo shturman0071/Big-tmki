@@ -91,6 +91,8 @@ python scripts/benchmark_regulations_search.py
 python scripts/run_mvp_regulations.py "промбезопасность кран" --hybrid
 python scripts/compare_chunks_quality.py
 python scripts/reindex_status.py
+python scripts/reindex_errors.py
+python scripts/run_ocr_http_smoke.py --mock
 python scripts/run_legal_corpus_curator.py --dry-run
 python scripts/run_legal_corpus_curator.py --apply-ingest
 python scripts/run_desktop_sync.py --once --display-name "Литовский Д." --ingest

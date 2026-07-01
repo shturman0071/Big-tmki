@@ -296,6 +296,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `--incremental` в `load_regulations_pgvector.py`, `sync_pgvector_incremental.ps1`, `total_candidates` в state
 
+### #55 [phase-4] [runtime] HTTP OCR smoke + re-index error report
+
+**Статус:** MVP (v0.3) — `run_ocr_http_smoke.py`, `reindex_errors.py`, `recent_errors` в state
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

@@ -34,3 +34,22 @@ def test_run_ocr_fallback_primary_error():
     assert result["fallback_used"] is True
     assert result["provider_used"] == "mistral_ocr_4"
     assert result["fallback_reason"] == "primary_error"
+
+
+def test_http_mineru_provider_mock(monkeypatch):
+    monkeypatch.setenv("TMKI_OCR_MODE", "http")
+
+    def fake_post(url: str, payload: dict, headers: dict, timeout: int) -> dict:
+        return {"markdown": "HTTP MinerU text", "avg_confidence": 0.91}
+
+    from tmki_ocr.ocr import HttpMinerUProvider, run_ocr
+
+    result = run_ocr(
+        doc_id="doc_http",
+        trace_id="t-http",
+        raw_bytes=b"%PDF",
+        mineru_provider=HttpMinerUProvider(api_url="http://test/mineru", http_post=fake_post),
+        mistral_provider=HttpMinerUProvider(api_url="http://test/m", http_post=fake_post),
+    )
+    assert result["ocr_status"] == "completed"
+    assert result["provider_used"] == "mineru"

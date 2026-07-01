@@ -9,7 +9,7 @@
 | `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 | `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
 | `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
-| `tmki_ingest` | `validate_ingest` / `accept_ingest` / `process_document` / `ingest_and_index` |
+| `tmki_ingest` | gate / dedup / pipeline / `scan_regulations_archive` / `import_regulations_batch` |
 | `tmki_ocr` | OCR stub/HTTP MinerU → Mistral (`TMKI_OCR_MODE`, `MINERU_API_URL`) |
 | `tmki_admin` | UI + API галочек grant/deny (`python -m tmki_admin`) |
 | `tmki_sharepoint` | stub + Graph adapter (`TMKI_GRAPH_DRY_RUN`, production resolve→invite/revoke) |
@@ -22,6 +22,42 @@ cd runtime
 python -m pip install -e ".[dev]"
 python -m pytest -q
 ```
+
+### Postgres + pgvector (local)
+
+```powershell
+cd runtime/docker
+docker compose up -d
+# Скопировать env: cp env.example ../.env.local (или export вручную)
+$env:DATABASE_URL = "postgresql://tmki:tmki_dev@127.0.0.1:5432/tmki"
+$env:TMKI_INDEX_BACKEND = "pgvector"
+pip install -e ".[pgvector]"
+python scripts/pgvector_smoke.py
+```
+
+### Импорт регламентов (#6 MVP)
+
+```python
+from pathlib import Path
+from tmki_ingest import scan_regulations_archive, import_regulations_batch, DedupStore
+from tmki_rag import ChunkIndex
+
+manifest = scan_regulations_archive(Path("D:/ТМКИ оригнал"), compute_hash=True)
+# manifest["stats"] — ingest_candidate / catalog_only / skip
+
+result = import_regulations_batch(
+    Path("D:/ТМКИ оригнал"),
+    policy_context=ctx,
+    classification="restricted",
+    folder_id="folder_ms_open",
+    folder_acl=acl,
+    dedup_store=DedupStore(),
+    index=ChunkIndex(),
+    limit=10,
+)
+```
+
+Контракт manifest: `schemas/document/regulations-catalog.schema.json`.
 
 ## Использование
 

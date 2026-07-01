@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/document/regulations-catalog.schema.json",
+  "title": "TMKI Regulations Archive Catalog",
+  "description": "Manifest локального архива регламентов для планирования ingest (#6)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "archive_root", "scanned_at", "total_files", "stats", "entries"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "archive_root": { "type": "string" },
+    "scanned_at": { "type": "string", "format": "date-time" },
+    "total_files": { "type": "integer", "minimum": 0 },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ingest_candidate", "catalog_only", "skip"],
+      "properties": {
+        "ingest_candidate": { "type": "integer", "minimum": 0 },
+        "catalog_only": { "type": "integer", "minimum": 0 },
+        "skip": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["relative_path", "file_name", "extension", "size_bytes", "import_action"],
+        "properties": {
+          "relative_path": { "type": "string" },
+          "file_name": { "type": "string" },
+          "extension": { "type": "string" },
+          "size_bytes": { "type": "integer", "minimum": 0 },
+          "import_action": {
+            "type": "string",
+            "enum": ["ingest_candidate", "catalog_only", "skip"]
+          },
+          "content_hash": { "type": "string", "pattern": "^sha256:" }
+        }
+      }
+    }
+  }
+}

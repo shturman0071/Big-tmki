@@ -75,7 +75,7 @@ Issues: <https://github.com/shturman0071/Big-tmki/issues>
 
 ### #6 [phase-1] [docs] Импорт регламентов из `ТМКИ оригнал`
 
-**Статус:** отложено — локальный архив ~1200+ файлов; vsdx → `ORG_MODEL.md` уже импортирован
+**Статус:** MVP (v0.2) — `scan_regulations_archive()` + `import_regulations_batch()` в `tmki_ingest/regulations.py`; полный архив ~1200+ файлов — backlog
 
 ---
 
@@ -207,7 +207,7 @@ pgvector + RLS-поля до выдачи в RAG.
 15. ~~#2 Закрепить владельцев и процесс апрува хэндбука~~ ✅ (v0.1)
 16. ~~#4 Owners в 13_ai_skills_registry.md~~ ✅ (v0.1)
 17. ~~#5 Карточки Approved в 18_technology_watch.md~~ ✅ (v0.1)
-18. ~~#6 Импорт регламентов~~ — отложено
+18. ~~#6 Импорт регламентов~~ — MVP scanner+batch ✅ (полный архив — backlog)
 19. ~~#7 RLS open questions (Сатимол)~~ ✅ (v0.2)
 20. ~~#8 Схема сущностей org model~~ ✅ (v0.1)
 21. ~~#9 Актуализировать вакансии оргсхемы~~ ✅ (v0.1)
@@ -224,7 +224,9 @@ pgvector + RLS-поля до выдачи в RAG.
 32. ~~#33 Embeddings API providers (local/openai/ollama)~~ ✅
 33. ~~#34 pgvector cosine search~~ ✅
 34. ~~#35 E2E MVP с Ollama + vector index~~ ✅
-35. **Следующий фокус:** импорт регламентов (#6); production Postgres+pgvector deploy; реальные MinerU/Mistral
+35. ~~#36 Postgres+pgvector deploy (docker-compose)~~ ✅
+36. ~~#6 Импорт регламентов — scanner + batch MVP~~ ✅ (полный архив — backlog)
+37. **Следующий фокус:** полный импорт архива; реальные MinerU/Mistral OCR; ivfflat tuning pgvector
 
 ---
 
@@ -287,6 +289,14 @@ pgvector + RLS-поля до выдачи в RAG.
 ### #35 [phase-6] [runtime] E2E MVP с Ollama + vector index
 
 **Статус:** done (v0.2 — `run_mvp(llm_provider=ollama, index=..., use_hybrid_search=True)`)
+
+### #36 [phase-4] [runtime] Postgres+pgvector deploy
+
+**Статус:** done (v0.2 — `runtime/docker/docker-compose.yml`, `init.sql`, `scripts/pgvector_smoke.py`)
+
+### #6 [phase-1] [runtime] Импорт регламентов — scanner + batch
+
+**Статус:** MVP (v0.2) — `scan_regulations_archive`, `import_regulations_batch`, schema `regulations-catalog.schema.json`
 
 ## Phase 2.5 — Делегирование папок (backlog)
 

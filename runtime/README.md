@@ -97,6 +97,7 @@ python scripts/compare_chunks_quality.py --json
 .\scripts\setup_http_ocr.ps1
 .\scripts\run_tmki_demo.ps1
 .\scripts\run_tmki_demo.ps1 -Backend pgvector
+.\scripts\finalize_regulations_index.ps1
 python scripts/reindex_status.py
 python scripts/reindex_report.py
 python scripts/reindex_errors.py

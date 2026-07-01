@@ -26,6 +26,31 @@ def _parse_iso(ts: str) -> datetime | None:
         return None
 
 
+def estimate_eta_hours(
+    *,
+    started: datetime | None,
+    live_progress: int,
+    total: int,
+    now: datetime | None = None,
+    min_elapsed_hours: float = 0.05,
+) -> float | None:
+    """ETA по live_progress (heartbeat) и started_at."""
+    if total <= 0:
+        return None
+    if live_progress >= total:
+        return 0.0
+    if not started or live_progress <= 0:
+        return None
+    now = now or datetime.now(timezone.utc)
+    elapsed_h = (now - started).total_seconds() / 3600.0
+    if elapsed_h < min_elapsed_hours:
+        return None
+    rate = live_progress / elapsed_h
+    if rate <= 0:
+        return None
+    return max(total - live_progress, 0) / rate
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Re-index progress report")
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
@@ -44,12 +69,6 @@ def main() -> int:
     total = int(state.get("total_candidates") or 10_089)
     imported = int(stats.get("imported", 0))
     errors = int(stats.get("errors", 0))
-    pct = 100.0 * processed / total if total else 0.0
-
-    chunk_count = 0
-    chunks_path = args.state.parent / "chunks-v2.json"
-    if chunks_path.is_file():
-        chunk_count = len(json.loads(chunks_path.read_text(encoding="utf-8")).get("chunks", []))
 
     current_file = None
     hb_index = None
@@ -58,15 +77,17 @@ def main() -> int:
         current_file = hb.get("current_file")
         hb_index = hb.get("file_index")
 
+    live_progress = max(processed, int(hb_index or 0))
+    pct = 100.0 * live_progress / total if total else 0.0
+
+    chunk_count = 0
+    chunks_path = args.state.parent / "chunks-v2.json"
+    if chunks_path.is_file():
+        chunk_count = len(json.loads(chunks_path.read_text(encoding="utf-8")).get("chunks", []))
+
     updated = _parse_iso(state.get("updated_at", ""))
-    started = _parse_iso(state.get("started_at", ""))
-    eta_hours = None
-    if updated and started and processed > 0:
-        elapsed_h = (updated - started).total_seconds() / 3600.0
-        if elapsed_h > 0:
-            rate = processed / elapsed_h
-            remaining = max(total - processed, 0)
-            eta_hours = remaining / rate if rate > 0 else None
+    started = _parse_iso(state.get("started_at", "")) or updated
+    eta_hours = estimate_eta_hours(started=started, live_progress=live_progress, total=total)
 
     recent_errors = state.get("recent_errors") or []
 
@@ -81,6 +102,7 @@ def main() -> int:
 
     report = {
         "processed": processed,
+        "live_progress": live_progress,
         "total": total,
         "percent": round(pct, 1),
         "imported": imported,
@@ -101,11 +123,11 @@ def main() -> int:
         return 0
 
     print("TMKI re-index report\n")
-    print(f"  progress: {processed}/{total} ({pct:.1f}%)")
+    print(f"  progress: {live_progress}/{total} ({pct:.1f}%)  [checkpoint {processed}]")
     print(f"  imported: {imported}  chunks-v2: {chunk_count}")
     print(f"  errors: {errors}  skip_temp: {stats.get('skip_temp', 0)}  ocr_failed: {stats.get('ocr_failed', 0)}")
     if eta_hours is not None:
-        print(f"  ETA: ~{eta_hours:.1f} h (оценка по checkpoint)")
+        print(f"  ETA: ~{eta_hours:.1f} h")
     if current_file:
         print(f"  current: [{hb_index}/{total}] {current_file}")
     if lock_pid:

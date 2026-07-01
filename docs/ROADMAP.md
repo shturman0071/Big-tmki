@@ -320,6 +320,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `reindex.lock`, `run_tmki_demo.ps1`, защита от параллельных прогонов
 
+### #61 [phase-4] [runtime] Finalize index + улучшенный ETA
+
+**Статус:** MVP (v0.3) — `finalize_regulations_index.ps1`, live progress + ETA в `reindex_report.py`
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

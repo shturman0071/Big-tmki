@@ -207,7 +207,7 @@ pgvector + RLS-поля до выдачи в RAG.
 15. ~~#2 Закрепить владельцев и процесс апрува хэндбука~~ ✅ (v0.1)
 16. ~~#4 Owners в 13_ai_skills_registry.md~~ ✅ (v0.1)
 17. ~~#5 Карточки Approved в 18_technology_watch.md~~ ✅ (v0.1)
-18. ~~#6 Импорт регламентов~~ — MVP scanner+batch ✅ (полный архив — backlog)
+18. ~~#6 Импорт регламентов~~ — полный stub-импорт ✅ (8056 chunks локально)
 19. ~~#7 RLS open questions (Сатимол)~~ ✅ (v0.2)
 20. ~~#8 Схема сущностей org model~~ ✅ (v0.1)
 21. ~~#9 Актуализировать вакансии оргсхемы~~ ✅ (v0.1)
@@ -225,8 +225,9 @@ pgvector + RLS-поля до выдачи в RAG.
 33. ~~#34 pgvector cosine search~~ ✅
 34. ~~#35 E2E MVP с Ollama + vector index~~ ✅
 35. ~~#36 Postgres+pgvector deploy (docker-compose)~~ ✅
-36. ~~#6 Импорт регламентов — scanner + batch MVP~~ ✅ (полный архив — backlog)
-37. **Следующий фокус:** полный импорт архива; реальные MinerU/Mistral OCR; ivfflat tuning pgvector
+36. ~~#6 Полный stub-импорт архива (8056 chunks)~~ ✅
+37. ~~#37 Regulations RAG + load в pgvector + IVFFlat~~ ✅
+38. **Следующий фокус:** реальные MinerU/Mistral OCR; re-index с настоящим текстом; production deploy
 
 ---
 
@@ -296,7 +297,11 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #6 [phase-1] [runtime] Импорт регламентов — scanner + batch
 
-**Статус:** MVP (v0.2) — `scan_regulations_archive`, `import_regulations_batch`, schema `regulations-catalog.schema.json`
+**Статус:** done (v0.2) — полный stub-прогон 10 089 кандидатов → 8056 chunks (`artifacts/regulations-import/`)
+
+### #37 [phase-4] [runtime] Regulations RAG + pgvector load
+
+**Статус:** done (v0.2 — `load_regulations_chunks`, `load_regulations_pgvector.py`, IVFFlat после bulk load)
 
 ## Phase 2.5 — Делегирование папок (backlog)
 

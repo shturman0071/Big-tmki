@@ -256,5 +256,6 @@ def _finalize(
 
 
 def load_chunks(path: Path) -> list[dict[str, Any]]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return data["chunks"]
+    from tmki_rag.chunks_io import load_chunks_file
+
+    return load_chunks_file(path)

@@ -59,6 +59,26 @@ result = import_regulations_batch(
 
 Контракт manifest: `schemas/document/regulations-catalog.schema.json`.
 
+### Загрузка в pgvector
+
+```powershell
+cd runtime/docker
+docker compose up -d
+$env:DATABASE_URL = "postgresql://tmki:tmki_dev@127.0.0.1:5432/tmki"
+$env:TMKI_INDEX_BACKEND = "pgvector"
+pip install -e ".[pgvector]"
+python scripts/load_regulations_pgvector.py
+```
+
+### RAG по импортированным регламентам
+
+```python
+from tmki_rag import load_regulations_chunks, rag_search
+
+chunks = load_regulations_chunks()  # artifacts/regulations-import/chunks.json
+resp = rag_search({"trace_id": "t1", "query": "промбезопасность", "policy_context": ctx}, chunks)
+```
+
 ## Использование
 
 ```python

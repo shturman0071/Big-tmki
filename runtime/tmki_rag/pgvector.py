@@ -131,6 +131,38 @@ class PgVectorChunkIndex(VectorChunkIndex):
         self._conn.commit()
         return count
 
+    def count(self) -> int:
+        with self._conn.cursor() as cur:
+            cur.execute(f"SELECT COUNT(*) FROM {self._table}")
+            row = cur.fetchone()
+        return int(row[0]) if row else 0
+
+    def create_ivfflat_index(self, *, lists: int | None = None) -> dict[str, Any]:
+        """IVFFlat индекс после bulk load (pgvector). lists ≈ sqrt(n), min 100 rows."""
+        if not self._use_pgvector:
+            return {"status": "skipped", "reason": "pgvector_not_enabled"}
+        n = self.count()
+        if n < 100:
+            return {"status": "skipped", "reason": "insufficient_rows", "row_count": n}
+        idx_lists = lists or max(10, min(int(n**0.5), 1000))
+        sql = (
+            f"CREATE INDEX IF NOT EXISTS tmki_chunks_embedding_ivfflat "
+            f"ON {self._table} USING ivfflat (embedding vector_cosine_ops) "
+            f"WITH (lists = {idx_lists})"
+        )
+        with self._conn.cursor() as cur:
+            cur.execute(sql)
+        self._conn.commit()
+        return {"status": "ok", "row_count": n, "lists": idx_lists}
+
+    def bulk_add(self, chunks: list[dict[str, Any]], *, batch_size: int = 200) -> int:
+        """Пакетная загрузка chunks (одна транзакция на batch)."""
+        total = 0
+        for offset in range(0, len(chunks), batch_size):
+            batch = chunks[offset : offset + batch_size]
+            total += self.add(batch)
+        return total
+
     def list(self) -> list[dict[str, Any]]:
         if self._chunks:
             return super().list()

@@ -41,14 +41,13 @@ def main() -> int:
         heartbeat_path=args.heartbeat,
         lock_path=args.lock,
     )
-    out_path = args.save
-    if out_path is not None:
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(json.dumps(archive, ensure_ascii=False, indent=2), encoding="utf-8")
+    out_path = args.save or (args.state.parent / "tmki-ops-archive-latest.json")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(archive, ensure_ascii=False, indent=2), encoding="utf-8")
 
     if args.stdout:
         print(json.dumps(archive, ensure_ascii=False, indent=2))
-    elif out_path is not None:
+    else:
         print(f"ops archive saved: {out_path}", file=sys.stderr)
     return 0
 

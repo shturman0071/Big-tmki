@@ -31,6 +31,17 @@ ALTER TABLE tmki_chunks
 """
 
 
+def _json_safe(value: Any) -> Any:
+    """Убрать NUL из строк — PostgreSQL JSONB их не принимает."""
+    if isinstance(value, str):
+        return value.replace("\x00", "")
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(v) for v in value]
+    return value
+
+
 class PgVectorChunkIndex(VectorChunkIndex):
     """
     PostgreSQL + pgvector backend (optional psycopg).
@@ -78,7 +89,7 @@ class PgVectorChunkIndex(VectorChunkIndex):
         count = 0
         with self._conn.cursor() as cur:
             for chunk in chunks:
-                item = dict(chunk)
+                item = _json_safe(dict(chunk))
                 self._ensure_embedding(item)
                 emb = item["_embedding"]
                 if self._use_pgvector:

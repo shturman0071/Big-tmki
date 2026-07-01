@@ -1,6 +1,13 @@
 import json
 
-from tmki_rag.pgvector import PgVectorChunkIndex
+from tmki_rag.pgvector import PgVectorChunkIndex, _json_safe
+
+
+def test_json_safe_strips_nul():
+    dirty = {"content_preview": "test\u0000suffix", "nested": ["a\u0000b"]}
+    clean = _json_safe(dirty)
+    assert "\x00" not in clean["content_preview"]
+    assert clean["nested"][0] == "ab"
 
 
 class _MockCursor:

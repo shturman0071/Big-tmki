@@ -32,14 +32,13 @@ def main() -> int:
     from tmki_ingest.finalize_ops_bundle import build_finalize_ops_bundle
 
     bundle = build_finalize_ops_bundle(args.artifacts)
-    out_path = args.save
-    if out_path is not None:
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8")
+    out_path = args.save or (args.artifacts / "finalize-ops-bundle-latest.json")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8")
 
     if args.stdout:
         print(json.dumps(bundle, ensure_ascii=False, indent=2))
-    elif out_path is not None:
+    else:
         print(f"finalize ops bundle saved: {out_path}", file=sys.stderr)
     return 0
 

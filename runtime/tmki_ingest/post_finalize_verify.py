@@ -41,12 +41,26 @@ def build_post_finalize_verify(artifacts_dir: Path, *, dsn: str | None = None) -
     reindex = report.get("reindex") or {}
     chunks_v2 = reindex.get("chunks_v2")
     if pg_rows is not None and chunks_v2:
-        add(
-            "pgvector_vs_chunks",
-            pg_rows >= int(chunks_v2),
-            f"pgvector={pg_rows} chunks_v2={chunks_v2}",
-            blocking=False,
-        )
+        try:
+            from tmki_rag.chunks_io import load_chunks_file, resolve_regulations_chunks_path
+
+            all_chunks = load_chunks_file(resolve_regulations_chunks_path("v2"))
+            unique_ids = len({c.get("chunk_id") for c in all_chunks if c.get("chunk_id")})
+            expected = unique_ids or int(chunks_v2)
+            detail = f"pgvector={pg_rows} unique_chunk_ids={expected} chunks_v2={chunks_v2}"
+            add(
+                "pgvector_vs_chunks",
+                pg_rows >= expected,
+                detail,
+                blocking=False,
+            )
+        except Exception:
+            add(
+                "pgvector_vs_chunks",
+                pg_rows >= int(chunks_v2),
+                f"pgvector={pg_rows} chunks_v2={chunks_v2}",
+                blocking=False,
+            )
 
     complete_path = artifacts_dir / "reindex-complete-latest.json"
     if complete_path.is_file():

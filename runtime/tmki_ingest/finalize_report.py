@@ -12,7 +12,7 @@ from typing import Any
 def _read_json(path: Path) -> dict[str, Any] | None:
     if not path.is_file():
         return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def pgvector_row_count(dsn: str | None = None) -> int | None:

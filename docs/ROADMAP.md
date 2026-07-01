@@ -36,9 +36,10 @@
 
 ### #2 [phase-0] [docs] Закрепить владельцев и процесс апрува хэндбука
 
-- Кто апрувит изменения MUST-требований
-- Когда обязателен security-review
-- Когда обновлять `README.md`
+**Статус:** done (v0.1 — `AGENTS.md` §Владельцы и апрув, ссылка в `README.md`)
+
+- Матрица owner по главам (роли Сатимол)
+- Апрув MUST, триггеры security-review, когда обновлять README
 
 ---
 
@@ -54,7 +55,7 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 .\scripts\create-github-issues.ps1 -IncludeDone
 ```
 
-Issues: https://github.com/shturman0071/Big-tmki/issues
+Issues: <https://github.com/shturman0071/Big-tmki/issues>
 
 ---
 
@@ -62,21 +63,22 @@ Issues: https://github.com/shturman0071/Big-tmki/issues
 
 ### #4 [phase-1] [docs] Дописать `13_ai_skills_registry.md` — owners
 
-- Назначить owner для каждого skill
-- Добавить примеры inputs/outputs (1 сценарий на skill)
+**Статус:** done (v0.1 — owners по ORG_MODEL, example на skill)
 
 ---
 
 ### #5 [phase-1] [docs] Детализировать `18_technology_watch.md` — карточки Approved
 
-Для каждой Approved-технологии: версия, owner, риски, дата пересмотра, ссылка на `16_tool_registry.md`.
+**Статус:** done (v0.1 — таблица карточек Approved + Watchlist)
 
 ---
 
 ### #6 [phase-1] [docs] Импорт регламентов из `ТМКИ оригнал`
 
-- Инвентаризация файлов в `d:\Курсор\ТМКИ оригнал\`
-- Выжимка в markdown (без коммита бинарников)
+**Статус:** in progress — инвентарь ~1200+ файлов в `d:\Курсор\ТМКИ оригнал\` (не коммитить)
+
+- Инвентаризация: vsdx импортирован в `ORG_MODEL.md`; остальное — backlog по категориям
+- Выжимка в markdown (без бинарников)
 - Skill: `vsdx-org-import` для оргсхем
 
 ---
@@ -204,5 +206,8 @@ pgvector + RLS-поля до выдачи в RAG.
 12. ~~#19 Security-review перед MVP-релизом~~ ✅ (v0.1)
 13. ~~#20 CI: markdown lint + secret scan~~ ✅ (v0.1)
 14. ~~#3 Установить gh + создать issues на GitHub~~ ✅
-15. **#2 Закрепить владельцев и процесс апрува хэндбука**
-16. **#4–#6 Phase 1 docs** (owners, Approved-карточки, импорт регламентов)
+15. ~~#2 Закрепить владельцев и процесс апрува хэндбука~~ ✅ (v0.1)
+16. ~~#4 Owners в 13_ai_skills_registry.md~~ ✅ (v0.1)
+17. ~~#5 Карточки Approved в 18_technology_watch.md~~ ✅ (v0.1)
+18. **#6 Импорт регламентов из ТМКИ оригнал** (in progress)
+19. **#7–#9 Phase 2** — RLS open questions, org schema, вакансии

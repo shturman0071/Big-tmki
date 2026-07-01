@@ -32,6 +32,10 @@
 - **Provider pattern**: внешние интеграции оформляются как провайдеры со стабильным интерфейсом.
 - **Аудитируемость**: существенные действия runtime (tool calls, доступы к данным, выдача ответов) должны оставлять след в аудит-логах.
 
+## Управление изменениями
+
+Владельцы глав, апрув MUST-требований и триггеры security-review: `AGENTS.md` §Владельцы и апрув.
+
 ## CI
 
 GitHub CLI: `winget install GitHub.cli` → `gh auth login` → `.\scripts\create-github-issues.ps1`  

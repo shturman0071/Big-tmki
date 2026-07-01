@@ -25,6 +25,7 @@
 - `schemas/document/` — JSON Schema ingest/dedup Document Intelligence (v0.1).
 - `schemas/tools/` — Tool Registry, provider pattern, tool call contracts (v0.1).
 - `schemas/security/` — MVP security-review checklist (v0.1).
+- `schemas/org/` — сущности org model: Company, Department, Position, Employee, Project, Assignment (v0.1).
 
 ## Конвенции
 

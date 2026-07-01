@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/org/department.schema.json",
+  "title": "TMKI Department",
+  "description": "Structural unit within company and optionally project (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "department_id", "company_id", "name", "status"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "department_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "company_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "project_id": {
+      "$ref": "common.schema.json#/$defs/entityId",
+      "description": "If set, department is project-scoped (e.g. Satimol site units)"
+    },
+    "parent_department_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "name": { "$ref": "common.schema.json#/$defs/localizedLabel" },
+    "status": { "$ref": "common.schema.json#/$defs/entityStatus" }
+  }
+}

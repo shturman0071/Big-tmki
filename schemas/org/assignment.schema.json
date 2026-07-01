@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/org/assignment.schema.json",
+  "title": "TMKI Assignment",
+  "description": "Links employee to position and/or project role (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "assignment_id",
+    "assignment_type",
+    "employee_id",
+    "valid_from",
+    "status"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "assignment_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "assignment_type": { "$ref": "common.schema.json#/$defs/assignmentType" },
+    "employee_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "company_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "department_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "position_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "project_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "project_role": {
+      "type": "string",
+      "description": "role_key from project-role catalog"
+    },
+    "company_group_id": {
+      "$ref": "common.schema.json#/$defs/entityId",
+      "description": "For group_grant assignments (group_admin)"
+    },
+    "valid_from": { "$ref": "common.schema.json#/$defs/date" },
+    "valid_to": { "$ref": "common.schema.json#/$defs/date" },
+    "status": { "$ref": "common.schema.json#/$defs/entityStatus" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "assignment_type": { "const": "position" } } },
+      "then": { "required": ["position_id", "department_id", "company_id"] }
+    },
+    {
+      "if": { "properties": { "assignment_type": { "const": "project_role" } } },
+      "then": { "required": ["project_id", "project_role"] }
+    },
+    {
+      "if": { "properties": { "assignment_type": { "const": "group_grant" } } },
+      "then": { "required": ["company_group_id", "project_role"] }
+    }
+  ]
+}

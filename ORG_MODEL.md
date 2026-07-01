@@ -13,6 +13,37 @@ Project -> ProjectRole -> Employee
 - **Employee** — конкретный сотрудник, назначенный на должность.
 - **Project** — проектная сущность (например, строительство шахты).
 - **ProjectRole** — проектная роль (ГИП, руководитель проекта, начальник участка и т. п.).
+- **Assignment** — назначение сотрудника на должность и/или проектную роль (с датами действия).
+
+## Схема сущностей (v0.1)
+
+> Roadmap #8 — JSON Schema в `schemas/org/`. Пример снимка Сатимол: `schemas/org/examples/satimol-snapshot.example.json`.
+
+```mermaid
+erDiagram
+  Company ||--o{ Department : has
+  Company ||--o{ Employee : employs
+  Company ||--o{ Project : operates
+  Department ||--o{ Position : contains
+  Project ||--o{ Department : scopes
+  Employee ||--o{ Assignment : holds
+  Position ||--o{ Assignment : fills
+  Project ||--o{ Assignment : grants
+  ProjectRole ||--o{ Assignment : defines
+  CompanyGroup ||--o{ Company : groups
+```
+
+| Сущность | Schema | Ключевые поля |
+|----------|--------|---------------|
+| Company | `company.schema.json` | `company_id`, `company_type`, `company_group_id` |
+| Department | `department.schema.json` | `department_id`, `company_id`, `project_id?`, `parent_department_id?` |
+| Position | `position.schema.json` | `position_id`, `department_id`, `status` (incl. `vacant`) |
+| Employee | `employee.schema.json` | `employee_id`, `clearance`, `contractor_id?` |
+| Project | `project.schema.json` | `project_id`, `primary_company_id` |
+| ProjectRole | `project-role.schema.json` | `role_key` → `policy_context.project_role` |
+| Assignment | `assignment.schema.json` | `position` / `project_role` / `group_grant` |
+
+**MUST**: `policy_context` в runtime собирается из активных `Assignment` на дату запроса (server-side).
 
 ## Источник оргструктуры (проект «Сатимол»)
 

@@ -1,0 +1,112 @@
+{
+  "schema_version": "0.1",
+  "snapshot_id": "satimol-org-2025-09-10",
+  "source": "Орг Структура Сатимола_проект_10092025.vsdx",
+  "companies": [
+    {
+      "schema_version": "0.1",
+      "company_id": "group_schbk",
+      "name": { "ru": "SchBK", "de": "SchBK" },
+      "company_type": "group",
+      "status": "active"
+    },
+    {
+      "schema_version": "0.1",
+      "company_id": "company_tmki_ru",
+      "name": { "ru": "ООО ТМКИ", "de": "Thyssen Mining Construction East" },
+      "company_type": "legal_entity",
+      "company_group_id": "group_schbk",
+      "country_code": "RU",
+      "status": "active"
+    }
+  ],
+  "projects": [
+    {
+      "schema_version": "0.1",
+      "project_id": "project_satimol",
+      "name": { "ru": "Сатимол", "de": "Satimol" },
+      "primary_company_id": "company_tmki_ru",
+      "company_ids": ["company_tmki_ru"],
+      "status": "active"
+    }
+  ],
+  "departments": [
+    {
+      "schema_version": "0.1",
+      "department_id": "dept_pto",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "name": { "ru": "ПТО", "de": "PTO" },
+      "status": "active"
+    },
+    {
+      "schema_version": "0.1",
+      "department_id": "dept_markscheider",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "name": { "ru": "Маркшейдерская служба", "de": "Markscheider Abteilung" },
+      "status": "active"
+    }
+  ],
+  "project_roles": [
+    {
+      "schema_version": "0.1",
+      "role_key": "Projektleiter",
+      "name": { "ru": "Руководитель проекта", "de": "Projektleiter" },
+      "default_clearance": "restricted",
+      "maps_to_matrix_row": "Projektleiter",
+      "status": "active"
+    },
+    {
+      "schema_version": "0.1",
+      "role_key": "Chefmarkscheider",
+      "name": { "ru": "Главный маркшейдер", "de": "Chefmarkscheider" },
+      "default_clearance": "restricted",
+      "maps_to_matrix_row": "Начальник подразделения",
+      "status": "active"
+    }
+  ],
+  "employees": [
+    {
+      "schema_version": "0.1",
+      "employee_id": "emp_neff_a",
+      "company_id": "company_tmki_ru",
+      "display_name": "Нефф А.",
+      "clearance": "restricted",
+      "status": "active"
+    },
+    {
+      "schema_version": "0.1",
+      "employee_id": "emp_litovsky_d",
+      "company_id": "company_tmki_ru",
+      "display_name": "Литовский Д.",
+      "clearance": "restricted",
+      "status": "active"
+    }
+  ],
+  "assignments": [
+    {
+      "schema_version": "0.1",
+      "assignment_id": "asgn_neff_pl",
+      "assignment_type": "project_role",
+      "employee_id": "emp_neff_a",
+      "company_id": "company_tmki_ru",
+      "project_id": "project_satimol",
+      "project_role": "Projektleiter",
+      "valid_from": "2025-09-10",
+      "status": "active"
+    },
+    {
+      "schema_version": "0.1",
+      "assignment_id": "asgn_litovsky_cm",
+      "assignment_type": "project_role",
+      "employee_id": "emp_litovsky_d",
+      "company_id": "company_tmki_ru",
+      "department_id": "dept_markscheider",
+      "project_id": "project_satimol",
+      "project_role": "Chefmarkscheider",
+      "valid_from": "2025-09-10",
+      "status": "active"
+    }
+  ]
+}

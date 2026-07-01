@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/org/employee.schema.json",
+  "title": "TMKI Employee",
+  "description": "Person subject to access control (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "employee_id", "company_id", "display_name", "status", "clearance"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "employee_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "user_id": {
+      "type": "string",
+      "description": "Auth system user id (MAY differ from employee_id)"
+    },
+    "company_id": {
+      "$ref": "common.schema.json#/$defs/entityId",
+      "description": "Primary employer company"
+    },
+    "contractor_id": {
+      "$ref": "common.schema.json#/$defs/entityId",
+      "description": "Set when employee acts as contractor guest"
+    },
+    "display_name": { "type": "string", "minLength": 1 },
+    "email": { "type": "string", "format": "email" },
+    "clearance": { "$ref": "common.schema.json#/$defs/clearanceLevel" },
+    "status": { "$ref": "common.schema.json#/$defs/entityStatus" }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/org/position.schema.json",
+  "title": "TMKI Position",
+  "description": "Org-chart position (slot) in a department (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "position_id", "company_id", "department_id", "title", "status"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "position_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "company_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "department_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "title": { "$ref": "common.schema.json#/$defs/localizedLabel" },
+    "status": {
+      "type": "string",
+      "enum": ["active", "vacant", "inactive"]
+    },
+    "is_manager": { "type": "boolean", "default": false }
+  }
+}

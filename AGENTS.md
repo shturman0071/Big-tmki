@@ -19,7 +19,7 @@
 
 | Файл | Тема |
 |------|------|
-| `ORG_MODEL.md` | Оргструктура, роли, RLS-маппинг |
+| `ORG_MODEL.md` | Оргструктура, роли, RLS-маппинг, `schemas/org/` |
 | `07_security_addendum.md` | Security baseline |
 | `09_document_processing.md` | Document Intelligence pipeline |
 | `10_ai_runtime.md` | AI Runtime, контракты Run/Step/Event |

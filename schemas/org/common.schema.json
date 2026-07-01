@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/org/common.schema.json",
+  "title": "TMKI Org Model Common Types",
+  "description": "Shared definitions for org entities (v0.1)",
+  "$defs": {
+    "entityId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,63}$",
+      "description": "Stable slug ID (e.g. company_tmki_ru, project_satimol)"
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "clearanceLevel": {
+      "type": "string",
+      "enum": ["public", "internal", "restricted", "confidential"]
+    },
+    "entityStatus": {
+      "type": "string",
+      "enum": ["active", "inactive", "vacant"]
+    },
+    "companyType": {
+      "type": "string",
+      "enum": ["legal_entity", "office", "contractor", "group"]
+    },
+    "assignmentType": {
+      "type": "string",
+      "enum": ["position", "project_role", "group_grant"]
+    },
+    "localizedLabel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ru": { "type": "string", "minLength": 1 },
+        "de": { "type": "string" },
+        "en": { "type": "string" }
+      }
+    }
+  }
+}

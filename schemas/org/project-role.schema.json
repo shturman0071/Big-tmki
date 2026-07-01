@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/org/project-role.schema.json",
+  "title": "TMKI ProjectRole Catalog Entry",
+  "description": "Catalog of project roles for policy matrix (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "role_key", "name", "status"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "role_key": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Value used in policy_context.project_role (e.g. Projektleiter)"
+    },
+    "name": { "$ref": "common.schema.json#/$defs/localizedLabel" },
+    "default_clearance": { "$ref": "common.schema.json#/$defs/clearanceLevel" },
+    "maps_to_matrix_row": {
+      "type": "string",
+      "description": "Row id in ORG_MODEL.md RLS matrix"
+    },
+    "status": { "$ref": "common.schema.json#/$defs/entityStatus" }
+  }
+}

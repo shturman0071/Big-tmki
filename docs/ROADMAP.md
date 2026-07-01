@@ -91,6 +91,8 @@ Issues: <https://github.com/shturman0071/Big-tmki/issues>
 
 ### #8 [phase-2] [security] Схема сущностей org model
 
+**Статус:** done (v0.1 — `schemas/org/`, пример `satimol-snapshot.example.json`, §Схема сущностей в `ORG_MODEL.md`)
+
 `company`, `department`, `position`, `employee`, `project`, `project_role`, `assignment`.
 
 ---
@@ -205,5 +207,5 @@ pgvector + RLS-поля до выдачи в RAG.
 17. ~~#5 Карточки Approved в 18_technology_watch.md~~ ✅ (v0.1)
 18. ~~#6 Импорт регламентов~~ — отложено
 19. ~~#7 RLS open questions (Сатимол)~~ ✅ (v0.2)
-20. **#8 Схема сущностей org model**
+20. ~~#8 Схема сущностей org model~~ ✅ (v0.1)
 21. **#9 Актуализировать вакансии оргсхемы**

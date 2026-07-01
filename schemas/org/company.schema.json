@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/org/company.schema.json",
+  "title": "TMKI Company",
+  "description": "Legal entity, office, contractor org, or group (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "company_id", "name", "company_type", "status"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "company_id": { "$ref": "common.schema.json#/$defs/entityId" },
+    "name": { "$ref": "common.schema.json#/$defs/localizedLabel" },
+    "company_type": { "$ref": "common.schema.json#/$defs/companyType" },
+    "company_group_id": {
+      "$ref": "common.schema.json#/$defs/entityId",
+      "description": "Parent group (e.g. schbk) for legal_entity/office"
+    },
+    "country_code": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$"
+    },
+    "status": { "$ref": "common.schema.json#/$defs/entityStatus" },
+    "external_ref": {
+      "type": "string",
+      "description": "ERP/HR external key"
+    }
+  }
+}

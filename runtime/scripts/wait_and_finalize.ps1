@@ -22,7 +22,7 @@ if ($PollSeconds -gt 0) {
 Write-Host "=== Preflight ===" -ForegroundColor Cyan
 python scripts/preflight_finalize.py
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Preflight failed — исправьте и запустите finalize вручную." -ForegroundColor Yellow
+    Write-Host "Preflight failed - fix issues and run finalize manually." -ForegroundColor Yellow
     exit $LASTEXITCODE
 }
 

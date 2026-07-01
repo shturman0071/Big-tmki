@@ -41,7 +41,7 @@ while ($true) {
         Write-Host "[$(Get-Date -Format HH:mm:ss)] 100% but lock active (pid=$($r.lock_pid)) — waiting..."
     }
     elseif (-not $r.complete -and -not (Test-ReindexRunning)) {
-        Write-Host "[$(Get-Date -Format HH:mm:ss)] re-index stopped at $($r.live_progress)/$($r.total) — run resume_reindex.ps1" -ForegroundColor Yellow
+        Write-Host "[$(Get-Date -Format HH:mm:ss)] re-index stopped at $($r.live_progress)/$($r.total) - run resume_reindex.ps1" -ForegroundColor Yellow
     }
     else {
         $eta = if ($r.eta_hours) { " ETA ~$($r.eta_hours)h" } else { "" }

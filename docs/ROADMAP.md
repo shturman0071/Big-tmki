@@ -400,6 +400,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `export_reindex_complete.py`, preflight+ops bundle+handoff в `reindex-complete-latest.json`
 
+### #81 [phase-4] [runtime] Post-finalize verify + checklist
+
+**Статус:** MVP (v0.3) — `verify_post_finalize.py`, `post_finalize_checklist.ps1`, verify в finalize pipeline
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

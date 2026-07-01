@@ -1,0 +1,97 @@
+{
+  "schema_version": "0.1",
+  "flow_id": "tmki-runtime-mvp-v0.1",
+  "description": "End-to-end MVP: Context → RAG → Loop → Judge → Audit",
+  "reference_scenario": "Пользователь Chefmarkscheider спрашивает о маркшейдерской съёмке на участке КС (проект Сатимол)",
+  "stages": [
+    {
+      "order": 1,
+      "module": "Audit",
+      "action": "emit run_started",
+      "loop_state": "init",
+      "schemas": ["schemas/runtime/event.schema.json"]
+    },
+    {
+      "order": 2,
+      "module": "Context Builder",
+      "action": "build ContextBundle from policy_context + message",
+      "loop_state": "init → context_ready",
+      "step_type": "context_build",
+      "schemas": ["schemas/runtime/common.schema.json#/$defs/policyContext"]
+    },
+    {
+      "order": 3,
+      "module": "Loop Engine",
+      "action": "init budget + circuit_breaker",
+      "loop_state": "context_ready",
+      "schemas": ["schemas/runtime/loop-state.schema.json"]
+    },
+    {
+      "order": 4,
+      "module": "Tool Registry",
+      "action": "rag_search via checkPolicy + execute",
+      "loop_state": "plan_ready → step_running → step_done",
+      "step_type": "tool_call",
+      "tool_id": "rag_search",
+      "schemas": [
+        "schemas/tools/tool-call-request.schema.json",
+        "schemas/document/search-request.schema.json",
+        "schemas/document/search-response.schema.json",
+        "schemas/tools/tool-gating.rules.json"
+      ]
+    },
+    {
+      "order": 5,
+      "module": "RAG",
+      "action": "attach evidence pack (citations) to context",
+      "loop_state": "step_done",
+      "audit": ["document_accessed", "tool_call_completed"]
+    },
+    {
+      "order": 6,
+      "module": "Tool Registry",
+      "action": "llm_openai generate answer",
+      "loop_state": "step_running → step_done",
+      "step_type": "llm_generate",
+      "tool_id": "llm_openai",
+      "guardrails": ["pre_call", "post_call", "pii_scan", "secret_scan"]
+    },
+    {
+      "order": 7,
+      "module": "Judge",
+      "action": "Security Review checklist + citation check",
+      "loop_state": "judge_pending → loop_complete",
+      "step_type": "judge",
+      "audit": ["judge_pass"]
+    },
+    {
+      "order": 8,
+      "module": "Audit",
+      "action": "emit run_completed",
+      "loop_state": "loop_complete",
+      "run_status": "completed"
+    }
+  ],
+  "degraded_paths": [
+    {
+      "trigger": "rag_search denied or empty",
+      "action": "llm_generate with confidence=low, read_only_mode=true, no citations"
+    },
+    {
+      "trigger": "circuit_breaker_tripped",
+      "action": "degraded_readonly → rag only → partial answer"
+    },
+    {
+      "trigger": "judge_fail",
+      "action": "retry llm_generate once, then failed"
+    }
+  ],
+  "mvp_acceptance_criteria": [
+    "trace_id связывает все Event одного Run",
+    "policy_context не модифицируется LLM",
+    "RAG results filtered server-side before LLM",
+    "tool gating deny → tool_call_denied, no execute",
+    "final Run.output contains citations when RAG succeeded",
+    "guardrails block → guardrail_block audit, no leak"
+  ]
+}

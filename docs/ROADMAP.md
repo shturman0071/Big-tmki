@@ -167,6 +167,8 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #18 [phase-6] [runtime] MVP: Context → RAG → Loop → Judge → Audit
 
+**Статус:** done (v0.1 — `10_ai_runtime.md` §MVP End-to-End, `schemas/runtime/mvp-flow.json`)
+
 ### #19 [phase-6] [security] Security-review перед MVP-релизом
 
 ### #20 [phase-0] CI: markdown lint + secret scan
@@ -185,5 +187,6 @@ pgvector + RLS-поля до выдачи в RAG.
 8. ~~#15 Индексация с server-side фильтрацией~~ ✅ (v0.1)
 9. ~~#16 Tool Registry каркас~~ ✅ (v0.1)
 10. ~~#17 Tool gating по org/role/env~~ ✅ (v0.1)
-11. **#18 MVP runtime end-to-end (#18 roadmap)**
-12. **#3 Установить gh + создать issues на GitHub**
+11. ~~#18 MVP runtime end-to-end~~ ✅ (v0.1)
+12. **#19 Security-review перед MVP-релизом**
+13. **#3 Установить gh + создать issues на GitHub**

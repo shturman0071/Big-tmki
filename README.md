@@ -33,5 +33,6 @@
 
 ## Roadmap
 
-План работ и backlog задач: `docs/ROADMAP.md`.
+План работ и backlog задач: `docs/ROADMAP.md`.  
+MVP runtime flow: `schemas/runtime/mvp-flow.json`.
 

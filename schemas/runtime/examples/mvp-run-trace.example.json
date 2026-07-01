@@ -1,0 +1,56 @@
+{
+  "schema_version": "0.1",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "run_id": "550e8400-e29b-41d4-a716-446655440001",
+  "scenario": "MVP Satimol — маркшейдерская съёмка КС",
+  "run_status": "completed",
+  "policy_version": "tool-gating-2026-07-01",
+  "guardrails_version": "guardrails-2026-06-01",
+  "steps": [
+    {
+      "step_id": "550e8400-e29b-41d4-a716-446655440010",
+      "type": "context_build",
+      "status": "completed",
+      "loop_state_after": "context_ready"
+    },
+    {
+      "step_id": "550e8400-e29b-41d4-a716-446655440002",
+      "type": "tool_call",
+      "tool_id": "rag_search",
+      "status": "completed",
+      "loop_state_after": "step_done",
+      "output_summary": "8 chunks, project satimol, S_dept_tree"
+    },
+    {
+      "step_id": "550e8400-e29b-41d4-a716-446655440011",
+      "type": "llm_generate",
+      "tool_id": "llm_openai",
+      "model": "gpt-4.1",
+      "status": "completed",
+      "loop_state_after": "step_done"
+    },
+    {
+      "step_id": "550e8400-e29b-41d4-a716-446655440012",
+      "type": "judge",
+      "status": "completed",
+      "loop_state_after": "loop_complete"
+    }
+  ],
+  "audit_events_summary": [
+    "run_started",
+    "loop_state_changed",
+    "tool_call_requested",
+    "document_accessed",
+    "tool_call_completed",
+    "step_completed",
+    "guardrail_redact",
+    "judge_pass",
+    "run_completed"
+  ],
+  "run_output": {
+    "confidence": "high",
+    "read_only_mode": false,
+    "citations_count": 2,
+    "stop_reason": "judge_pass"
+  }
+}

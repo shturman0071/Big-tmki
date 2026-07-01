@@ -29,10 +29,15 @@ def build_ops_status(
     finalize_marker = artifacts_dir / "finalize-done.json"
     summary_path = artifacts_dir / "finalize-summary-latest.json"
 
+    from tmki_ingest.reindex_stats import build_ingest_stats
+
+    ingest_stats = build_ingest_stats(state, report)
+
     ready_for_finalize = bool(report.get("complete")) and report.get("lock_pid") is None
 
     return {
         "report": report,
+        "ingest_stats": ingest_stats,
         "errors": errors,
         "ready_for_finalize": ready_for_finalize,
         "finalize_done": finalize_marker.is_file(),

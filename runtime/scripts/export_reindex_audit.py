@@ -32,11 +32,14 @@ def build_audit(
         heartbeat_path=heartbeat_path,
         lock_path=lock_path,
     )
+    from tmki_ingest.reindex_stats import build_ingest_stats
+
     return {
         "exported_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "report": report,
         "errors": load_error_audit(state, limit=error_limit),
         "stats": state.get("stats", {}),
+        "ingest_stats": build_ingest_stats(state, report),
     }
 
 

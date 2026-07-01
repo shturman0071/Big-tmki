@@ -45,6 +45,12 @@ def main() -> int:
     if r.get("complete"):
         print("  status: complete")
     print(f"  chunks-v2: {r.get('chunks_v2')}  errors: {status['errors']['errors_total']}")
+    ing = status.get("ingest_stats") or {}
+    if ing:
+        print(
+            f"  yield: {ing.get('import_yield_pct')}%  skip_temp: {ing.get('skip_temp')}  "
+            f"too_large: {ing.get('too_large')}"
+        )
     if status["ready_for_finalize"]:
         print("  ready_for_finalize: yes")
     elif r.get("complete"):

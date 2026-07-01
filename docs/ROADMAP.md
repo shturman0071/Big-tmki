@@ -360,6 +360,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `reindex_ops_status.py`, `watch_to_finalize.ps1`, `wait_and_finalize -PollSeconds 0`
 
+### #71 [phase-4] [runtime] Ingest stats + progress snapshot log
+
+**Статус:** MVP (v0.3) — `reindex_stats.py`, `record_reindex_snapshot.py`, ingest_stats в ops/audit
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

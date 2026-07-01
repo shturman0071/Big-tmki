@@ -349,6 +349,7 @@ def import_regulations_full(
         if checkpoint_every > 0 and i % checkpoint_every == 0:
             state["processed"] = sorted(processed)
             state["stats"] = stats
+            state["total_candidates"] = len(candidates)
             state["updated_at"] = _now_iso()
             state["archive_root"] = str(root)
             _save_import_state(state_file, state)
@@ -356,6 +357,7 @@ def import_regulations_full(
 
     state["processed"] = sorted(processed)
     state["stats"] = stats
+    state["total_candidates"] = len(candidates)
     state["updated_at"] = _now_iso()
     state["archive_root"] = str(root)
     state["started_at"] = state.get("started_at") or started

@@ -26,11 +26,12 @@ def main() -> int:
     state = json.loads(args.state.read_text(encoding="utf-8"))
     processed = state.get("processed", [])
     stats = state.get("stats", {})
+    total = int(state.get("total_candidates") or args.total)
     imported = stats.get("imported", 0)
     errors = stats.get("errors", 0)
     skip_temp = stats.get("skip_temp", 0)
     ocr_failed = stats.get("ocr_failed", 0)
-    pct = 100.0 * len(processed) / args.total if args.total else 0.0
+    pct = 100.0 * len(processed) / total if total else 0.0
 
     chunks_v2 = args.state.parent / "chunks-v2.json"
     chunk_count = 0
@@ -40,7 +41,7 @@ def main() -> int:
 
     print(f"archive: {state.get('archive_root', '?')}")
     print(f"updated: {state.get('updated_at', '?')}")
-    print(f"processed: {len(processed)}/{args.total} ({pct:.1f}%)")
+    print(f"processed: {len(processed)}/{total} ({pct:.1f}%)")
     print(f"imported: {imported}  skip_temp: {skip_temp}  ocr_failed: {ocr_failed}  errors: {errors}")
     print(f"chunks-v2: {chunk_count} records")
     return 0

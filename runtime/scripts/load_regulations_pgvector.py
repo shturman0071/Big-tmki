@@ -22,6 +22,11 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=200)
     parser.add_argument("--ivfflat-lists", type=int, default=None)
     parser.add_argument("--skip-ivfflat", action="store_true")
+    parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help="Загрузить только новые chunks с прошлого sync (pgvector-sync-state.json)",
+    )
     args = parser.parse_args()
     chunks_path = args.chunks or resolve_regulations_chunks_path(args.variant)
 
@@ -37,9 +42,28 @@ def main() -> int:
 
     from tmki_rag.chunks_io import load_chunks_file
     from tmki_rag.pgvector import PgVectorChunkIndex
+    from tmki_rag.pgvector_sync import (
+        save_pgvector_sync_state,
+        slice_chunks_for_incremental,
+        sync_state_path,
+    )
 
-    chunks = load_chunks_file(chunks_path)
-    print(f"Загрузка {len(chunks)} chunks из {chunks_path}")
+    all_chunks = load_chunks_file(chunks_path)
+    offset = 0
+    chunks = all_chunks
+    if args.incremental:
+        chunks, offset = slice_chunks_for_incremental(
+            all_chunks,
+            variant=args.variant,
+            chunks_path=chunks_path,
+            state_path=sync_state_path(chunks_path),
+        )
+        if not chunks:
+            print(f"Нет новых chunks (всего {len(all_chunks)}, уже загружено {offset})")
+            return 0
+        print(f"Incremental: {len(chunks)} новых chunks (offset {offset}, всего {len(all_chunks)})")
+    else:
+        print(f"Загрузка {len(chunks)} chunks из {chunks_path}")
 
     index = PgVectorChunkIndex.from_env()
     if not isinstance(index, PgVectorChunkIndex):
@@ -50,6 +74,14 @@ def main() -> int:
     loaded = index.bulk_add(chunks, batch_size=args.batch_size)
     elapsed = time.perf_counter() - started
     print(f"Загружено: {loaded} за {elapsed:.1f}s, rows in DB: {index.count()}")
+
+    if args.incremental or loaded:
+        save_pgvector_sync_state(
+            sync_state_path(chunks_path),
+            variant=args.variant,
+            chunks_path=chunks_path,
+            loaded_count=offset + loaded,
+        )
 
     if not args.skip_ivfflat:
         ivf = index.create_ivfflat_index(lists=args.ivfflat_lists)

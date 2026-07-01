@@ -81,3 +81,31 @@ def test_create_ivfflat_index_mock():
     result = index.create_ivfflat_index(lists=50)
     assert result["status"] == "ok"
     assert "ivfflat" in conn.last_sql
+
+
+def test_pgvector_incremental_slice(tmp_path: Path):
+    from tmki_rag.pgvector_sync import (
+        save_pgvector_sync_state,
+        slice_chunks_for_incremental,
+        sync_state_path,
+    )
+
+    chunks_path = tmp_path / "chunks-v2.json"
+    chunks_path.write_text("{}", encoding="utf-8")
+    state_path = sync_state_path(chunks_path)
+    all_chunks = [{"chunk_id": f"c{i}"} for i in range(5)]
+    save_pgvector_sync_state(
+        state_path,
+        variant="v2",
+        chunks_path=chunks_path,
+        loaded_count=3,
+    )
+    new_chunks, offset = slice_chunks_for_incremental(
+        all_chunks,
+        variant="v2",
+        chunks_path=chunks_path,
+        state_path=state_path,
+    )
+    assert offset == 3
+    assert len(new_chunks) == 2
+    assert new_chunks[0]["chunk_id"] == "c3"

@@ -292,6 +292,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `tmki_legal/ingest_hook.py`, `--apply-ingest` в `run_legal_corpus_curator.py`
 
+### #54 [phase-4] [runtime] Incremental pgvector sync + re-index progress
+
+**Статус:** MVP (v0.3) — `--incremental` в `load_regulations_pgvector.py`, `sync_pgvector_incremental.ps1`, `total_candidates` в state
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

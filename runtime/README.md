@@ -95,6 +95,8 @@ python scripts/run_legal_corpus_curator.py --dry-run
 python scripts/run_legal_corpus_curator.py --apply-ingest
 python scripts/run_desktop_sync.py --once --display-name "Литовский Д." --ingest
 python scripts/load_regulations_pgvector.py --variant v2
+python scripts/load_regulations_pgvector.py --variant v2 --incremental --skip-ivfflat
+.\scripts\sync_pgvector_incremental.ps1
 ```
 
 ### Production-like stack (Docker)

@@ -89,7 +89,8 @@ def main() -> int:
         st = json.loads(state.read_text(encoding="utf-8"))
         stats = st.get("stats", {})
         proc = len(st.get("processed", []))
-        print(f"  [info] re-index: {proc}/10089 processed, imported={stats.get('imported', 0)}")
+        total = int(st.get("total_candidates") or 10_089)
+        print(f"  [info] re-index: {proc}/{total} processed, imported={stats.get('imported', 0)}")
 
     return 0 if ok else 1
 

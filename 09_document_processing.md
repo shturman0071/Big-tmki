@@ -101,6 +101,7 @@ Document -> OCR -> Markdown -> Metadata -> Chunking -> Embeddings -> Vector Sear
 - **Primary**: MinerU
 - **Fallback**: Mistral OCR 4
 - **Schema**: `schemas/document/ocr-result.schema.json`
+- **Референс (MVP stub)**: `runtime/tmki_ocr` (`run_ocr`); полный ingest → OCR → chunk: `tmki_ingest.process_document`
 
 #### Порядок провайдеров (MUST)
 

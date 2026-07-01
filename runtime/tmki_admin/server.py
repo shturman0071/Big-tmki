@@ -122,11 +122,9 @@ class GrantsHandler(BaseHTTPRequestHandler):
                 raise GrantServiceError(f"Неизвестный mode: {mode}")
 
             # SharePoint sync (stub) после изменения
-            from tmki_sharepoint import StubSharePointAdapter, build_sync_plan
+            from tmki_sharepoint import sync_grants_to_sharepoint
 
-            plan = build_sync_plan(self.service.store.grants, self.service.folders)
-            adapter = StubSharePointAdapter()
-            sync_result = adapter.apply(plan)
+            sync_result = sync_grants_to_sharepoint(self.service.store.grants, self.service.folders)
 
             self._send_json(
                 HTTPStatus.OK,

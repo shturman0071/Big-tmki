@@ -8,9 +8,10 @@
 | `tmki_rag` | `rag_search()` — RLS + folder ACL + keyword-score (MVP без pgvector) |
 | `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
 | `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
-| `tmki_ingest` | `validate_ingest` / `validate_delete` — gate до OCR pipeline |
+| `tmki_ingest` | `validate_ingest` / `accept_ingest` / `process_document` |
+| `tmki_ocr` | OCR stub MinerU → Mistral fallback (`run_ocr`) |
 | `tmki_admin` | UI + API галочек grant/deny (`python -m tmki_admin`) |
-| `tmki_sharepoint` | stub sync ACL SharePoint после изменения grants |
+| `tmki_sharepoint` | stub + Graph adapter (`TMKI_SHAREPOINT_ADAPTER`, `AZURE_*`) |
 | `tmki_llm` | LLM providers: `stub` (default) / `openai` (`OPENAI_API_KEY`) |
 | `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 

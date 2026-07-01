@@ -212,7 +212,16 @@ pgvector + RLS-поля до выдачи в RAG.
 20. ~~#8 Схема сущностей org model~~ ✅ (v0.1)
 21. ~~#9 Актуализировать вакансии оргсхемы~~ ✅ (v0.1)
 22. ~~#21 Folder grants~~ ✅
-23. **Следующий фокус:** production SharePoint Graph API; ingest → OCR stub; локальный LLM (watchlist)
+23. ~~#22–#24 ingest dedup, LLM, CI pytest~~ ✅
+24. **Следующий фокус:** production Graph permissions API; локальный LLM (watchlist); импорт регламентов (#6)
+
+### #25 [phase-4] [runtime] OCR stub pipeline (MinerU → Mistral)
+
+**Статус:** done (v0.1 — `tmki_ocr/ocr.py`, `process_document` в `tmki_ingest`)
+
+### #26 [phase-2] [runtime] SharePoint Graph adapter (каркас)
+
+**Статус:** done (v0.1 — `tmki_sharepoint/graph.py`, env `AZURE_*`); production driveItem permissions — backlog
 
 ---
 

@@ -5,15 +5,15 @@
 | Модуль | Назначение |
 |--------|------------|
 | `tmki_policy` | `policy_context` из org-снимка |
-| `tmki_rag` | `rag_search()` + `ChunkIndex` (in-memory до pgvector) |
+| `tmki_rag` | `rag_search()` + `ChunkIndex` / `VectorChunkIndex` / `pgvector` (`TMKI_INDEX_BACKEND`) |
+| `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 | `tmki_tools` | Tool Registry + gating (`tool-gating.rules.json`) |
 | `tmki_loop` | Loop Engine — budget, circuit breaker, state machine |
 | `tmki_ingest` | `validate_ingest` / `accept_ingest` / `process_document` / `ingest_and_index` |
-| `tmki_ocr` | OCR stub MinerU → Mistral fallback (`run_ocr`) |
+| `tmki_ocr` | OCR stub/HTTP MinerU → Mistral (`TMKI_OCR_MODE`, `MINERU_API_URL`) |
 | `tmki_admin` | UI + API галочек grant/deny (`python -m tmki_admin`) |
-| `tmki_sharepoint` | stub + Graph adapter (`TMKI_SHAREPOINT_ADAPTER`, `AZURE_*`, `TMKI_GRAPH_DRY_RUN`) |
+| `tmki_sharepoint` | stub + Graph adapter (`TMKI_GRAPH_DRY_RUN`, production resolve→invite/revoke) |
 | `tmki_llm` | LLM: `stub` / `openai` / `ollama` (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`) |
-| `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 
 ## Запуск тестов
 

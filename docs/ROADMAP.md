@@ -218,7 +218,10 @@ pgvector + RLS-поля до выдачи в RAG.
 26. ~~#27 Ollama LLM provider~~ ✅
 27. ~~#28 Graph permissions dry_run operations~~ ✅
 28. ~~#29 ChunkIndex + ingest_and_index~~ ✅
-29. **Следующий фокус:** production Graph permissions API; реальный MinerU/Mistral OCR; pgvector; импорт регламентов (#6)
+29. ~~#30 Graph production permissions (resolve + invite/revoke)~~ ✅
+30. ~~#31 OCR HTTP providers (MinerU/Mistral)~~ ✅
+31. ~~#32 VectorChunkIndex + pgvector factory~~ ✅
+32. **Следующий фокус:** реальный pgvector + embeddings API; импорт регламентов (#6); E2E с Ollama
 
 ---
 
@@ -257,6 +260,18 @@ pgvector + RLS-поля до выдачи в RAG.
 ### #29 [phase-4] [runtime] ChunkIndex + ingest → RAG
 
 **Статус:** done (v0.2 — `tmki_rag/index.py`, `ingest_and_index()` в pipeline)
+
+### #30 [phase-2] [runtime] Graph production permissions API
+
+**Статус:** done (v0.2 — resolve driveItem → invite/revoke, injectable HTTP для тестов)
+
+### #31 [phase-4] [runtime] OCR HTTP providers (MinerU/Mistral)
+
+**Статус:** done (v0.2 — `TMKI_OCR_MODE=http`, `MINERU_API_URL`, `MISTRAL_OCR_API_URL`)
+
+### #32 [phase-4] [runtime] VectorChunkIndex + pgvector factory
+
+**Статус:** done (v0.2 — `VectorChunkIndex`, `get_chunk_index()`, `PgVectorChunkIndex` с fallback)
 
 ## Phase 2.5 — Делегирование папок (backlog)
 

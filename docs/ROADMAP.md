@@ -300,6 +300,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `run_ocr_http_smoke.py`, `reindex_errors.py`, `recent_errors` в state
 
+### #56 [phase-4] [runtime] Re-index heartbeat + MVP pgvector backend
+
+**Статус:** MVP (v0.3) — `reindex-heartbeat.json`, `--backend pgvector` в `run_mvp_regulations.py`
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

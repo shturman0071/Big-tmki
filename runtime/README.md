@@ -89,6 +89,7 @@ python scripts/reindex_regulations_local.py --checkpoint-every 200
 # → artifacts/regulations-import/chunks-v2.json
 python scripts/benchmark_regulations_search.py
 python scripts/run_mvp_regulations.py "промбезопасность кран" --hybrid
+python scripts/run_mvp_regulations.py "промбезопасность кран" --backend pgvector --hybrid
 python scripts/compare_chunks_quality.py
 python scripts/reindex_status.py
 python scripts/reindex_errors.py

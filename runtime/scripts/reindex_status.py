@@ -11,11 +11,13 @@ from pathlib import Path
 DEFAULT_STATE = (
     Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import" / "reindex-state.json"
 )
+DEFAULT_HEARTBEAT = DEFAULT_STATE.parent / "reindex-heartbeat.json"
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Show regulations re-index progress")
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
+    parser.add_argument("--heartbeat", type=Path, default=DEFAULT_HEARTBEAT)
     parser.add_argument("--total", type=int, default=10_089, help="Ожидаемое число ingest-кандидатов")
     args = parser.parse_args()
 
@@ -44,6 +46,13 @@ def main() -> int:
     print(f"processed: {len(processed)}/{total} ({pct:.1f}%)")
     print(f"imported: {imported}  skip_temp: {skip_temp}  ocr_failed: {ocr_failed}  errors: {errors}")
     print(f"chunks-v2: {chunk_count} records")
+
+    if args.heartbeat.is_file():
+        hb = json.loads(args.heartbeat.read_text(encoding="utf-8"))
+        current = hb.get("current_file")
+        if current:
+            print(f"current: [{hb.get('file_index', '?')}/{hb.get('total_candidates', total)}] {current}")
+            print(f"heartbeat: {hb.get('updated_at', '?')}")
     return 0
 
 

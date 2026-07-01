@@ -199,6 +199,31 @@ def _save_chunks_snapshot(chunks_path: Path, index: ChunkIndex) -> None:
     )
 
 
+def _write_reindex_heartbeat(
+    heartbeat_path: Path,
+    *,
+    relative_path: str,
+    file_index: int,
+    total_candidates: int,
+    stats: dict[str, int],
+) -> None:
+    heartbeat_path.parent.mkdir(parents=True, exist_ok=True)
+    heartbeat_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "0.1",
+                "current_file": relative_path,
+                "file_index": file_index,
+                "total_candidates": total_candidates,
+                "stats": stats,
+                "updated_at": _now_iso(),
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+
 def _load_chunks_into_index(chunks_path: Path, index: ChunkIndex) -> int:
     if not chunks_path.is_file():
         return 0
@@ -264,6 +289,7 @@ def import_regulations_full(
     allowed = extensions or INGEST_EXTENSIONS
     state_file = state_path or (root / ".tmki-import-state.json")
     chunks_file = chunks_path or (root / ".tmki-import-chunks.json")
+    heartbeat_file = state_file.parent / "reindex-heartbeat.json"
 
     state = _load_import_state(state_file) if resume else {
         "schema_version": "0.1",
@@ -302,6 +328,14 @@ def import_regulations_full(
             stats["too_large"] += 1
             processed.add(rel)
             continue
+
+        _write_reindex_heartbeat(
+            heartbeat_file,
+            relative_path=rel,
+            file_index=i,
+            total_candidates=len(candidates),
+            stats=dict(stats),
+        )
 
         try:
             raw = path.read_bytes()
@@ -344,7 +378,14 @@ def import_regulations_full(
         processed.add(rel)
 
         if on_progress and (i % 25 == 0 or checkpoint_every > 0 and i % checkpoint_every == 0):
-            on_progress({"file_index": i, "total_candidates": len(candidates), "stats": dict(stats)})
+            on_progress(
+                {
+                    "file_index": i,
+                    "total_candidates": len(candidates),
+                    "stats": dict(stats),
+                    "current_file": rel,
+                }
+            )
 
         if checkpoint_every > 0 and i % checkpoint_every == 0:
             state["processed"] = sorted(processed)
@@ -365,6 +406,8 @@ def import_regulations_full(
     state["started_at"] = state.get("started_at") or started
     _save_import_state(state_file, state)
     _save_chunks_snapshot(chunks_file, index)
+    if heartbeat_file.is_file():
+        heartbeat_file.unlink()
 
     return {
         "schema_version": "0.1",

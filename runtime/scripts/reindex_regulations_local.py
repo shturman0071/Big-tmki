@@ -64,10 +64,12 @@ def main() -> int:
             print(f"  Кандидатов: {payload['total_candidates']}", flush=True)
             return
         s = payload["stats"]
+        cur = payload.get("current_file", "")
+        cur_short = f" {cur[-60:]}" if cur else ""
         print(
             f"  [{payload['file_index']}/{payload['total_candidates']}] "
             f"imported={s['imported']} skip_temp={s.get('skip_temp', 0)} "
-            f"ocr_failed={s['ocr_failed']} err={s['errors']}",
+            f"ocr_failed={s['ocr_failed']} err={s['errors']}{cur_short}",
             flush=True,
         )
 

@@ -93,6 +93,8 @@ python scripts/benchmark_regulations_search.py
 python scripts/run_mvp_regulations.py "промбезопасность кран" --hybrid
 python scripts/run_mvp_regulations.py "промбезопасность кран" --backend pgvector --hybrid
 python scripts/compare_chunks_quality.py
+python scripts/compare_chunks_quality.py --json
+.\scripts\setup_http_ocr.ps1
 python scripts/reindex_status.py
 python scripts/reindex_report.py
 python scripts/reindex_errors.py

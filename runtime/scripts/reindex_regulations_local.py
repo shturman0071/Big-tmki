@@ -22,9 +22,15 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--checkpoint-every", type=int, default=200)
+    parser.add_argument(
+        "--ocr-mode",
+        choices=["local", "http", "stub"],
+        default="local",
+        help="TMKI_OCR_MODE для re-index",
+    )
     args = parser.parse_args()
 
-    os.environ["TMKI_OCR_MODE"] = "local"
+    os.environ["TMKI_OCR_MODE"] = args.ocr_mode
 
     if not args.archive.is_dir():
         print(f"Архив не найден: {args.archive}", file=sys.stderr)
@@ -38,7 +44,7 @@ def main() -> int:
         n = len(prev.get("processed", []))
         print(f"Resume: {n} файлов уже обработано, stats={prev.get('stats')}", flush=True)
 
-    print("Сканирование архива и re-index (TMKI_OCR_MODE=local)...", flush=True)
+    print(f"Сканирование архива и re-index (TMKI_OCR_MODE={args.ocr_mode})...", flush=True)
 
     from tmki_ingest import reindex_regulations_full
     from tmki_policy import build_policy_context, load_org_snapshot

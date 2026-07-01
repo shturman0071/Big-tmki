@@ -312,6 +312,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `reindex_report.py`, `watch_reindex.ps1 -SyncPgvector`, `started_at` в state
 
+### #59 [phase-4] [runtime] HTTP OCR setup + re-index ocr-mode
+
+**Статус:** MVP (v0.3) — `setup_http_ocr.ps1`, `--ocr-mode` в re-index, улучшенный `compare_chunks_quality`
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

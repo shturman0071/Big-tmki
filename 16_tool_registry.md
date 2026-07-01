@@ -35,7 +35,7 @@ Loop Engine → Tool Registry → Provider → External Service
 |-------|------------|
 | `getDefinition()` | Возвращает `ToolDefinition` из реестра |
 | `validateInput(input)` | Server-side validation входа |
-| `checkPolicy(ctx, tool)` | Tool gating (org/role/env) — см. #17 |
+| `checkPolicy(ctx, tool)` | Tool gating (org/role/env) — см. ниже |
 | `execute(ctx, input)` | Вызов внешнего сервиса |
 | `sanitizeOutput(output)` | Перед возвратом в LLM/audit |
 
@@ -60,6 +60,7 @@ Loop Engine → Tool Registry → Provider → External Service
 | `schemas/tools/tool-call-request.schema.json` | Запрос вызова |
 | `schemas/tools/tool-call-response.schema.json` | Ответ / deny |
 | `schemas/tools/providers.registry.json` | Approved + watchlist tools |
+| `schemas/tools/tool-gating.rules.json` | Gating по role/env/org |
 | `schemas/tools/examples/tool-call-request.example.json` | Пример rag_search |
 
 ### Статусы в реестре
@@ -69,6 +70,56 @@ Loop Engine → Tool Registry → Provider → External Service
 | `approved` | Доступен по policy |
 | `watchlist` | Только `development` (или deny в production) |
 | `disabled` | Всегда deny |
+
+## Tool Gating (org / role / env) v0.1
+
+> Связь с матрицей ролей: `ORG_MODEL.md` (Tool gating по ролям).  
+> Machine-readable: `schemas/tools/tool-gating.rules.json`
+
+### Алгоритм `checkPolicy()` (MUST)
+
+Выполняется **server-side** до `execute()`. Порядок проверок:
+
+1. **Registry status** — `disabled` → deny; `watchlist` + `env=production` → deny
+2. **Org scope** — `company_id` / `project_id` MUST совпадать с `policy_context` (если `same_company` / `same_project`)
+3. **Environment** — `policy_context.env` ∈ `env_allowlist` (gate + registry)
+4. **Role group** — `project_role` → role_group; MUST ∈ `allow_role_groups`, MUST NOT ∈ `deny_role_groups`
+5. **Capability** — запрошенная операция MUST быть ≥ `min_capability` (T_r / T_w из матрицы ORG_MODEL)
+6. **Confirmation** — если `requires_confirmation` и нет `confirmed_by_user` → deny
+7. **Department scope** — для data tools: применить `default_department_scope` или override по role_group (передаётся в RAG/OCR input)
+
+При deny → `tool_call_denied`, `deny_reason` ∈ `tool-call-response.schema.json`, audit `policy_denied`.
+
+### Role groups (v0.1)
+
+| Group | Примеры `project_role` |
+|-------|------------------------|
+| `leadership` | Direktor, Projektleiter |
+| `engineering_leads` | ГИП, Начальник подразделения |
+| `design` | Projektleiter (Design), Generalprojektant |
+| `site_ops` | Начальник участка, ОТ и ПБ |
+| `contractor` | Подрядчик |
+| `it` | ИТ, Связь |
+
+Полный список: `tool-gating.rules.json` → `role_groups`.
+
+### T_w (write tools)
+
+Инструменты с `capabilities: write` или `min_capability: T_w`:
+
+- **MUST**: только `leadership`, `engineering_leads` (по матрице ORG_MODEL)
+- **MUST**: `requires_confirmation=true` + audit
+- **MUST NOT**: `contractor`, `site_ops`, `finance_hr`
+
+### Файлы policy
+
+| Файл | Назначение |
+|------|------------|
+| `tool-gating-policy.schema.json` | Схема policy-файла |
+| `tool-gating.rules.json` | Правила по `tool_id` и role groups |
+| `providers.registry.json` | `env_allowlist`, `min_capability` per tool |
+
+`policy_version` из rules **SHOULD** записываться в Run/Step (`policy_version`).
 
 ## Approved (текущее состояние)
 

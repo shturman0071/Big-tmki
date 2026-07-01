@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/tools/tool-gating-policy.schema.json",
+  "title": "TMKI Tool Gating Policy",
+  "description": "Server-side tool access rules by org/role/env (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "policy_version", "role_groups", "gates"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "policy_version": { "type": "string" },
+    "role_groups": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "description": "Maps group id to project_role values"
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tool_id", "allow_role_groups", "env_allowlist", "min_capability"],
+        "properties": {
+          "tool_id": { "type": "string" },
+          "allow_role_groups": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "deny_role_groups": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "env_allowlist": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["development", "staging", "production"] }
+          },
+          "min_capability": {
+            "type": "string",
+            "enum": ["T_r", "T_w"]
+          },
+          "department_scope": {
+            "type": "string",
+            "enum": ["S_project", "S_dept", "S_dept_tree", "none"]
+          },
+          "default_department_scope": {
+            "type": "string",
+            "enum": ["S_project", "S_dept", "S_dept_tree", "none"]
+          },
+          "scoped_department_overrides": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": ["S_project", "S_dept", "S_dept_tree", "none"]
+            }
+          },
+          "requires_confirmation": { "type": "boolean", "default": false },
+          "company_scope": {
+            "type": "string",
+            "enum": ["same_company", "any"],
+            "default": "same_company"
+          },
+          "project_scope": {
+            "type": "string",
+            "enum": ["same_project", "any"],
+            "default": "same_project"
+          }
+        }
+      }
+    }
+  }
+}

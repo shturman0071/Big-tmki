@@ -1,0 +1,104 @@
+{
+  "schema_version": "0.1",
+  "policy_version": "tool-gating-2026-07-01",
+  "role_groups": {
+    "leadership": ["Direktor", "Projektleiter"],
+    "engineering_leads": [
+      "ГИП",
+      "Главный инженер проекта",
+      "Hauptingenieur",
+      "Начальник подразделения"
+    ],
+    "design": ["Projektleiter (Design)", "Generalprojektant"],
+    "site_ops": ["Начальник участка", "Секретариат", "Служба ОТ и ПБ"],
+    "support_mto": ["МТО", "Закупки"],
+    "finance_hr": ["Бухгалтерия", "Кадры"],
+    "it": ["ИТ", "Связь"],
+    "contractor": ["Подрядчик"]
+  },
+  "gates": [
+    {
+      "tool_id": "rag_search",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "support_mto", "it", "contractor"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "S_project",
+      "scoped_department_overrides": {
+        "engineering_leads": "S_dept_tree",
+        "site_ops": "S_dept",
+        "contractor": "S_dept"
+      },
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
+      "tool_id": "ocr_mineru",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "support_mto", "it"],
+      "deny_role_groups": ["contractor", "finance_hr"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "S_dept",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
+      "tool_id": "ocr_mistral",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "support_mto", "it"],
+      "deny_role_groups": ["contractor", "finance_hr"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "S_dept",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
+      "tool_id": "llm_openai",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "contractor"],
+      "deny_role_groups": ["finance_hr"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "none",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
+      "tool_id": "llm_anthropic",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "contractor"],
+      "deny_role_groups": ["finance_hr"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "none",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
+      "tool_id": "web_searxng",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "support_mto", "it"],
+      "deny_role_groups": ["contractor", "finance_hr"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "none",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
+      "tool_id": "web_firecrawl",
+      "allow_role_groups": ["leadership", "engineering_leads", "design", "site_ops", "support_mto", "it"],
+      "deny_role_groups": ["contractor", "finance_hr"],
+      "env_allowlist": ["development", "staging", "production"],
+      "min_capability": "T_r",
+      "default_department_scope": "none",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    },
+    {
+      "tool_id": "web_camofox",
+      "allow_role_groups": ["leadership", "engineering_leads", "it"],
+      "env_allowlist": ["development"],
+      "min_capability": "T_r",
+      "default_department_scope": "none",
+      "company_scope": "same_company",
+      "project_scope": "same_project"
+    }
+  ]
+}

@@ -217,7 +217,7 @@ Project -> ProjectRole -> Employee
 | `07_security_addendum.md` | RLS, server-side authorization |
 | `10_ai_runtime.md` | Context Builder, tool gating по роли |
 | `09_document_processing.md` | classification, фильтрация документов |
-| `16_tool_registry.md` | policy hooks по org/role/env |
+| `16_tool_registry.md` | policy hooks по org/role/env, `tool-gating.rules.json` |
 
 ## Статус вакансий (по схеме на 10.09.2025)
 

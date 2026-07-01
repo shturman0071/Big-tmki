@@ -161,6 +161,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #17 [phase-5] [security] Tool gating по org/role/env
 
+**Статус:** done (v0.1 — `16_tool_registry.md` §Tool Gating, `schemas/tools/tool-gating.rules.json`)
+
+---
+
 ### #18 [phase-6] [runtime] MVP: Context → RAG → Loop → Judge → Audit
 
 ### #19 [phase-6] [security] Security-review перед MVP-релизом
@@ -180,5 +184,6 @@ pgvector + RLS-поля до выдачи в RAG.
 7. ~~#14 OCR pipeline MinerU + fallback~~ ✅ (v0.1)
 8. ~~#15 Индексация с server-side фильтрацией~~ ✅ (v0.1)
 9. ~~#16 Tool Registry каркас~~ ✅ (v0.1)
-10. **#17 Tool gating по org/role/env**
-11. **#3 Установить gh + создать issues на GitHub**
+10. ~~#17 Tool gating по org/role/env~~ ✅ (v0.1)
+11. **#18 MVP runtime end-to-end (#18 roadmap)**
+12. **#3 Установить gh + создать issues на GitHub**

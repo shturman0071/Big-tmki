@@ -171,6 +171,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 ### #19 [phase-6] [security] Security-review перед MVP-релизом
 
+**Статус:** done (v0.1 — `07_security_addendum.md` §MVP Security Review, `schemas/security/`)
+
+---
+
 ### #20 [phase-0] CI: markdown lint + secret scan
 
 ---
@@ -188,5 +192,6 @@ pgvector + RLS-поля до выдачи в RAG.
 9. ~~#16 Tool Registry каркас~~ ✅ (v0.1)
 10. ~~#17 Tool gating по org/role/env~~ ✅ (v0.1)
 11. ~~#18 MVP runtime end-to-end~~ ✅ (v0.1)
-12. **#19 Security-review перед MVP-релизом**
-13. **#3 Установить gh + создать issues на GitHub**
+12. ~~#19 Security-review перед MVP-релизом~~ ✅ (v0.1)
+13. **#20 CI: markdown lint + secret scan**
+14. **#3 Установить gh + создать issues на GitHub**

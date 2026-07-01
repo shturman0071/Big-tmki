@@ -390,6 +390,7 @@ sequenceDiagram
 5. `Run.output.citations[]` при успешном RAG.
 6. `guardrail_block` — ответ не уходит пользователю.
 7. `Run.status=completed` только после `judge_pass`.
+8. MVP security-review checklist signed off (`schemas/security/`) перед production deploy.
 
 ### Деградационные ветки (SHOULD)
 

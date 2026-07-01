@@ -57,7 +57,7 @@
 - **inputs**: diff/PR, затронутые модули, threat model.
 - **outputs**: чеклист pass/fail, список блокеров.
 - **constraints**: MUST сверка с `07_security_addendum.md` и `ORG_MODEL.md`.
-- **checklist**: RLS → secrets в логах → tool gating → rate limits → guardrails PII.
+- **checklist**: полный MVP checklist — `schemas/security/mvp-security-review.checklist.json`; краткий: RLS → secrets → tool gating → rate limits → guardrails PII.
 - **owner**: TBD
 
 ## Связь с runtime
@@ -71,6 +71,6 @@
 | Документ | Связь |
 |----------|-------|
 | `10_ai_runtime.md` | Loop Engine, Judge, Guardrails, Audit |
-| `07_security_addendum.md` | Security Review, PII/secrets policy |
+| `07_security_addendum.md` | Security Review, MVP security-review checklist |
 | `16_tool_registry.md` | инструменты в harness |
 | `18_technology_watch.md` | Harness Engineering Guide (approved) |

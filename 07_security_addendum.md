@@ -54,6 +54,53 @@
 - проверка лимитов и бюджетов
 - проверка критичных guardrails (PII, запрещенные действия)
 
+## MVP Security Review (v0.1)
+
+> **Phase 6 #19** — обязателен перед первым MVP-релизом runtime.  
+> Skill: `13_ai_skills_registry.md` → Security Review.
+
+### Артефакты
+
+| Файл | Назначение |
+|------|------------|
+| `schemas/security/mvp-security-review.checklist.json` | 28 проверок в 9 категориях |
+| `schemas/security/mvp-security-review.schema.json` | Формат результата review |
+| `schemas/security/examples/mvp-security-review.example.json` | Пример sign-off |
+
+### Процедура (MUST)
+
+1. Назначить reviewer (ИБ / security owner).
+2. Пройти все пункты с `must_pass: true` в checklist.
+3. Зафиксировать результат в `mvp-security-review.schema.json` (pass / pass_with_notes / fail).
+4. При `fail` — blockers MUST быть устранены до релиза.
+5. При `pass_with_notes` — deferred items MUST иметь owner и срок.
+
+### Категории checklist
+
+| Категория | ID prefix | Фокус |
+|-----------|-----------|-------|
+| RLS и доступы | ACC-* | server-side filter, policy_context, clearance |
+| Tool gating | TL-* | checkPolicy, watchlist, T_w excluded |
+| Секреты | SEC-* | repo, registry, audit, LLM secret_scan |
+| Audit | AUD-* | trace_id, MVP events, document_accessed |
+| Guardrails / Judge | GRD-* | block, redact, judge before completed |
+| Limits | LIM-* | budget, circuit breaker, rate limits |
+| Documents | DOC-* | ingest dedup, clearance, OCR fallback |
+| Governance | GOV-* | approved providers, policy_version |
+| MVP cross-check | MVP-* | mvp-flow acceptance criteria |
+
+### Правила sign-off
+
+| `overall_status` | Условие |
+|------------------|---------|
+| `pass` | все `must_pass=true` → pass |
+| `pass_with_notes` | все must pass; optional items deferred с owner |
+| `fail` | любой `must_pass=true` → fail |
+
+### Связь с Judge
+
+Judge в runtime **SHOULD** использовать подмножество GRD-* checks на каждом Run; полный checklist — при релизе/изменении policy.
+
 ## Связанные документы
 
 | Документ | Связь |
@@ -63,3 +110,4 @@
 | `09_document_processing.md` | фильтрация доступа к документам до выдачи |
 | `16_tool_registry.md` | tool gating, policy hooks |
 | `18_technology_watch.md` | model governance, approved-провайдеры |
+| `schemas/security/` | MVP security-review checklist и sign-off |

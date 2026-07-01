@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tmki.dev/schemas/security/mvp-security-review.schema.json",
+  "title": "TMKI MVP Security Review Result",
+  "description": "Security review sign-off before MVP release (v0.1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_id",
+    "target",
+    "reviewer",
+    "reviewed_at",
+    "overall_status",
+    "items"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+    "review_id": { "type": "string", "format": "uuid" },
+    "target": {
+      "type": "string",
+      "description": "e.g. tmk-runtime-mvp-v0.1"
+    },
+    "policy_versions": {
+      "type": "object",
+      "properties": {
+        "guardrails": { "type": "string" },
+        "tool_gating": { "type": "string" },
+        "mvp_flow": { "type": "string" }
+      }
+    },
+    "reviewer": { "type": "string" },
+    "reviewed_at": { "type": "string", "format": "date-time" },
+    "overall_status": {
+      "type": "string",
+      "enum": ["pass", "pass_with_notes", "fail"]
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check_id", "status"],
+        "properties": {
+          "check_id": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "na", "deferred"]
+          },
+          "notes": { "type": "string" },
+          "evidence": { "type": "string" }
+        }
+      }
+    }
+  }
+}

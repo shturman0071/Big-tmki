@@ -1,0 +1,24 @@
+{
+  "schema_version": "0.1",
+  "review_id": "660e8400-e29b-41d4-a716-446655440500",
+  "target": "tmki-runtime-mvp-v0.1",
+  "policy_versions": {
+    "guardrails": "guardrails-2026-06-01",
+    "tool_gating": "tool-gating-2026-07-01",
+    "mvp_flow": "tmki-runtime-mvp-v0.1"
+  },
+  "reviewer": "TBD — ИБ / Security owner",
+  "reviewed_at": "2026-07-01T14:00:00Z",
+  "overall_status": "pass_with_notes",
+  "blockers": [],
+  "items": [
+    { "check_id": "ACC-01", "status": "pass", "evidence": "search-response.schema.json filter_applied" },
+    { "check_id": "ACC-02", "status": "pass", "evidence": "mvp-flow.json acceptance #2" },
+    { "check_id": "TL-01", "status": "pass", "evidence": "16_tool_registry.md checkPolicy algorithm" },
+    { "check_id": "SEC-01", "status": "pass", "evidence": ".cursorignore, no .env in repo" },
+    { "check_id": "AUD-01", "status": "pass", "evidence": "mvp-run-trace.example.json" },
+    { "check_id": "GRD-03", "status": "pass", "evidence": "mvp-flow stage 7" },
+    { "check_id": "LIM-04", "status": "deferred", "notes": "API gateway rate limit — post-MVP infra" },
+    { "check_id": "MVP-01", "status": "pass", "evidence": "handbook specs complete; code TBD" }
+  ]
+}

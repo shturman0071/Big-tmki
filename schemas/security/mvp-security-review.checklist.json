@@ -1,0 +1,254 @@
+{
+  "schema_version": "0.1",
+  "checklist_id": "mvp-security-review-2026-07-01",
+  "target": "tmki-runtime-mvp-v0.1",
+  "description": "Security review checklist before MVP release — aligned with 07_security_addendum, ORG_MODEL, mvp-flow.json",
+  "categories": [
+    {
+      "id": "access",
+      "name": "RLS и доступы",
+      "checks": [
+        {
+          "check_id": "ACC-01",
+          "must_pass": true,
+          "text": "RAG/search применяет server-side фильтр (company_id, project_id, classification) до выдачи",
+          "reference": "09_document_processing.md §7, ORG_MODEL.md"
+        },
+        {
+          "check_id": "ACC-02",
+          "must_pass": true,
+          "text": "policy_context формируется server-side, не принимается из LLM output",
+          "reference": "10_ai_runtime.md MVP §Acceptance"
+        },
+        {
+          "check_id": "ACC-03",
+          "must_pass": true,
+          "text": "Матрица роль → права согласована с tool-gating.rules.json",
+          "reference": "ORG_MODEL.md, schemas/tools/tool-gating.rules.json"
+        },
+        {
+          "check_id": "ACC-04",
+          "must_pass": true,
+          "text": "Clearance ordering: chunk с restricted не виден user с internal",
+          "reference": "09_document_processing.md, ORG_MODEL.md S_label"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "name": "Tool gating и инструменты",
+      "checks": [
+        {
+          "check_id": "TL-01",
+          "must_pass": true,
+          "text": "checkPolicy() выполняется до execute() для каждого tool call",
+          "reference": "16_tool_registry.md §Tool Gating"
+        },
+        {
+          "check_id": "TL-02",
+          "must_pass": true,
+          "text": "watchlist tools (Camofox) заблокированы в production",
+          "reference": "schemas/tools/providers.registry.json"
+        },
+        {
+          "check_id": "TL-03",
+          "must_pass": true,
+          "text": "T_w write-tools не доступны в MVP scope",
+          "reference": "10_ai_runtime.md MVP scope excluded"
+        },
+        {
+          "check_id": "TL-04",
+          "must_pass": true,
+          "text": "tool_call_denied пишет audit policy_denied / tool_call_denied",
+          "reference": "audit-event-catalog.json"
+        }
+      ]
+    },
+    {
+      "id": "secrets",
+      "name": "Секреты и credentials",
+      "checks": [
+        {
+          "check_id": "SEC-01",
+          "must_pass": true,
+          "text": "Нет секретов в репозитории (.env, keys в коде)",
+          "reference": "07_security_addendum.md Secrets Policy"
+        },
+        {
+          "check_id": "SEC-02",
+          "must_pass": true,
+          "text": "auth.secret_ref используется вместо inline secrets в registry",
+          "reference": "schemas/tools/providers.registry.json"
+        },
+        {
+          "check_id": "SEC-03",
+          "must_pass": true,
+          "text": "Audit payload не содержит API keys / tokens (sanitization_rules)",
+          "reference": "audit-event-catalog.json"
+        },
+        {
+          "check_id": "SEC-04",
+          "must_pass": true,
+          "text": "LLM prompt проходит secret_scan guardrail pre_call",
+          "reference": "providers.registry.json llm_* hooks"
+        }
+      ]
+    },
+    {
+      "id": "audit",
+      "name": "Audit и наблюдаемость",
+      "checks": [
+        {
+          "check_id": "AUD-01",
+          "must_pass": true,
+          "text": "Полный MVP Run воспроизводим по trace_id",
+          "reference": "mvp-run-trace.example.json"
+        },
+        {
+          "check_id": "AUD-02",
+          "must_pass": true,
+          "text": "run_started / run_completed / judge_pass эмитятся на happy path",
+          "reference": "mvp-flow.json stages"
+        },
+        {
+          "check_id": "AUD-03",
+          "must_pass": true,
+          "text": "document_accessed при каждом RAG retrieval с doc_id",
+          "reference": "audit-event-catalog.json"
+        }
+      ]
+    },
+    {
+      "id": "guardrails",
+      "name": "Guardrails и Judge",
+      "checks": [
+        {
+          "check_id": "GRD-01",
+          "must_pass": true,
+          "text": "guardrail_block предотвращает выдачу ответа пользователю",
+          "reference": "10_ai_runtime.md MVP acceptance #6"
+        },
+        {
+          "check_id": "GRD-02",
+          "must_pass": true,
+          "text": "PII redact логируется как guardrail_redact",
+          "reference": "audit-event-catalog.json"
+        },
+        {
+          "check_id": "GRD-03",
+          "must_pass": true,
+          "text": "Judge выполняется до Run.status=completed",
+          "reference": "mvp-flow.json stage 7"
+        },
+        {
+          "check_id": "GRD-04",
+          "must_pass": true,
+          "text": "judge_fail блокирует completed без retry policy",
+          "reference": "10_ai_runtime.md degraded paths"
+        }
+      ]
+    },
+    {
+      "id": "limits",
+      "name": "Rate limits и budget",
+      "checks": [
+        {
+          "check_id": "LIM-01",
+          "must_pass": true,
+          "text": "Run budget (max_steps, max_tokens, timeout) enforced server-side",
+          "reference": "10_ai_runtime.md Loop Engine Budget"
+        },
+        {
+          "check_id": "LIM-02",
+          "must_pass": true,
+          "text": "budget_exceeded эмитит audit и останавливает Run",
+          "reference": "loop-state.schema.json stop_reason"
+        },
+        {
+          "check_id": "LIM-03",
+          "must_pass": true,
+          "text": "circuit_breaker_tripped → degraded_readonly или fail per policy",
+          "reference": "10_ai_runtime.md Circuit breaker"
+        },
+        {
+          "check_id": "LIM-04",
+          "must_pass": false,
+          "text": "Rate limiting на API gateway настроен (production)",
+          "reference": "07_security_addendum.md",
+          "note": "SHOULD для MVP; MAY defer с записью в blockers"
+        }
+      ]
+    },
+    {
+      "id": "documents",
+      "name": "Document Intelligence",
+      "checks": [
+        {
+          "check_id": "DOC-01",
+          "must_pass": true,
+          "text": "Ingest dedup по content_hash предотвращает duplicate processing",
+          "reference": "09_document_processing.md §1"
+        },
+        {
+          "check_id": "DOC-02",
+          "must_pass": true,
+          "text": "classification на ingest валидируется против user.clearance",
+          "reference": "ingest-request.schema.json INGEST_CLEARANCE_DENIED"
+        },
+        {
+          "check_id": "DOC-03",
+          "must_pass": true,
+          "text": "OCR fallback логируется в metadata warnings + audit",
+          "reference": "09_document_processing.md §2"
+        }
+      ]
+    },
+    {
+      "id": "governance",
+      "name": "Model и provider governance",
+      "checks": [
+        {
+          "check_id": "GOV-01",
+          "must_pass": true,
+          "text": "LLM providers только из Approved (OpenAI, Anthropic)",
+          "reference": "18_technology_watch.md, providers.registry.json"
+        },
+        {
+          "check_id": "GOV-02",
+          "must_pass": true,
+          "text": "policy_version записывается в Run/Step/Event",
+          "reference": "run.schema.json, event.schema.json"
+        },
+        {
+          "check_id": "GOV-03",
+          "must_pass": false,
+          "text": "Local LLM и zvec не используются в MVP production",
+          "reference": "18_technology_watch.md Watchlist"
+        }
+      ]
+    },
+    {
+      "id": "mvp",
+      "name": "MVP acceptance cross-check",
+      "checks": [
+        {
+          "check_id": "MVP-01",
+          "must_pass": true,
+          "text": "Все 7 acceptance criteria из mvp-flow.json verified",
+          "reference": "schemas/runtime/mvp-flow.json"
+        },
+        {
+          "check_id": "MVP-02",
+          "must_pass": true,
+          "text": "Референсный сценарий Сатимол (Chefmarkscheider) проходит happy path",
+          "reference": "10_ai_runtime.md MVP scenario"
+        }
+      ]
+    }
+  ],
+  "sign_off_rules": {
+    "pass": "all must_pass=true items are pass",
+    "pass_with_notes": "all must_pass=true pass; some must_pass=false deferred with owner",
+    "fail": "any must_pass=true item is fail"
+  }
+}

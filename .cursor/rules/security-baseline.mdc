@@ -1,0 +1,30 @@
+---
+description: Security baseline TMKI — RLS, секреты, audit, guardrails
+alwaysApply: true
+---
+
+# Security Baseline
+
+При любых изменениях, затрагивающих данные, runtime или интеграции:
+
+## MUST
+
+- **RLS** для многопользовательских таблиц (`company_id`, `project_id`, `department_id`).
+- **Server-side** authorization и validation — не доверять выводу LLM.
+- **Секреты** не в репозитории, не в логах, не в LLM-контексте без крайней необходимости.
+- **Audit**: tool calls, доступ к документам, смена policy — с `trace_id` / `run_id`.
+- **Guardrails**: PII/secrets redact или block; tool gating по роли и окружению.
+
+## SHOULD
+
+- Rate limiting и budget (токены/стоимость) на Run.
+- Circuit breaker при повторяющихся ошибках.
+- Security-review перед релизом критичных модулей.
+
+## Сверка
+
+Детали: `07_security_addendum.md`, маппинг доступов: `ORG_MODEL.md`, runtime: `10_ai_runtime.md`.
+
+## Запрещено коммитить
+
+`.env`, credentials, API keys, private keys.

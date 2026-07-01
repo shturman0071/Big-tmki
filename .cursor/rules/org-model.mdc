@@ -1,0 +1,40 @@
+---
+description: Оргмодель TMKI — структура, роли, импорт из Visio, RLS
+globs: "ORG_MODEL.md"
+alwaysApply: false
+---
+
+# Org Model
+
+## Сущности
+
+```
+Company -> Department -> Position -> Employee
+Project -> ProjectRole -> Employee
+```
+
+## Источник правды
+
+- В репозитории: `ORG_MODEL.md`
+- Оригинал схемы: `d:\Курсор\ТМКИ оригнал\Орг Структура Сатимола_проект_10092025.vsdx`
+
+При обновлении из `.vsdx` указывать дату схемы и проект (например, «Сатимол»).
+
+## RLS-маппинг (MUST при интеграции в систему)
+
+| Сущность | Поле |
+|----------|------|
+| Company | `company_id` |
+| Department | `department_id` |
+| Project | `project_id` |
+| ProjectRole | `project_role` |
+| Employee | `employee_id` / `user_id` |
+| Classification | `access_label` |
+
+## Вакансии
+
+Позиции без ФИО на схеме — `Position` без назначенного `Employee`.
+
+## Импорт
+
+Использовать skill `vsdx-org-import`. Временные файлы `_vsdx_*` не коммитить.

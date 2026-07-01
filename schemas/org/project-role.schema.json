@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tmki.dev/schemas/org/project-role.schema.json",
-  "title": "TMKI ProjectRole Catalog Entry",
-  "description": "Catalog of project roles for policy matrix (v0.1)",
+  "title": "TMKI — каталог проектных ролей",
+  "description": "Справочник проектных ролей для матрицы policy (v0.1)",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "role_key", "name", "status"],

@@ -258,17 +258,17 @@ erDiagram
 | `restricted` | 2 | маркшейдерия, геология, сметы с коммерческими условиями | `restricted`+ |
 | `confidential` | 3 | HR, персональные данные, зарплата, договоры с NDA | `confidential`+ |
 
-**MUST**: ordering `public < internal < restricted < confidential` (см. `09_document_processing.md` §7).  
-**MUST**: `user.clearance` в `policy_context` — тот же enum; назначается Security owner при онбординге.
+**MUST**: порядок `public < internal < restricted < confidential` (см. `09_document_processing.md` §7).  
+**MUST**: `user.clearance` в `policy_context` — тот же enum; назначается владельцем ИБ при онбординге.
 
 ### Подрядчики (MUST)
 
 | Поле | Правило |
 |------|---------|
 | `contractor_id` | Стабильный ID юрлица подрядчика (MAY ≠ `company_id` TMKI) |
-| `project_role` | `Подрядчик (external)` — guest-роль в проекте |
+| `project_role` | `Подрядчик (external)` — гостевая роль в проекте |
 | `company_id` в сессии | Юрлицо подрядчика (для audit), `project_id` обязателен |
-| Доступ к `doc.*` | `doc.contractor_id = user.contractor_id` **OR** `user.contractor_id IN doc.shared_with_contractor_ids` |
+| Доступ к `doc.*` | `doc.contractor_id = user.contractor_id` **ИЛИ** `user.contractor_id IN doc.shared_with_contractor_ids` |
 | RLS | `project_id` совпадает; **без** `S_dept_tree`; ingest/OCR — запрещены (см. матрицу) |
 | Share | Выдача документа подрядчику — явное действие Projektleiter+ с audit `document_shared` |
 
@@ -277,38 +277,52 @@ erDiagram
 | Аспект | Решение |
 |--------|---------|
 | Назначение | SchBK / Gen. Direktor — `project_role`: `group_admin`, `company_group_id`: `schbk` |
-| Scope | Сквозной read по юрлицам группы (ТМКИ, Thyssen Schachtbau) **в рамках выданных проектов** |
-| Ограничение | Нет автоматического доступа ко всем `confidential` / всем проектам; cross-project — через `org.assignments` grant |
-| T_w / ingest | Запрещены по умолчанию; только read + audit сводок |
+| Область | Сквозное чтение по юрлицам группы (ТМКИ, Thyssen Schachtbau) **в рамках выданных проектов** |
+| Ограничение | Нет автоматического доступа ко всем `confidential` / всем проектам; межпроектный доступ — через grant в `org.assignments` |
+| T_w / ingest | Запрещены по умолчанию; только чтение + аудит сводок |
 | Пример | Хюбшер С. — `group_admin`, clearance `restricted` (не `confidential` без отдельного grant) |
 
 ### Решения по открытым вопросам (v0.2)
 
 | # | Вопрос | Решение |
 |---|--------|---------|
-| 1 | Уровни `access_label` | Утверждены 4 уровня (таблица выше); aligned с ingest schema |
-| 2 | Projektleiter (Design) и смежные подразделения | Read `doc.department` = `S_project`; write = `S_dept` only |
-| 3 | SchBK / group_admin | Отдельная роль `group_admin` + `company_group_id`; project grants обязательны |
-| 4 | Подрядчики | Отдельный `contractor_id`, guest `project_role`, share-list на документе |
+| 1 | Уровни `access_label` | Утверждены 4 уровня (таблица выше); согласованы со схемой ingest |
+| 2 | Projektleiter (Design) и смежные подразделения | Чтение `doc.department` = `S_project`; запись = только `S_dept` |
+| 3 | SchBK / group_admin | Отдельная роль `group_admin` + `company_group_id`; межпроектные grants обязательны |
+| 4 | Подрядчики | Отдельный `contractor_id`, гостевая `project_role`, share-list на документе |
 
-**SHOULD**: пересмотр решений при смене оргсхемы или инциденте доступа — owner: Security + Projektleiter.
+**SHOULD**: пересмотр решений при смене оргсхемы или инциденте доступа — владельцы: ИБ + Projektleiter.
 
 ## Связанные документы
 
 | Документ | Связь |
 |----------|-------|
-| `07_security_addendum.md` | RLS, server-side authorization |
+| `07_security_addendum.md` | RLS, серверная авторизация |
 | `10_ai_runtime.md` | Context Builder, tool gating по роли |
-| `09_document_processing.md` | classification, фильтрация документов |
+| `09_document_processing.md` | классификация, фильтрация документов |
 | `16_tool_registry.md` | policy hooks по org/role/env, `tool-gating.rules.json` |
+| `schemas/org/` | JSON Schema сущностей и пример Сатимол |
 
-## Статус вакансий (по схеме на 10.09.2025)
+## Статус вакансий (v0.1, оргсхема 10.09.2025)
 
-На схеме отмечены открытые позиции, в т. ч.:
+> Roadmap #9. Источник: `Орг Структура Сатимола_проект_10092025.vsdx`.  
+> В системе учёта: `Position` со `status: vacant` — см. `position.schema.json`, пример в `satimol-snapshot.example.json`.
 
-- ПТО — срочная вакансия
-- Геологический отдел — вакансия (ближайшее время)
-- Лаборатория, инженер по контролю качества, участки БВР/КС/СС/СМУ — вакансии
-- Зам. по обще строительным работам — вакансия
+| `position_id` | Подразделение | Должность | Статус | Срочность | Назначен (по схеме) |
+|---------------|---------------|-----------|--------|-----------|---------------------|
+| `pos_pto_head` | ПТО | Начальник ПТО | **вакансия** | срочно | — |
+| `pos_geology_head` | Геологический отдел | Главный геолог (Chefgeologe) | **вакансия** | ближайшее время | — |
+| `pos_lab_qc` | Лаборатория (ОТК) | Инженер по контролю качества | **вакансия** | планово | — |
+| `pos_bvr_head` | Участок БВР | Начальник участка | **вакансия** | планово | — |
+| `pos_ks_head` | Участок подземных работ КС | Начальник участка | **вакансия** | планово | — |
+| `pos_ss_head` | Участок подземных работ СС | Начальник участка | **вакансия** | планово | — |
+| `pos_smu_head` | СМУ | Начальник участка | **вакансия** | планово | — |
+| `pos_smu_deputy_gc` | СМУ | Зам. по общестроительным работам | **вакансия** | планово | — |
+| `pos_hauptingenieur` | Служба главного инженера | Hauptingenieur / Главный инженер | уточнить | — | — |
+| `pos_generalprojektant` | КГЦМ | Generalprojektant | уточнить | — | — |
+| `pos_chefmarkscheider` | Маркшейдерская служба | Chefmarkscheider | занято | — | Литовский Д. |
+| `pos_projektleiter` | Управление проекта | Projektleiter | занято | — | Нефф А. |
+| `pos_gip` | Служба ГИП | ГИП | занято | — | Дядин С., Гаер Д. |
 
-При интеграции в систему учёта персонала эти позиции следует вести как `Position` без назначенного `Employee`.
+**MUST**: для вакантных `position_id` не создавать активный `Assignment` типа `project_role` до найма.  
+**SHOULD**: при закрытии вакансии обновить таблицу и `schemas/org/examples/satimol-snapshot.example.json`.

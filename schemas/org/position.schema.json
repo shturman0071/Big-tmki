@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tmki.dev/schemas/org/position.schema.json",
-  "title": "TMKI Position",
-  "description": "Org-chart position (slot) in a department (v0.1)",
+  "title": "TMKI — должность",
+  "description": "Должность (слот) в подразделении оргсхемы (v0.1)",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "position_id", "company_id", "department_id", "title", "status"],

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tmki.dev/schemas/org/department.schema.json",
-  "title": "TMKI Department",
-  "description": "Structural unit within company and optionally project (v0.1)",
+  "title": "TMKI — подразделение",
+  "description": "Структурное подразделение внутри компании и опционально проекта (v0.1)",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "department_id", "company_id", "name", "status"],

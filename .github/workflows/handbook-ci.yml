@@ -1,4 +1,4 @@
-name: Handbook CI
+name: CI хэндбука
 
 on:
   push:
@@ -11,12 +11,12 @@ permissions:
 
 jobs:
   markdown-lint:
-    name: Markdown lint
+    name: Проверка Markdown
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run markdownlint-cli2
+      - name: Запуск markdownlint-cli2
         uses: davidanson/markdownlint-cli2-action@v19
         with:
           config: .markdownlint.jsonc
@@ -25,14 +25,14 @@ jobs:
             !**/node_modules/**
 
   secret-scan:
-    name: Secret scan (gitleaks)
+    name: Сканирование секретов (gitleaks)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run gitleaks
+      - name: Запуск gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

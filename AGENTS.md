@@ -6,7 +6,7 @@
 
 - **Репозиторий:** <https://github.com/shturman0071/Big-tmki>
 - **Ветка по умолчанию:** `main`
-- **Статус хэндбука:** APPROVED (см. `README.md`)
+- **Статус хэндбука:** УТВЕРЖДЁН (см. `README.md`)
 - **Процесс изменений:** см. раздел «Владельцы и апрув» ниже
 
 ## С чего начинать
@@ -60,7 +60,7 @@
 2. Правка MUST-требований в главе owner'а — **апрув owner'а** (комментарий или review в PR).
 3. Правка MUST в `07_security_addendum.md`, `ORG_MODEL.md` (RLS), `schemas/security/`, `tool-gating.rules.json` — **апрув Security owner** + custodian (РП).
 4. Правка `schemas/runtime/`, `mvp-flow.json`, Loop/Judge — **апрув ГИП (runtime)** + при затрагивании security — Security owner.
-5. Статус `APPROVED` в `README.md` не менять без явного решения custodian (РП).
+5. Статус `УТВЕРЖДЁН` в `README.md` не менять без явного решения custodian (РП).
 
 ### Когда обязателен security-review (MUST)
 
@@ -102,9 +102,9 @@ branch  main
 
 Формат коммита: краткий заголовок + 1–2 предложения «зачем».
 
-## CI
+## Непрерывная интеграция
 
-Workflow `.github/workflows/handbook-ci.yml`: markdownlint + gitleaks на push/PR в `main`.
+Workflow `.github/workflows/handbook-ci.yml`: проверка markdown + gitleaks на push/PR в `main`.
 
 ## Skills проекта
 
@@ -113,7 +113,7 @@ Workflow `.github/workflows/handbook-ci.yml`: markdownlint + gitleaks на push/
 | `tmki-handbook-update` | Дополнение/синхронизация глав хэндбука |
 | `vsdx-org-import` | Импорт оргструктуры из Visio `.vsdx` |
 
-## Roadmap
+## План работ
 
 План работ и backlog: `docs/ROADMAP.md`.  
 Создание issues на GitHub: `scripts/create-github-issues.ps1` (нужен `gh` CLI).

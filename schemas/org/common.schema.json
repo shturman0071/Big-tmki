@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tmki.dev/schemas/org/common.schema.json",
-  "title": "TMKI Org Model Common Types",
-  "description": "Shared definitions for org entities (v0.1)",
+  "title": "TMKI — общие типы оргмодели",
+  "description": "Общие определения для сущностей оргструктуры (v0.1)",
   "$defs": {
     "entityId": {
       "type": "string",

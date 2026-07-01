@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tmki.dev/schemas/org/employee.schema.json",
-  "title": "TMKI Employee",
-  "description": "Person subject to access control (v0.1)",
+  "title": "TMKI — сотрудник",
+  "description": "Физическое лицо — субъект контроля доступа (v0.1)",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "employee_id", "company_id", "display_name", "status", "clearance"],

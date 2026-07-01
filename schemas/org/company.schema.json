@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tmki.dev/schemas/org/company.schema.json",
-  "title": "TMKI Company",
-  "description": "Legal entity, office, contractor org, or group (v0.1)",
+  "title": "TMKI — компания",
+  "description": "Юрлицо, офис, подрядчик или группа (v0.1)",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "company_id", "name", "company_type", "status"],

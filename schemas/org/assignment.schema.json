@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tmki.dev/schemas/org/assignment.schema.json",
-  "title": "TMKI Assignment",
-  "description": "Links employee to position and/or project role (v0.1)",
+  "title": "TMKI — назначение",
+  "description": "Связь сотрудника с должностью и/или проектной ролью (v0.1)",
   "type": "object",
   "additionalProperties": false,
   "required": [

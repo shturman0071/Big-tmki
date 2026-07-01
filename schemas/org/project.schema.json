@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tmki.dev/schemas/org/project.schema.json",
-  "title": "TMKI Project",
-  "description": "Project entity (e.g. mine construction Satimol) (v0.1)",
+  "title": "TMKI — проект",
+  "description": "Проектная сущность (например, строительство шахты Сатимол) (v0.1)",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "project_id", "name", "primary_company_id", "status"],

@@ -48,6 +48,26 @@
       "status": "active"
     }
   ],
+  "positions": [
+    {
+      "schema_version": "0.1",
+      "position_id": "pos_pto_head",
+      "company_id": "company_tmki_ru",
+      "department_id": "dept_pto",
+      "title": { "ru": "Начальник ПТО", "de": "Leiter PTO" },
+      "status": "vacant",
+      "is_manager": true
+    },
+    {
+      "schema_version": "0.1",
+      "position_id": "pos_chefmarkscheider",
+      "company_id": "company_tmki_ru",
+      "department_id": "dept_markscheider",
+      "title": { "ru": "Главный маркшейдер", "de": "Chefmarkscheider" },
+      "status": "active",
+      "is_manager": true
+    }
+  ],
   "project_roles": [
     {
       "schema_version": "0.1",

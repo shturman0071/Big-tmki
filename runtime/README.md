@@ -95,6 +95,8 @@ python scripts/run_mvp_regulations.py "промбезопасность кран
 python scripts/run_mvp_regulations.py "промбезопасность кран" --backend pgvector --hybrid
 python scripts/compare_chunks_quality.py
 python scripts/compare_chunks_quality.py --json
+python scripts/compare_chunks_quality.py --save artifacts/regulations-import/quality-benchmark.json
+.\scripts\reindex_milestone.ps1
 .\scripts\setup_http_ocr.ps1
 .\scripts\run_tmki_demo.ps1
 .\scripts\run_tmki_demo.ps1 -Backend pgvector

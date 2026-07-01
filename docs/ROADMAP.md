@@ -328,6 +328,10 @@ pgvector + RLS-поля до выдачи в RAG.
 
 **Статус:** MVP (v0.3) — `watch_reindex.ps1 -Finalize`, `reindex_errors.py --summary`, live progress в health check
 
+### #63 [phase-4] [runtime] Milestone sync + pgvector health
+
+**Статус:** MVP (v0.3) — `reindex_milestone.ps1`, pgvector rows в health check, `--save` в compare_chunks_quality
+
 ---
 
 ## Phase 4.5 — Runtime hardening (v0.2)

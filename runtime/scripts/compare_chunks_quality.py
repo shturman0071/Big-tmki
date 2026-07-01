@@ -35,6 +35,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Compare v1 vs v2 regulations search")
     parser.add_argument("--top-k", type=int, default=3)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument(
+        "--save",
+        type=Path,
+        default=None,
+        help="Сохранить JSON-отчёт (например artifacts/regulations-import/quality-benchmark.json)",
+    )
     args = parser.parse_args()
 
     from tmki_policy import build_policy_context, load_org_snapshot
@@ -70,10 +76,19 @@ def main() -> int:
         rows.append({"query": q, "v1_hits": h1, "v1_score": s1, "v2_hits": h2, "v2_score": s2})
         print(f"{q:<25} {h1:>5} {s1:>6.3f} {h2:>5} {s2:>6.3f}")
 
+    payload = {"v1_count": len(v1), "v2_count": len(v2 or []), "rows": rows}
     if args.json:
         import json
 
-        print(json.dumps({"v1_count": len(v1), "v2_count": len(v2 or []), "rows": rows}, ensure_ascii=False, indent=2))
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    if args.save:
+        import json
+        from datetime import datetime, timezone
+
+        args.save.parent.mkdir(parents=True, exist_ok=True)
+        out = {**payload, "occurred_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+        args.save.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"saved: {args.save}", file=sys.stderr)
     return 0
 
 

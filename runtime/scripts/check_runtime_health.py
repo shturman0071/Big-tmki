@@ -60,7 +60,13 @@ def main() -> int:
             with psycopg.connect(dsn, connect_timeout=5) as conn:
                 with conn.cursor() as cur:
                     cur.execute("SELECT 1")
-            print("  [ok] DATABASE_URL")
+                    if os.environ.get("TMKI_INDEX_BACKEND", "").lower() == "pgvector":
+                        cur.execute("SELECT COUNT(*) FROM tmki_chunks")
+                        row = cur.fetchone()
+                        n = int(row[0]) if row else 0
+                        print(f"  [ok] DATABASE_URL (pgvector rows: {n})")
+                    else:
+                        print("  [ok] DATABASE_URL")
         except Exception as exc:
             print(f"  [fail] DATABASE_URL: {exc}")
             ok = False

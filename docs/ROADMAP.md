@@ -211,7 +211,24 @@ pgvector + RLS-поля до выдачи в RAG.
 19. ~~#7 RLS open questions (Сатимол)~~ ✅ (v0.2)
 20. ~~#8 Схема сущностей org model~~ ✅ (v0.1)
 21. ~~#9 Актуализировать вакансии оргсхемы~~ ✅ (v0.1)
-22. **Следующий фокус:** folder grants (#21) в runtime + SharePoint sync; реальный LLM provider
+22. ~~#21 Folder grants~~ ✅
+23. **Следующий фокус:** production SharePoint Graph API; ingest → OCR stub; локальный LLM (watchlist)
+
+---
+
+## Phase 4.5 — Runtime hardening (v0.2)
+
+### #22 [phase-4] [runtime] Ingest dedup + accept_ingest pipeline
+
+**Статус:** done (v0.1 — `tmki_ingest/dedup.py`, `pipeline.py`)
+
+### #23 [phase-5] [runtime] LLM provider pattern (stub + OpenAI)
+
+**Статус:** done (v0.1 — `tmki_llm/providers.py`, env `TMKI_LLM_PROVIDER`)
+
+### #24 [phase-0] [runtime] CI: pytest для `runtime/`
+
+**Статус:** done — job `runtime-tests` в `.github/workflows/handbook-ci.yml`
 
 ---
 

@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from tmki_admin.grants_service import GrantService, GrantStore, GrantServiceError
+from tmki_rag import load_folder_catalog
 
 ROOT = Path(__file__).resolve().parents[2]
 

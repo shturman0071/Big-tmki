@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,7 @@ from uuid import uuid4
 from tmki_loop import LoopEngine
 from tmki_rag.folders import FolderAclContext, load_folder_catalog, load_folder_grants
 from tmki_rag.search import rag_search
+from tmki_llm import get_llm_provider
 from tmki_tools import ToolRegistry, load_gating_rules
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,23 +33,32 @@ def _audit(event_type: str, trace_id: str, payload: dict[str, Any]) -> dict[str,
     return {"event_type": event_type, "trace_id": trace_id, "payload": payload}
 
 
+def _llm_handler(provider_name: str | None = None):
+    def handler(request: dict[str, Any], _decision: Any) -> dict[str, Any]:
+        inp = request["input"]
+        if provider_name:
+            os.environ["TMKI_LLM_PROVIDER"] = provider_name
+        provider = get_llm_provider()
+        result = provider.generate(
+            query=inp.get("query", ""),
+            citations=inp.get("citations", []),
+            read_only_mode=bool(inp.get("read_only_mode")),
+        )
+        return {
+            "answer": result.answer,
+            "confidence": result.confidence,
+            "citations": result.citations,
+            "provider": result.provider,
+            "model": result.model,
+            "token_usage": result.token_usage,
+            "summary": f"llm provider={result.provider} confidence={result.confidence}",
+        }
+
+    return handler
+
+
 def _stub_llm_generate(request: dict[str, Any], _decision: Any) -> dict[str, Any]:
-    inp = request["input"]
-    citations = inp.get("citations", [])
-    query = inp.get("query", "")
-    if citations:
-        snippet = citations[0].get("snippet", "")
-        answer = f"По материалам проекта: {snippet[:200]}"
-        confidence = "high"
-    else:
-        answer = f"Недостаточно источников по запросу «{query}». Уточните формулировку."
-        confidence = "low"
-    return {
-        "answer": answer,
-        "confidence": confidence,
-        "citations": citations,
-        "summary": f"llm confidence={confidence}",
-    }
+    return _llm_handler("stub")(request, _decision)
 
 
 def _rag_handler(chunks: list[dict[str, Any]], folder_acl: Any | None = None):

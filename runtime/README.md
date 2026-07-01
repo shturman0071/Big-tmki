@@ -11,6 +11,7 @@
 | `tmki_ingest` | `validate_ingest` / `validate_delete` — gate до OCR pipeline |
 | `tmki_admin` | UI + API галочек grant/deny (`python -m tmki_admin`) |
 | `tmki_sharepoint` | stub sync ACL SharePoint после изменения grants |
+| `tmki_llm` | LLM providers: `stub` (default) / `openai` (`OPENAI_API_KEY`) |
 | `tmki_runtime` | `run_mvp()` — end-to-end по `mvp-flow.json` |
 
 ## Запуск тестов

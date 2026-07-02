@@ -1,0 +1,21 @@
+{
+  "schema_version": "0.1",
+  "templates": [
+    {
+      "template_id": "instruction_internal",
+      "title": "Внутренняя инструкция",
+      "document_type": "instruction",
+      "path": "instruction_internal.md",
+      "format": "markdown",
+      "placeholders": ["title", "author", "department", "date", "body"]
+    },
+    {
+      "template_id": "memo_internal",
+      "title": "Служебная записка",
+      "document_type": "letter",
+      "path": "memo_internal.txt",
+      "format": "text",
+      "placeholders": ["title", "author", "recipient", "date", "body"]
+    }
+  ]
+}

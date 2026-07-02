@@ -11,7 +11,7 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_ARCHIVE = Path(r"D:\Курсор\ТМКИ оригнал")
+DEFAULT_ARCHIVE = Path(r"D:\Курсор\СКРУ-2")
 DEFAULT_OUTPUT = Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import"
 
 

@@ -19,7 +19,14 @@
       "tool_id": "rag_search",
       "status": "completed",
       "loop_state_after": "step_done",
-      "output_summary": "8 chunks, project satimol, S_dept_tree"
+      "output_summary": "8 chunks, project satimol, S_dept_tree",
+      "citations": [
+        {
+          "doc_id": "doc_grd_0142",
+          "page": 12,
+          "snippet": "Маркшейдерская съёмка на участке КС выполняется..."
+        }
+      ]
     },
     {
       "step_id": "550e8400-e29b-41d4-a716-446655440011",

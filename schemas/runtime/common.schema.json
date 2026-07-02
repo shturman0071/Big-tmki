@@ -1,9 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tmki.dev/schemas/runtime/common.schema.json",
-  "title": "TMKI Runtime Common Types",
-  "description": "Shared definitions for Run, Step, Event contracts (v0.1)",
+  "title": "TMKI Common Types",
+  "description": "Общие типы для runtime, policy_context, citation, budget, circuit breaker",
   "$defs": {
+    "clearanceLevel": {
+      "type": "string",
+      "enum": ["public", "internal", "restricted", "confidential"],
+      "description": "Уровень доступа: public < internal < restricted < confidential"
+    },
     "uuid": {
       "type": "string",
       "format": "uuid",
@@ -23,30 +28,40 @@
         "project_id",
         "project_role",
         "employee_id",
+        "clearance",
         "env"
       ],
       "properties": {
-        "company_id": { "type": "string", "minLength": 1 },
-        "project_id": { "type": "string", "minLength": 1 },
-        "department_id": { "type": "string" },
-        "project_role": { "type": "string", "minLength": 1 },
-        "employee_id": { "type": "string", "minLength": 1 },
-        "clearance": {
+        "company_id": { "type": "string", "minLength": 1, "description": "ID юрлица (TMKI, Thyssen Schachtbau)" },
+        "company_group_id": {
           "type": "string",
-          "enum": ["public", "internal", "restricted", "confidential"],
-          "default": "internal"
+          "description": "ID группы (например, schbk)"
+        },
+        "project_id": { "type": "string", "minLength": 1, "description": "ID проекта (например, satimol)" },
+        "department_id": { "type": "string", "description": "ID подразделения" },
+        "position_id": {
+          "type": "string",
+          "description": "ID должности (Position) для определения is_manager"
+        },
+        "is_manager": {
+          "type": "boolean",
+          "default": false,
+          "description": "Начальник подразделения? (вычисляется из Position)"
+        },
+        "project_role": { "type": "string", "minLength": 1, "description": "Проектная роль (Direktor, Projektleiter, ГИП и т.д.)" },
+        "employee_id": { "type": "string", "minLength": 1, "description": "ID сотрудника" },
+        "clearance": {
+          "$ref": "#/$defs/clearanceLevel",
+          "description": "Уровень доступа сотрудника"
         },
         "env": {
           "type": "string",
-          "enum": ["development", "staging", "production"]
+          "enum": ["development", "staging", "production"],
+          "description": "Окружение"
         },
         "contractor_id": {
           "type": "string",
-          "description": "Required when project_role is contractor guest (see ORG_MODEL.md)"
-        },
-        "company_group_id": {
-          "type": "string",
-          "description": "SchBK group scope; required for group_admin"
+          "description": "ID подрядчика (для external-ролей)"
         }
       }
     },
@@ -92,14 +107,17 @@
       "type": "object",
       "description": "Citable fragment (see 09_document_processing.md)",
       "additionalProperties": false,
-      "required": ["doc_id"],
+      "required": ["doc_id", "page"],
       "properties": {
-        "doc_id": { "type": "string" },
-        "page": { "type": "integer", "minimum": 1 },
-        "start_offset": { "type": "integer", "minimum": 0 },
-        "end_offset": { "type": "integer", "minimum": 0 },
-        "url": { "type": "string", "format": "uri" },
-        "snippet": { "type": "string" }
+        "doc_id": { "type": "string", "description": "ID документа" },
+        "page": { "type": "integer", "minimum": 1, "description": "Номер страницы" },
+        "start_offset": { "type": "integer", "minimum": 0, "description": "Начало цитаты в символах" },
+        "end_offset": { "type": "integer", "minimum": 0, "description": "Конец цитаты в символах" },
+        "snippet": { "type": "string", "description": "Текст цитаты" },
+        "url": { "type": "string", "format": "uri", "description": "Ссылка на документ (опционально)" },
+        "file_name": { "type": "string", "description": "Имя файла источника (demo/UI)" },
+        "relative_path": { "type": "string", "description": "Путь в архиве регламентов" },
+        "absolute_path": { "type": "string", "description": "Абсолютный путь к файлу (локальный demo)" }
       }
     },
     "runtimeError": {

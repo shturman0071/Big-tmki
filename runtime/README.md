@@ -42,11 +42,11 @@ from pathlib import Path
 from tmki_ingest import scan_regulations_archive, import_regulations_batch, DedupStore
 from tmki_rag import ChunkIndex
 
-manifest = scan_regulations_archive(Path("D:/ТМКИ оригнал"), compute_hash=True)
+manifest = scan_regulations_archive(Path("D:/Курсор/СКРУ-2"), compute_hash=True)
 # manifest["stats"] — ingest_candidate / catalog_only / skip
 
 result = import_regulations_batch(
-    Path("D:/ТМКИ оригнал"),
+    Path("D:/Курсор/СКРУ-2"),
     policy_context=ctx,
     classification="restricted",
     folder_id="folder_ms_open",
@@ -105,6 +105,7 @@ python scripts/compare_chunks_quality.py --save artifacts/regulations-import/qua
 .\scripts\watch_reindex.ps1 -SyncPgvector -Milestone -Finalize
 .\scripts\setup_http_ocr.ps1
 .\scripts\run_tmki_demo.ps1
+.\scripts\run_tmki_demo_ui.ps1
 .\scripts\run_tmki_demo.ps1 -Experience
 .\scripts\run_tmki_demo.ps1 -Milestone
 .\scripts\run_full_stack_demo.ps1 -Experience -Milestone
@@ -157,8 +158,47 @@ python scripts/run_legal_corpus_curator.py --apply-ingest
 python scripts/run_desktop_sync.py --once --display-name "Литовский Д." --ingest
 python scripts/load_regulations_pgvector.py --variant v2
 python scripts/load_regulations_pgvector.py --variant v2 --incremental --skip-ivfflat
+python scripts/load_regulations_pgvector.py --variant v2 --replace
 .\scripts\sync_pgvector_incremental.ps1
 ```
+
+### Обновление индекса (документы изменились)
+
+Когда в архиве `СКРУ-2` появились новые или изменённые файлы:
+
+1. **Полная пересборка** — заново читает архив, пересобирает `chunks-v2.json` и **полностью перезаписывает** pgvector:
+
+```powershell
+cd runtime
+.\scripts\rebuild_regulations_index.ps1 -Fresh
+```
+
+2. **Продолжить прерванный re-index** и синхронизировать pgvector с текущим `chunks-v2`:
+
+```powershell
+.\scripts\rebuild_regulations_index.ps1 -Resume
+```
+
+3. **Только pgvector** — если `chunks-v2.json` уже актуален, но векторы в БД устарели:
+
+```powershell
+.\scripts\rebuild_regulations_index.ps1 -PgvectorOnly
+```
+
+4. **После 100% re-index** — IVFFlat, бенчмарки, verify:
+
+```powershell
+.\scripts\run_finalize.ps1
+```
+
+| Скрипт | chunks-v2 | pgvector | Когда |
+|--------|-----------|----------|-------|
+| `reindex_regulations_local.py` | пересборка | — | длинный прогон по архиву |
+| `load_regulations_pgvector.py --replace` | — | полная перезапись | после изменения chunks |
+| `sync_pgvector_incremental.ps1` | — | догрузка новых | во время re-index |
+| `rebuild_regulations_index.ps1` | + | replace | один вход для оператора |
+
+Архив по умолчанию: `D:\Курсор\СКРУ-2` (переопределение: `--archive` в `reindex_regulations_local.py`).
 
 ### Production-like stack (Docker)
 

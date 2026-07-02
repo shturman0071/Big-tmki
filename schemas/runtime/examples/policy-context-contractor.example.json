@@ -1,0 +1,13 @@
+{
+  "description": "policy_context для подрядчика (emp_contractor_01) — см. satimol-snapshot.example.json",
+  "policy_context": {
+    "company_id": "company_tmki_ru",
+    "project_id": "project_satimol",
+    "department_id": "dept_markscheider",
+    "project_role": "Подрядчик (external)",
+    "employee_id": "emp_contractor_01",
+    "contractor_id": "contractor_ks_sub",
+    "clearance": "internal",
+    "env": "production"
+  }
+}

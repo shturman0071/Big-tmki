@@ -79,10 +79,10 @@
     },
     {
       "schema_version": "0.1",
-      "role_key": "Chefmarkscheider",
-      "name": { "ru": "Главный маркшейдер", "de": "Chefmarkscheider" },
-      "default_clearance": "restricted",
-      "maps_to_matrix_row": "Начальник подразделения",
+      "role_key": "Подрядчик (external)",
+      "name": { "ru": "Подрядчик", "de": "Auftragnehmer" },
+      "default_clearance": "internal",
+      "maps_to_matrix_row": "Подрядчик (external)",
       "status": "active"
     }
   ],
@@ -101,6 +101,15 @@
       "company_id": "company_tmki_ru",
       "display_name": "Литовский Д.",
       "clearance": "restricted",
+      "status": "active"
+    },
+    {
+      "schema_version": "0.1",
+      "employee_id": "emp_contractor_01",
+      "company_id": "company_tmki_ru",
+      "contractor_id": "contractor_ks_sub",
+      "display_name": "Иванов И. (подрядчик КС)",
+      "clearance": "internal",
       "status": "active"
     }
   ],
@@ -125,6 +134,18 @@
       "department_id": "dept_markscheider",
       "project_id": "project_satimol",
       "project_role": "Chefmarkscheider",
+      "valid_from": "2025-09-10",
+      "status": "active"
+    },
+    {
+      "schema_version": "0.1",
+      "assignment_id": "asgn_contractor_ks",
+      "assignment_type": "project_role",
+      "employee_id": "emp_contractor_01",
+      "company_id": "company_tmki_ru",
+      "department_id": "dept_markscheider",
+      "project_id": "project_satimol",
+      "project_role": "Подрядчик (external)",
       "valid_from": "2025-09-10",
       "status": "active"
     }

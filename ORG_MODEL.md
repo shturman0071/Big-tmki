@@ -44,6 +44,9 @@ erDiagram
 | Assignment | `assignment.schema.json` | `position` / `project_role` / `group_grant` |
 | FolderCatalog | `../document/folder-catalog.schema.json` | физический каталог SharePoint/диск → `folder_id` |
 | EmployeeFolderGrant | `employee-folder-grant.schema.json` | deny/grant от начальника подразделения |
+| EmployeeHRCard | `employee-hr-card.schema.json` | `employee_id`, `voice_profile_id`, `anthropometry`, `consent_signed` |
+
+**MUST**: HR-карточка хранится отдельно от основной оргмодели, не в RAG/pgvector. Доступ только HR + Security owner.
 
 **MUST**: `policy_context` в runtime собирается из активных `Assignment` на дату запроса (server-side).  
 **MUST**: эффективные права на папки — из `FolderCatalog` + активных `EmployeeFolderGrant` (server-side, см. §Делегирование).

@@ -37,7 +37,15 @@
       "policy_version",
       "loop_state",
       "stop_reason"
-    ]
+    ],
+    "redaction_tokens": {
+      "email": "[REDACTED_EMAIL]",
+      "phone": "[REDACTED_PHONE]",
+      "full_name": "[REDACTED_NAME]",
+      "passport": "[REDACTED_PASSPORT]",
+      "api_key": "[REDACTED_API_KEY]",
+      "auth_token": "[REDACTED_TOKEN]"
+    }
   },
   "events": [
     {

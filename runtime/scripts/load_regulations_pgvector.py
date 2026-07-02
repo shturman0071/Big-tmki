@@ -23,11 +23,20 @@ def main() -> int:
     parser.add_argument("--ivfflat-lists", type=int, default=None)
     parser.add_argument("--skip-ivfflat", action="store_true")
     parser.add_argument(
+        "--replace",
+        action="store_true",
+        help="Очистить pgvector и загрузить chunks заново (после изменения документов)",
+    )
+    parser.add_argument(
         "--incremental",
         action="store_true",
         help="Загрузить только новые chunks с прошлого sync (pgvector-sync-state.json)",
     )
     args = parser.parse_args()
+    if args.replace and args.incremental:
+        print("Нельзя одновременно --replace и --incremental", file=sys.stderr)
+        return 1
+
     chunks_path = args.chunks or resolve_regulations_chunks_path(args.variant)
 
     if not chunks_path.is_file():
@@ -70,6 +79,13 @@ def main() -> int:
         print("PgVectorChunkIndex недоступен (psycopg/DATABASE_URL)", file=sys.stderr)
         return 1
 
+    state_file = sync_state_path(chunks_path)
+    if args.replace:
+        deleted = index.truncate()
+        if state_file.is_file():
+            state_file.unlink()
+        print(f"pgvector очищен: удалено {deleted} строк, загружаем {len(chunks)} chunks")
+
     started = time.perf_counter()
     loaded = index.bulk_add(chunks, batch_size=args.batch_size)
     elapsed = time.perf_counter() - started
@@ -80,7 +96,7 @@ def main() -> int:
             sync_state_path(chunks_path),
             variant=args.variant,
             chunks_path=chunks_path,
-            loaded_count=offset + loaded,
+            loaded_count=offset + loaded if args.incremental else len(all_chunks),
         )
 
     if not args.skip_ivfflat:

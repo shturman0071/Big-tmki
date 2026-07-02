@@ -131,5 +131,11 @@
       "company_scope": "same_company",
       "project_scope": "same_project"
     }
-  ]
+  ],
+  "write_tools": {
+    "min_capability": "T_w",
+    "requires_confirmation": true,
+    "allow_role_groups": ["leadership", "engineering_leads"],
+    "deny_role_groups": ["contractor", "site_ops", "finance_hr"]
+  }
 }

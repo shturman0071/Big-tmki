@@ -1,0 +1,5 @@
+# TMKI — точка входа Docker Compose (делегирует в runtime/docker).
+# Запуск: docker compose up -d postgres
+# Ollama (опционально): docker compose --profile llm up -d
+include:
+  - path: ./runtime/docker/docker-compose.full.yml

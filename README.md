@@ -27,6 +27,8 @@
 - `schemas/tools/` — реестр инструментов, provider pattern, контракты вызовов (v0.1).
 - `schemas/security/` — чеклист security-review перед MVP (v0.1).
 - `schemas/org/` — сущности оргмодели: компания, подразделение, должность, сотрудник, проект, назначение (v0.1).
+- `schemas/README.md` — обзор контрактов и примеров в `schemas/`.
+- `docs/architecture/deployment.md` — схема развёртывания (demo, Docker, pgvector).
 - `runtime/` — код MVP runtime: `tmki_policy`, `tmki_rag`, `tmki_tools`, `tmki_loop`, `run_mvp`.
 
 ## Конвенции

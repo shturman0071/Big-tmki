@@ -37,7 +37,7 @@ def _default_score(query: str, chunk: dict[str, Any]) -> float:
 def _to_citation(chunk: dict[str, Any]) -> dict[str, Any]:
     return {
         "doc_id": chunk["doc_id"],
-        "page": chunk.get("page"),
+        "page": chunk.get("page") or 1,
         "start_offset": chunk.get("start_offset"),
         "end_offset": chunk.get("end_offset"),
         "snippet": (chunk.get("content_preview") or "")[:280],

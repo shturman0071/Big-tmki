@@ -42,7 +42,7 @@
     "department_id": { "$ref": "../org/common.schema.json#/$defs/entityId" },
     "access_tier": {
       "type": "string",
-      "enum": ["department_open", "department_restricted", "grant_only"]
+      "enum": ["project_open", "department_open", "department_restricted", "grant_only"]
     },
     "default_classification": {
       "$ref": "../org/common.schema.json#/$defs/clearanceLevel"

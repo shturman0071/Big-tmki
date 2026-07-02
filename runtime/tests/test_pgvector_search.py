@@ -13,10 +13,14 @@ def test_json_safe_strips_nul():
 class _MockCursor:
     def __init__(self, conn: "_MockConn") -> None:
         self._conn = conn
+        self.rowcount = 0
 
     def execute(self, sql: str, params=None) -> None:
         self._conn.last_sql = sql
         self._conn.last_params = params
+        if "DELETE FROM" in sql:
+            self.rowcount = len(self._conn.inserts)
+            self._conn.inserts.clear()
         if "INSERT INTO" in sql:
             self._conn.inserts.append(params)
 
@@ -53,6 +57,17 @@ class _MockConn:
 
     def commit(self) -> None:
         pass
+
+
+def test_pgvector_truncate_clears_rows():
+    conn = _MockConn()
+    index = PgVectorChunkIndex(conn, use_pgvector=True)
+    index._chunks.append({"chunk_id": "c1"})
+    conn.inserts.append(("row",))
+    deleted = index.truncate()
+    assert deleted == 1
+    assert "DELETE FROM" in conn.last_sql
+    assert index._chunks == []
 
 
 def test_pgvector_search_similar_uses_cosine_sql():

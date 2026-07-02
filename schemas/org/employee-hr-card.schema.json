@@ -15,6 +15,11 @@
     },
     "consent_signed_at": { "type": "string", "format": "date-time" },
     "consent_document_ref": { "type": "string" },
+    "voice_profile_id": {
+      "type": "string",
+      "description": "ID голосового профиля для идентификации"
+    },
+    "voice_profile_enrolled_at": { "type": "string", "format": "date-time" },
     "hr_fields": {
       "type": "object",
       "description": "Поля по российскому кадровому законодательству",
@@ -39,10 +44,26 @@
       "additionalProperties": false,
       "properties": {
         "height_cm": { "type": "number" },
+        "weight_kg": { "type": "number" },
         "recorded_at": { "type": "string", "format": "date-time" },
         "notes": { "type": "string" }
       }
     },
+    "anthropometry": {
+      "type": "object",
+      "description": "Алиас anthropometrics (совместимость v0.1)",
+      "additionalProperties": false,
+      "properties": {
+        "height_cm": { "type": "number" },
+        "weight_kg": { "type": "number" }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "retention_until": { "type": "string", "format": "date" },
+    "deleted_at": { "type": "string", "format": "date-time" },
     "access_restricted": {
       "type": "boolean",
       "const": true,

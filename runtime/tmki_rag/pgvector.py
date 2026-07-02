@@ -148,6 +148,15 @@ class PgVectorChunkIndex(VectorChunkIndex):
             row = cur.fetchone()
         return int(row[0]) if row else 0
 
+    def truncate(self) -> int:
+        """Полная очистка таблицы chunks перед перезаписью индекса."""
+        with self._conn.cursor() as cur:
+            cur.execute(f"DELETE FROM {self._table}")
+            deleted = int(cur.rowcount or 0)
+        self._conn.commit()
+        self._chunks.clear()
+        return deleted
+
     def create_ivfflat_index(self, *, lists: int | None = None) -> dict[str, Any]:
         """IVFFlat индекс после bulk load (pgvector). lists ≈ sqrt(n), min 100 rows."""
         if not self._use_pgvector:

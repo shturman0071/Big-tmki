@@ -354,6 +354,21 @@ sequenceDiagram
     Runtime-->>User: Run.output + trace_id
 ```
 
+### Demo UI Flow (v0.2 local)
+
+Локальная demo-версия (`tmki_demo :8767`) работает без MCP: браузер вызывает HTTP API demo-сервера, demo-сервер ищет релевантные чанки через `tmki_rag`, получает фрагменты из `chunks-v2` или `pgvector`, передаёт их в контекст Ollama и возвращает ответ пользователю.
+
+```mermaid
+flowchart LR
+    Browser[Браузер] -->|Запрос| Demo[tmki_demo :8767]
+    Demo -->|1. Поиск релевантных чанков| Rag[tmki_rag]
+    Rag -->|2. Запрос векторов| Index[chunks-v2 / pgvector]
+    Index -->|3. Возврат чанков| Rag
+    Rag -->|4. Передача чанков в контекст| Ollama[Ollama]
+    Ollama -->|5. Генерация ответа| Demo
+    Demo -->|Ответ| Browser
+```
+
 ### Пошаговая спецификация (MUST для MVP)
 
 | # | Модуль | Step type | Tool | loop_state | Audit events |

@@ -73,7 +73,7 @@ def hybrid_score_fn(index: VectorChunkIndex, keyword_score):
     def score(query: str, chunk: dict[str, Any]) -> float:
         kw = keyword_score(query, chunk)
         vec = index.vector_score(query, chunk)
-        return 0.35 * kw + 0.65 * vec
+        return 0.5 * kw + 0.5 * vec
 
     return score
 

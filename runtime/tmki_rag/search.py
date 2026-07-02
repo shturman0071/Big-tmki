@@ -97,8 +97,9 @@ def rag_search(
             allowed.append((score_fn(query, chunk), chunk))
 
     allowed.sort(key=lambda x: x[0], reverse=True)
+    pool_k = request.get("candidate_pool") or max(top_k * 4, top_k)
     results = []
-    for score, chunk in allowed[:top_k]:
+    for score, chunk in allowed[:pool_k]:
         if score <= 0:
             continue
         results.append(
@@ -110,6 +111,11 @@ def rag_search(
                 "classification": chunk.get("classification"),
             }
         )
+
+    if request.get("quality_rerank"):
+        from tmki_rag.retrieval import rerank_results
+
+        results = rerank_results(query, results, top_k=top_k)
 
     return {
         "schema_version": "0.1",

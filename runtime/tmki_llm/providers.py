@@ -28,6 +28,19 @@ class LlmProvider(Protocol):
     ) -> LlmGenerateResult: ...
 
 
+def _format_citation_context(citations: list[dict[str, Any]], *, limit: int = 6) -> str:
+    lines: list[str] = []
+    for i, citation in enumerate(citations[:limit], start=1):
+        doc_id = citation.get("doc_id") or "?"
+        file_name = citation.get("file_name") or citation.get("relative_path") or ""
+        snippet = (citation.get("snippet") or "").strip()
+        header = f"[{i}] doc_id={doc_id}"
+        if file_name:
+            header += f" | файл: {file_name}"
+        lines.append(f"{header}\n{snippet}")
+    return "\n\n".join(lines) if lines else "Нет цитат."
+
+
 class StubLlmProvider:
     """MVP заглушка (без сети)."""
 
@@ -76,12 +89,11 @@ class OpenAiLlmProvider:
         citations: list[dict[str, Any]],
         read_only_mode: bool = False,
     ) -> LlmGenerateResult:
-        context = "\n".join(
-            f"- {c.get('snippet', '')}" for c in citations[:6]
-        ) or "Нет цитат."
+        context = _format_citation_context(citations)
         system = (
             "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
-            "Если цитат недостаточно — скажи об этом."
+            "Если цитат недостаточно — скажи об этом. "
+            "В ответе указывай doc_id и имя файла источника, если они есть в цитатах."
         )
         if read_only_mode:
             system += " Режим read-only: не предлагай действий с side-effects."
@@ -145,10 +157,11 @@ class OllamaLlmProvider:
         citations: list[dict[str, Any]],
         read_only_mode: bool = False,
     ) -> LlmGenerateResult:
-        context = "\n".join(f"- {c.get('snippet', '')}" for c in citations[:6]) or "Нет цитат."
+        context = _format_citation_context(citations)
         system = (
             "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
-            "Если цитат недостаточно — скажи об этом."
+            "Если цитат недостаточно — скажи об этом. "
+            "В ответе указывай doc_id и имя файла источника, если они есть в цитатах."
         )
         if read_only_mode:
             system += " Режим read-only: не предлагай действий с side-effects."

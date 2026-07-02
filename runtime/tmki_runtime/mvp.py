@@ -121,6 +121,7 @@ def run_mvp(
     llm_provider: str = "stub",
     index: VectorChunkIndex | None = None,
     use_hybrid_search: bool = False,
+    quality_rerank: bool = False,
 ) -> dict[str, Any]:
     """
     MVP flow: schemas/runtime/mvp-flow.json (стадии 1–8).
@@ -136,7 +137,14 @@ def run_mvp(
 
     score_fn = None
     if index is not None and use_hybrid_search:
-        score_fn = hybrid_score_fn(index, _default_score)
+        from tmki_rag.retrieval import quality_aware_score_fn
+
+        base_kw = quality_aware_score_fn(_default_score) if quality_rerank else _default_score
+        score_fn = hybrid_score_fn(index, base_kw)
+    elif quality_rerank:
+        from tmki_rag.retrieval import quality_aware_score_fn
+
+        score_fn = quality_aware_score_fn(_default_score)
 
     engine = LoopEngine(run_id=run_id, trace_id=trace_id, env=env)
     registry = build_registry(
@@ -169,7 +177,11 @@ def run_mvp(
         "step_id": str(uuid4()),
         "tool_id": "rag_search",
         "policy_context": policy_context,
-        "input": {"query": message, "top_k": 8},
+        "input": {
+            "query": message,
+            "top_k": 8,
+            **({"quality_rerank": True} if quality_rerank else {}),
+        },
     }
     rag_resp = registry.execute(rag_req)
     if rag_resp["status"] == "denied":

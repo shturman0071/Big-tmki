@@ -51,12 +51,17 @@ if (-not $SkipQa) {
   Write-Host ''
   Write-Host '[2/4] Q&A over regulations...' -ForegroundColor Yellow
   $questions = @(
-    'marksheider survey site',
-    'crane rosthehnadzor',
-    'OPO hazardous production facility'
+    'кран ростехнадзор',
+    'ОПО опасный производственный объект',
+    'промбезопасность',
+    'требования к маркшейдерской съемке',
+    'охрана труда на участке',
+    'инструкция по пожарной безопасности',
+    'порядок проведения инструктажа по охране труда',
+    'открой акт маркшейдерской опорной сети'
   )
-  $backendArgs = @('--variant','v2','--hybrid','--llm',$resolvedLlm)
-  if ($env:DATABASE_URL) { $backendArgs += @('--backend','pgvector') }
+  $env:TMKI_INDEX_BACKEND = 'json'
+  $backendArgs = @('--variant','v2','--hybrid','--llm',$resolvedLlm,'--backend','json')
 
   foreach ($q in $questions) {
     Write-Host ''
@@ -87,5 +92,5 @@ Write-Host ''
 Write-Host '========================================' -ForegroundColor Green
 Write-Host '  Demo completed' -ForegroundColor Green
 Write-Host '  Documents: artifacts\\leadership-demo\\documents\\' -ForegroundColor Green
-Write-Host ("  Repeat Q&A: python scripts/run_mvp_regulations.py ""your question"" --llm {0} --hybrid --backend pgvector" -f $resolvedLlm) -ForegroundColor Green
+Write-Host ("  Repeat Q&A: python scripts/run_leadership_qa_benchmark.py --llm {0}" -f $resolvedLlm) -ForegroundColor Green
 Write-Host '========================================' -ForegroundColor Green

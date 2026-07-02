@@ -52,8 +52,16 @@ class StubLlmProvider:
         read_only_mode: bool = False,
     ) -> LlmGenerateResult:
         if citations:
-            snippet = citations[0].get("snippet", "")
-            answer = f"По материалам проекта: {snippet[:200]}"
+            first = citations[0]
+            snippet = (first.get("snippet") or "").strip()
+            doc_id = first.get("doc_id") or "?"
+            file_name = first.get("file_name") or first.get("relative_path") or ""
+            header = f"По регламентам проекта (doc_id={doc_id}"
+            if file_name:
+                header += f", файл: {file_name}"
+            header += "):"
+            body = snippet[:420] if snippet else "фрагмент без текста"
+            answer = f"{header}\n{body}"
             confidence = "high"
         else:
             answer = f"Недостаточно источников по запросу «{query}». Уточните формулировку."
@@ -92,8 +100,9 @@ class OpenAiLlmProvider:
         context = _format_citation_context(citations)
         system = (
             "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
+            "Формат: 2–4 предложения по сути, затем источники (doc_id и имя файла). "
             "Если цитат недостаточно — скажи об этом. "
-            "В ответе указывай doc_id и имя файла источника, если они есть в цитатах."
+            "Не выдумывай нормы и номера документов."
         )
         if read_only_mode:
             system += " Режим read-only: не предлагай действий с side-effects."
@@ -160,8 +169,9 @@ class OllamaLlmProvider:
         context = _format_citation_context(citations)
         system = (
             "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
+            "Формат: 2–4 предложения по сути, затем источники (doc_id и имя файла). "
             "Если цитат недостаточно — скажи об этом. "
-            "В ответе указывай doc_id и имя файла источника, если они есть в цитатах."
+            "Не выдумывай нормы и номера документов."
         )
         if read_only_mode:
             system += " Режим read-only: не предлагай действий с side-effects."

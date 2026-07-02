@@ -73,6 +73,10 @@ def _rag_handler(
             "top_k": inp.get("top_k", 8),
             "policy_context": request["policy_context"],
         }
+        if inp.get("quality_rerank"):
+            search_req["quality_rerank"] = True
+        if inp.get("candidate_pool"):
+            search_req["candidate_pool"] = inp["candidate_pool"]
         if index is not None:
             resp = rag_search_with_index(search_req, index, folder_acl=folder_acl, score_fn=score_fn)
         else:

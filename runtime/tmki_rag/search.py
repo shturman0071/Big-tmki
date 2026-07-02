@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable, TYPE_CHECKING
 
 from tmki_rag.folders import FolderAclContext
@@ -35,13 +36,18 @@ def _default_score(query: str, chunk: dict[str, Any]) -> float:
 
 
 def _to_citation(chunk: dict[str, Any]) -> dict[str, Any]:
-    return {
+    citation: dict[str, Any] = {
         "doc_id": chunk["doc_id"],
         "page": chunk.get("page") or 1,
         "start_offset": chunk.get("start_offset"),
         "end_offset": chunk.get("end_offset"),
         "snippet": (chunk.get("content_preview") or "")[:280],
     }
+    rel = chunk.get("source_relative_path")
+    if rel:
+        citation["relative_path"] = rel
+        citation["file_name"] = chunk.get("source_file_name") or Path(str(rel)).name
+    return citation
 
 
 def rag_search(

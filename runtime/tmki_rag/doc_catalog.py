@@ -41,13 +41,15 @@ class DocCatalog:
         archive_root: Path | None = None,
         cache_path: Path | None = None,
         artifacts_dir: Path | None = None,
+        index_paths: bool = True,
     ) -> "DocCatalog":
         artifacts = artifacts_dir or DEFAULT_ARTIFACTS
         root = archive_root or resolve_archive_root(artifacts) or DEFAULT_ARCHIVE
         cache = cache_path or (artifacts / "doc-catalog.json")
         catalog = cls(archive_root=root, cache_path=cache)
         catalog._load_cache()
-        catalog._ensure_path_index()
+        if index_paths:
+            catalog._ensure_path_index()
         return catalog
 
     def _load_cache(self) -> None:
@@ -76,6 +78,17 @@ class DocCatalog:
     def _ensure_path_index(self) -> None:
         if self.paths:
             return
+        priority = _priority_paths(self.cache_path.parent)
+        if priority:
+            allowed = {ext.lower() for ext in INGEST_EXTENSIONS}
+            self.paths = [
+                rel
+                for rel in priority
+                if Path(rel).suffix.lower() in allowed
+                and (self.archive_root / rel).is_file()
+            ]
+            if self.paths:
+                return
         if not self.archive_root.is_dir():
             return
         self.paths = [
@@ -83,6 +96,38 @@ class DocCatalog:
             for p in sorted(self.archive_root.rglob("*"))
             if p.is_file() and p.suffix.lower() in INGEST_EXTENSIONS
         ]
+
+    def register_mapping(self, doc_id: str, relative_path: str) -> None:
+        if doc_id and relative_path:
+            self.by_doc_id[doc_id] = relative_path.replace("\\", "/")
+
+    def warm_from_processed(self, *, limit: int = 0, save_every: int = 200) -> int:
+        """Заполнить cache doc_id→path по списку processed из reindex-state (без rglob архива)."""
+        priority = _priority_paths(self.cache_path.parent)
+        if not priority or not self.archive_root.is_dir():
+            return 0
+        known_rels = set(self.by_doc_id.values())
+        added = 0
+        for rel_path in priority:
+            if rel_path in known_rels:
+                continue
+            full = self.archive_root / rel_path
+            if not full.is_file():
+                continue
+            try:
+                did = doc_id_from_path(full)
+            except OSError:
+                continue
+            self.by_doc_id[did] = rel_path
+            known_rels.add(rel_path)
+            added += 1
+            if save_every and added % save_every == 0:
+                self._save_cache()
+            if limit and added >= limit:
+                break
+        if added:
+            self._save_cache()
+        return added
 
     def search_paths(self, query: str, *, limit: int = 10) -> list[dict[str, Any]]:
         """Поиск файлов по токенам в имени/пути (как в проводнике)."""
@@ -146,10 +191,11 @@ class DocCatalog:
                 break
 
         if doc_id not in self.by_doc_id:
-            self._ensure_path_index()
-            for rel_path in self.paths:
+            for rel_path in priority:
                 if doc_id in self.by_doc_id:
                     break
+                if rel_path in self.by_doc_id.values():
+                    continue
                 full = self.archive_root / rel_path
                 if not full.is_file():
                     continue
@@ -162,7 +208,7 @@ class DocCatalog:
                 if did == doc_id:
                     self._save_cache()
                     return _entry_from_path(full, rel_path, doc_id=doc_id)
-                if scanned >= max_new_hashes * 4:
+                if scanned >= max_new_hashes:
                     break
 
         if scanned:
@@ -173,16 +219,31 @@ class DocCatalog:
         full = self.archive_root / rel
         return _entry_from_path(full, rel, doc_id=doc_id)
 
-    def enrich_citations(self, citations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def enrich_citations(self, citations: list[dict[str, Any]], *, resolve_missing: bool = False) -> list[dict[str, Any]]:
         enriched: list[dict[str, Any]] = []
         for citation in citations:
             item = dict(citation)
+            if item.get("relative_path") and item.get("file_name"):
+                rel = str(item["relative_path"])
+                full = self.archive_root / rel
+                item["absolute_path"] = str(full)
+                enriched.append(item)
+                continue
             doc_id = item.get("doc_id") or ""
-            resolved = self.resolve_doc_id(doc_id, max_new_hashes=40) if doc_id else None
-            if resolved:
-                item["file_name"] = resolved["file_name"]
-                item["relative_path"] = resolved["relative_path"]
-                item["absolute_path"] = resolved["absolute_path"]
+            rel = self.by_doc_id.get(doc_id) if doc_id else None
+            if rel:
+                full = self.archive_root / rel
+                item["file_name"] = full.name
+                item["relative_path"] = rel
+                item["absolute_path"] = str(full)
+                enriched.append(item)
+                continue
+            if resolve_missing and doc_id:
+                resolved = self.resolve_doc_id(doc_id, max_new_hashes=8)
+                if resolved:
+                    item["file_name"] = resolved["file_name"]
+                    item["relative_path"] = resolved["relative_path"]
+                    item["absolute_path"] = resolved["absolute_path"]
             enriched.append(item)
         return enriched
 

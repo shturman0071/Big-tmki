@@ -51,6 +51,14 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _update_doc_catalog_mapping(artifacts_dir: Path, doc_id: str, relative_path: str) -> None:
+    from tmki_rag.doc_catalog import DocCatalog
+
+    catalog = DocCatalog.load(artifacts_dir=artifacts_dir)
+    catalog.register_mapping(doc_id, relative_path)
+    catalog._save_cache()
+
+
 def _classify_extension(ext: str) -> ImportAction:
     lowered = ext.lower()
     if lowered in SKIP_EXTENSIONS:
@@ -359,6 +367,12 @@ def import_regulations_full(
             status = result.ingest_response.get("ingest_status")
             if result.chunks:
                 stats["imported"] += 1
+                doc_id = result.ingest_response.get("doc_id")
+                if doc_id:
+                    _update_doc_catalog_mapping(state_file.parent, doc_id, rel)
+                for chunk in result.chunks:
+                    chunk["source_relative_path"] = rel
+                    chunk["source_file_name"] = path.name
                 imported.append(
                     {
                         "relative_path": rel,

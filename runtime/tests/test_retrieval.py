@@ -16,6 +16,8 @@ def test_detect_open_intent():
 
 def test_normalize_query():
     assert "ростехнадзор" in normalize_query("кран ростех надзор").lower()
+    assert "опасный производственный объект" in normalize_query("ОПО требования").lower()
+    assert "пожарная безопасность" in normalize_query("инструкция по пожарной безопасности").lower()
 
 
 def test_chunk_text_quality_filters_noise():
@@ -67,6 +69,8 @@ def test_doc_catalog_resolve_doc_id(tmp_path: Path):
     file_path.write_bytes(content)
     catalog = DocCatalog(archive_root=archive, cache_path=tmp_path / "doc-catalog.json")
     doc_id = doc_id_from_bytes(content)
+    catalog.register_mapping(doc_id, "reglament.pdf")
+    catalog._save_cache()
     resolved = catalog.resolve_doc_id(doc_id, max_new_hashes=10)
     assert resolved is not None
     assert resolved["file_name"] == "reglament.pdf"

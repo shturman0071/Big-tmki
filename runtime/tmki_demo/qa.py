@@ -9,6 +9,18 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import"
+_INDEX_CACHE: dict[str, tuple[str, Any, list[dict[str, Any]]]] = {}
+_CATALOG_CACHE: Any | None = None
+
+
+def _get_catalog() -> Any:
+    global _CATALOG_CACHE
+    if _CATALOG_CACHE is None:
+        from tmki_rag.doc_catalog import DocCatalog
+
+        _CATALOG_CACHE = DocCatalog.load(artifacts_dir=DEFAULT_ARTIFACTS, index_paths=False)
+    return _CATALOG_CACHE
+
 
 
 def _maybe_fix_mojibake_text(value: str) -> str:
@@ -63,12 +75,10 @@ def resolve_llm_provider() -> str:
 
 
 def _align_embedding_provider(llm: str) -> None:
-    """Для demo: если LLM локальный, embeddings тоже через Ollama (лучше семантика)."""
-    if llm != "ollama":
-        return
+    """Demo: всегда local embeddings (совпадает с pgvector индексом, без сети)."""
     if os.environ.get("TMKI_EMBEDDING_PROVIDER"):
         return
-    os.environ["TMKI_EMBEDDING_PROVIDER"] = "ollama"
+    os.environ["TMKI_EMBEDDING_PROVIDER"] = "local"
 
 
 def _policy_context() -> dict[str, Any]:
@@ -91,14 +101,24 @@ def _resolve_backend() -> tuple[str, Any | None, list[dict[str, Any]]]:
         os.environ.get("DATABASE_URL")
     )
     if use_pgvector:
+        cache_key = "pgvector"
+        if cache_key in _INDEX_CACHE:
+            return _INDEX_CACHE[cache_key]
         backend = get_chunk_index()
         if isinstance(backend, PgVectorChunkIndex) and backend.count() > 0:
-            return "pgvector", backend, []
+            payload = ("pgvector", backend, [])
+            _INDEX_CACHE[cache_key] = payload
+            return payload
     chunks_path = resolve_regulations_chunks_path("v2")
+    cache_key = f"json:{chunks_path.resolve()}"
+    if cache_key in _INDEX_CACHE:
+        return _INDEX_CACHE[cache_key]
     chunks = load_regulations_chunks(chunks_path)
     index = VectorChunkIndex()
     index.add(chunks)
-    return "json", index, []
+    payload = ("json", index, [])
+    _INDEX_CACHE[cache_key] = payload
+    return payload
 
 
 def _answer_open_intent(message: str, catalog: Any) -> dict[str, Any] | None:
@@ -154,7 +174,7 @@ def ask_regulations(
     raw_message = message.strip()
     llm = llm_provider or resolve_llm_provider()
     _align_embedding_provider(llm)
-    catalog = DocCatalog.load(artifacts_dir=DEFAULT_ARTIFACTS)
+    catalog = _get_catalog()
 
     open_result = _answer_open_intent(raw_message, catalog)
     if open_result is not None:
@@ -171,12 +191,13 @@ def ask_regulations(
 
     query = normalize_query(raw_message)
     backend_name, index, chunks = _resolve_backend()
+    use_hybrid = hybrid and backend_name != "pgvector"
     result = run_mvp(
         message=query,
         policy_context=_policy_context(),
         chunks=chunks,
         index=index,
-        use_hybrid_search=hybrid,
+        use_hybrid_search=use_hybrid,
         quality_rerank=True,
         llm_provider=llm,
     )
@@ -189,8 +210,14 @@ def ask_regulations(
     else:
         rows = len(chunks)
     citations = catalog.enrich_citations(_clean_demo_payload(output.get("citations") or []))
+    answer = _maybe_fix_mojibake_text(output.get("answer", ""))
+    if llm == "stub" and citations:
+        from tmki_llm.providers import StubLlmProvider
+
+        regen = StubLlmProvider().generate(query=query, citations=citations)
+        answer = _maybe_fix_mojibake_text(regen.answer)
     return {
-        "answer": _maybe_fix_mojibake_text(output.get("answer", "")),
+        "answer": answer,
         "confidence": output.get("confidence", "low"),
         "citations": citations,
         "llm_provider": output.get("llm_provider") or llm,
@@ -204,7 +231,7 @@ def ask_regulations(
 def resolve_document(doc_id: str | None = None, *, query: str | None = None) -> dict[str, Any]:
     from tmki_rag.doc_catalog import DocCatalog
 
-    catalog = DocCatalog.load(artifacts_dir=DEFAULT_ARTIFACTS)
+    catalog = _get_catalog()
     if doc_id:
         resolved = catalog.resolve_doc_id(doc_id)
         if resolved:

@@ -40,14 +40,17 @@ class VectorChunkIndex(ChunkIndex):
         return super().add(prepared)
 
     def embed_query(self, query: str) -> list[float]:
-        return self._embedding_provider.embed(query).vector
+        cache: dict[str, list[float]] = getattr(self, "_query_embed_cache", {})
+        if query not in cache:
+            cache[query] = self._embedding_provider.embed(query).vector
+            self._query_embed_cache = cache
+        return cache[query]
 
     def vector_score(self, query: str, chunk: dict[str, Any]) -> float:
         q_emb = self.embed_query(query)
         c_emb = chunk.get("_embedding")
         if not c_emb:
-            self._ensure_embedding(chunk)
-            c_emb = chunk["_embedding"]
+            return 0.0
         return cosine_similarity(q_emb, c_emb)
 
     def search_similar(

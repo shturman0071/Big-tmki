@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -109,10 +110,22 @@ def _open_local_file(path: str) -> dict[str, Any]:
     return {"status": "opened", "path": str(target), "method": opener}
 
 
+def _warmup_demo() -> None:
+    """Прогрев индекса при старте — первый вопрос в UI не ждёт минуты."""
+    try:
+        ask_regulations("промбезопасность", llm_provider="stub", hybrid=True)
+        print("  Warmup: index ready", flush=True)  # noqa: T201
+    except Exception as exc:  # noqa: BLE001
+        print(f"  Warmup skipped: {exc}", flush=True)  # noqa: T201
+
+
 def serve(host: str = "127.0.0.1", port: int = 8767) -> None:
     server = ThreadingHTTPServer((host, port), DemoHandler)
-    print(f"TMKI Demo UI: http://{host}:{port}/")  # noqa: T201
-    print(f"  LLM: {resolve_llm_provider()}")  # noqa: T201
+    url = f"http://{host}:{port}/"
+    print(f"TMKI Demo UI: {url}", flush=True)  # noqa: T201
+    print(f"  LLM: {resolve_llm_provider()}", flush=True)  # noqa: T201
+    if os.environ.get("TMKI_DEMO_WARMUP", "").lower() in ("1", "true", "yes"):
+        threading.Thread(target=_warmup_demo, name="tmki-demo-warmup", daemon=True).start()
     server.serve_forever()
 
 

@@ -172,6 +172,7 @@ def _load_import_state(state_path: Path) -> dict[str, Any]:
         }
     data = json.loads(state_path.read_text(encoding="utf-8"))
     data.setdefault("processed", [])
+    data.setdefault("fingerprints", {})
     defaults = _empty_import_stats()
     saved = data.get("stats") or {}
     data["stats"] = {**defaults, **saved}
@@ -186,12 +187,29 @@ def _empty_import_stats() -> dict[str, int]:
         "ocr_failed": 0,
         "too_large": 0,
         "skip_temp": 0,
+        "skip_unchanged": 0,
         "errors": 0,
     }
 
 
 def _is_temp_office_file(path: Path) -> bool:
     return path.name.startswith("~$")
+
+
+def _file_fingerprint(path: Path) -> dict[str, int]:
+    st = path.stat()
+    return {"mtime_ns": st.st_mtime_ns, "size": st.st_size}
+
+
+def _fingerprints_match(
+    stored: dict[str, Any] | None,
+    current: dict[str, int],
+) -> bool:
+    if not stored:
+        return False
+    return int(stored.get("mtime_ns", -1)) == current["mtime_ns"] and int(
+        stored.get("size", -1)
+    ) == current["size"]
 
 
 def _save_import_state(state_path: Path, state: dict[str, Any]) -> None:
@@ -306,6 +324,11 @@ def import_regulations_full(
     }
     processed: set[str] = set(state.get("processed", []))
     stats = state.get("stats", _empty_import_stats())
+    fingerprints: dict[str, dict[str, Any]] = dict(state.get("fingerprints") or {})
+
+    from tmki_rag.feature_flags import incremental_ingest_enabled
+
+    skip_unchanged = incremental_ingest_enabled() and resume and not force_reprocess
 
     if resume and not index.list():
         _load_chunks_into_index(chunks_file, index)
@@ -325,8 +348,14 @@ def import_regulations_full(
             break
 
         rel = str(path.relative_to(root)).replace("\\", "/")
-        if rel in processed:
+        fp = _file_fingerprint(path)
+
+        if skip_unchanged and rel in processed and _fingerprints_match(fingerprints.get(rel), fp):
+            stats["skip_unchanged"] += 1
             continue
+
+        if rel in processed and not _fingerprints_match(fingerprints.get(rel), fp):
+            index.remove_by_source_path(rel)
 
         if _is_temp_office_file(path):
             stats["skip_temp"] += 1
@@ -392,6 +421,7 @@ def import_regulations_full(
             errors.append({"path": rel, "error": str(exc)})
 
         processed.add(rel)
+        fingerprints[rel] = fp
 
         if on_progress and (i % 25 == 0 or checkpoint_every > 0 and i % checkpoint_every == 0):
             on_progress(
@@ -405,6 +435,7 @@ def import_regulations_full(
 
         if checkpoint_every > 0 and i % checkpoint_every == 0:
             state["processed"] = sorted(processed)
+            state["fingerprints"] = fingerprints
             state["stats"] = stats
             state["total_candidates"] = len(candidates)
             state["recent_errors"] = errors[-50:]
@@ -414,6 +445,7 @@ def import_regulations_full(
             _save_chunks_snapshot(chunks_file, index)
 
     state["processed"] = sorted(processed)
+    state["fingerprints"] = fingerprints
     state["stats"] = stats
     state["total_candidates"] = len(candidates)
     state["recent_errors"] = errors[-50:]
@@ -444,6 +476,40 @@ def import_regulations_full(
         "errors": errors[-20:],
         "occurred_at": _now_iso(),
     }
+
+
+def reindex_regulations_incremental(
+    root: Path,
+    *,
+    policy_context: dict[str, Any],
+    classification: str,
+    folder_id: str,
+    folder_acl: FolderAclContext,
+    output_dir: Path,
+    limit: int | None = None,
+    resume: bool = True,
+    checkpoint_every: int = 100,
+    on_progress: Callable[[dict[str, Any]], None] | None = None,
+) -> dict[str, Any]:
+    """Incremental re-index: только новые/изменённые файлы (mtime+size)."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    index = ChunkIndex()
+    return import_regulations_full(
+        root,
+        policy_context=policy_context,
+        classification=classification,
+        folder_id=folder_id,
+        folder_acl=folder_acl,
+        dedup_store=DedupStore(),
+        index=index,
+        limit=limit,
+        state_path=output_dir / "reindex-state.json",
+        chunks_path=output_dir / "chunks-v2.json",
+        checkpoint_every=checkpoint_every,
+        on_progress=on_progress,
+        resume=resume,
+        force_reprocess=False,
+    )
 
 
 def reindex_regulations_full(

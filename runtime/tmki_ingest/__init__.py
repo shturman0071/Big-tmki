@@ -9,6 +9,7 @@ from tmki_ingest.regulations import (
     import_regulations_batch,
     import_regulations_full,
     reindex_regulations_full,
+    reindex_regulations_incremental,
     scan_regulations_archive,
 )
 
@@ -26,6 +27,7 @@ __all__ = [
     "import_regulations_batch",
     "import_regulations_full",
     "reindex_regulations_full",
+    "reindex_regulations_incremental",
     "ingest_and_index",
     "process_document",
     "scan_regulations_archive",

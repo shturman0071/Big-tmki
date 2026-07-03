@@ -33,6 +33,13 @@ if ($env:OPENAI_API_KEY -and $env:OPENAI_API_KEY -notmatch '^sk-[A-Za-z0-9_-]{20
 $env:TMKI_INDEX_BACKEND = "json"
 $env:TMKI_EMBEDDING_PROVIDER = "local"
 $env:TMKI_SEARCH_POOL = "64"
+# Retrieval upgrades (matrix): hybrid + fusion + cross-encoder rerank
+if (-not $env:TMKI_RAG_FUSION) { $env:TMKI_RAG_FUSION = "1" }
+if (-not $env:TMKI_CROSS_ENCODER_RERANK) { $env:TMKI_CROSS_ENCODER_RERANK = "1" }
+if (-not $env:TMKI_QUALITY_RERANK) { $env:TMKI_QUALITY_RERANK = "1" }
+if (-not $env:TMKI_INCREMENTAL_INGEST) { $env:TMKI_INCREMENTAL_INGEST = "1" }
+# Отложено: TMKI_INGEST_PARSER=docling|kreuzberg; TMKI_INDEX_BACKEND=pgvector + DATABASE_URL
+if (-not $env:TMKI_INGEST_PARSER) { $env:TMKI_INGEST_PARSER = "default" }
 
 # Локальное распознавание речи (faster-whisper, пресеты в tmki_voice/whisper_presets.py)
 if (-not $env:TMKI_STT_PROVIDER) { $env:TMKI_STT_PROVIDER = "whisper" }

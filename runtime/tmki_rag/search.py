@@ -168,10 +168,7 @@ def rag_search(
             }
         )
 
-    if request.get("quality_rerank"):
-        from tmki_rag.retrieval import rerank_results
-
-        results = rerank_results(query, results, top_k=top_k)
+    results = _finalize_results(request, query, results, top_k=top_k)
 
     return {
         "schema_version": "0.1",
@@ -184,6 +181,52 @@ def rag_search(
         },
         "occurred_at": now,
     }
+
+
+def _finalize_results(
+    request: dict[str, Any],
+    query: str,
+    results: list[dict[str, Any]],
+    *,
+    top_k: int,
+) -> list[dict[str, Any]]:
+    """Cross-encoder rerank → эвристический rerank → top_k."""
+    if not results:
+        return []
+    use_ce = request.get("cross_encoder_rerank")
+    if use_ce is None:
+        from tmki_rag.feature_flags import cross_encoder_rerank_enabled
+
+        use_ce = cross_encoder_rerank_enabled()
+    if use_ce:
+        from tmki_rag.cross_encoder import available, rerank_results as ce_rerank
+
+        if available():
+            reranked = ce_rerank(query, results, top_k=top_k)
+            if reranked:
+                return reranked
+    quality = request.get("quality_rerank")
+    if quality is None:
+        from tmki_rag.feature_flags import quality_rerank_enabled
+
+        quality = quality_rerank_enabled()
+    if quality:
+        from tmki_rag.retrieval import rerank_results
+
+        reranked = rerank_results(query, results, top_k=top_k)
+        if reranked:
+            return reranked
+    return results[:top_k]
+
+
+def _fusion_enabled(request: dict[str, Any]) -> bool:
+    if request.get("rag_fusion") is False:
+        return False
+    if request.get("rag_fusion") is True:
+        return True
+    from tmki_rag.feature_flags import rag_fusion_enabled
+
+    return rag_fusion_enabled()
 
 
 def _bm25_disabled() -> bool:
@@ -306,21 +349,48 @@ def rag_search_with_index(
     score_fn = score_fn or _default_score
     policy_context = request["policy_context"]
     top_k = request.get("top_k", 8)
-    pool = candidate_pool or max(top_k * 8, 64)
+    pool = candidate_pool or request.get("candidate_pool") or max(top_k * 8, 64)
+
+    if _fusion_enabled(request):
+        from tmki_rag.rag_fusion import expand_query_variants, fuse_chunk_rankings
+
+        ranked_lists: list[list[dict[str, Any]]] = []
+        for variant in expand_query_variants(request["query"]):
+            sub = {**request, "query": variant, "rag_fusion": False}
+            ranked_lists.append(
+                _retrieve_chunks(sub, index, score_fn=score_fn, folder_acl=folder_acl, pool=pool)
+            )
+        fused = fuse_chunk_rankings([r for r in ranked_lists if r], top_k=pool)
+        fusion_request = {**request, "rag_fusion": False}
+        return rag_search(fusion_request, fused, score_fn=score_fn, folder_acl=folder_acl)
+
+    chunks = _retrieve_chunks(
+        request, index, score_fn=score_fn, folder_acl=folder_acl, pool=pool
+    )
+    return rag_search(request, chunks, score_fn=score_fn, folder_acl=folder_acl)
+
+
+def _retrieve_chunks(
+    request: dict[str, Any],
+    index: "VectorChunkIndex",
+    *,
+    score_fn: Callable[[str, dict[str, Any]], float],
+    folder_acl: FolderAclContext | None,
+    pool: int,
+) -> list[dict[str, Any]]:
+    policy_context = request["policy_context"]
     if _use_full_text_scan(index):
-        chunks = _full_scan_index_chunks(
+        return _full_scan_index_chunks(
             request,
             index,
             score_fn=score_fn,
             folder_acl=folder_acl,
             pool=pool,
         )
-        return rag_search(request, chunks, score_fn=score_fn, folder_acl=folder_acl)
     similar = index.search_similar(
         request["query"],
         company_id=policy_context["company_id"],
         project_id=policy_context["project_id"],
         top_k=pool,
     )
-    chunks = [chunk for _, chunk in similar]
-    return rag_search(request, chunks, score_fn=score_fn, folder_acl=folder_acl)
+    return [chunk for _, chunk in similar]

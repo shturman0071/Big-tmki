@@ -80,7 +80,8 @@ def _http_post_with_retry(
     return {}
 
 
-from tmki_ocr.extractors import extract_local_text, guess_suffix
+from tmki_ocr.extractors import guess_suffix
+from tmki_ocr.parser_backend import extract_document
 
 
 class LocalMinerUProvider:
@@ -95,7 +96,7 @@ class LocalMinerUProvider:
     def extract(self, raw_bytes: bytes) -> OcrAttempt:
         started = datetime.now(timezone.utc)
         suffix = guess_suffix(raw_bytes, self._source_name)
-        result = extract_local_text(raw_bytes, suffix=suffix)
+        result = extract_document(raw_bytes, suffix=suffix)
         text = result["text"]
         page_count = int(result["page_count"] or 1)
         confidence = float(result["confidence"])

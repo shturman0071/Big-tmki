@@ -37,6 +37,14 @@ def _demo_status_snapshot() -> dict[str, Any]:
         return _status_cache[1]
 
     from tmki_voice.stt_corrections import stt_fix_selftest
+    from tmki_rag.cross_encoder import available as ce_available
+    from tmki_rag.feature_flags import (
+        cross_encoder_rerank_enabled,
+        incremental_ingest_enabled,
+        ingest_parser_backend,
+        pgvector_backend_enabled,
+        rag_fusion_enabled,
+    )
 
     payload: dict[str, Any] = {
         "phase": "demo",
@@ -50,6 +58,14 @@ def _demo_status_snapshot() -> dict[str, Any]:
         "stt": os.environ.get("TMKI_STT_PROVIDER", "stub").lower(),
         "whisper_preset": os.environ.get("WHISPER_PRESET", "fast"),
         "stt_fix": stt_fix_selftest(),
+        "retrieval": {
+            "rag_fusion": rag_fusion_enabled(),
+            "cross_encoder_rerank": cross_encoder_rerank_enabled(),
+            "cross_encoder_installed": ce_available(),
+            "incremental_ingest": incremental_ingest_enabled(),
+            "ingest_parser": ingest_parser_backend(),
+            "pgvector_ready": pgvector_backend_enabled(),
+        },
     }
     state = ARTIFACTS_DIR / "reindex-state.json"
     if state.is_file():

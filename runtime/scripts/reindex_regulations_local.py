@@ -22,6 +22,11 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--no-resume", action="store_true")
+    parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help="Только новые/изменённые файлы (mtime+size), без force_reprocess",
+    )
     parser.add_argument("--checkpoint-every", type=int, default=200)
     parser.add_argument(
         "--ocr-mode",
@@ -73,7 +78,7 @@ def _run(args: argparse.Namespace) -> int:
 
     print(f"Сканирование архива и re-index (TMKI_OCR_MODE={args.ocr_mode})...", flush=True)
 
-    from tmki_ingest import reindex_regulations_full
+    from tmki_ingest import reindex_regulations_full, reindex_regulations_incremental
     from tmki_policy import build_policy_context, load_org_snapshot
     from tmki_rag import FolderAclContext, load_folder_catalog, load_folder_grants
 
@@ -104,13 +109,15 @@ def _run(args: argparse.Namespace) -> int:
         print(
             safe_console_text(
                 f"  [{payload['file_index']}/{payload['total_candidates']}] "
-                f"imported={s['imported']} skip_temp={s.get('skip_temp', 0)} "
+                f"imported={s['imported']} skip_unchanged={s.get('skip_unchanged', 0)} "
+                f"skip_temp={s.get('skip_temp', 0)} "
                 f"ocr_failed={s['ocr_failed']} err={s['errors']}{cur_short}"
             ),
             flush=True,
         )
 
-    result = reindex_regulations_full(
+    reindex_fn = reindex_regulations_incremental if args.incremental else reindex_regulations_full
+    result = reindex_fn(
         args.archive,
         policy_context=ctx,
         classification="restricted",

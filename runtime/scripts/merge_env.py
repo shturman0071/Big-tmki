@@ -16,7 +16,6 @@ ENV_TARGET = RUNTIME / ".env"
 
 DEFAULTS = {
     "TMKI_OCR_MODE": "http",
-    "TMKI_LLM_PROVIDER": "openai",
     "OPENAI_MODEL": "gpt-4o-mini",
     "MINERU_API_URL": "https://mineru.net/api/v4",
     "MISTRAL_OCR_API_URL": "https://api.mistral.ai/v1/ocr",
@@ -28,6 +27,11 @@ DEFAULTS = {
     "WHISPER_DEVICE": "cpu",
     "WHISPER_COMPUTE_TYPE": "int8",
     "TMKI_LLM_PROVIDER": "ollama",
+    "TMKI_RAG_FUSION": "1",
+    "TMKI_CROSS_ENCODER_RERANK": "1",
+    "TMKI_QUALITY_RERANK": "1",
+    "TMKI_INCREMENTAL_INGEST": "1",
+    "TMKI_INGEST_PARSER": "default",
 }
 
 from tmki_runtime.secrets import is_valid_api_secret, is_valid_openai_api_key

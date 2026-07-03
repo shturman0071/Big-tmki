@@ -42,10 +42,14 @@ _CONTENT_SUMMARY = re.compile(
 
 
 def detect_query_intent(query: str) -> str:
-    """qa — ответ по содержанию; open — найти/открыть файл; summarize — пересказ текста."""
+    """qa — ответ по содержанию; open — найти/открыть файл; summarize — пересказ; analyze — разбор сути."""
+    from tmki_rag.document_intel import detect_analyze_intent
+
     q = query.strip()
     if _OPEN_INTENT.search(q) and not looks_like_content_summary_query(q):
         return "open"
+    if detect_analyze_intent(q):
+        return "analyze"
     if looks_like_content_summary_query(q):
         return "summarize"
     return "qa"

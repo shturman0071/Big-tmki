@@ -63,17 +63,67 @@
     .vt-log { width: 100%; min-height: 8rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.82rem; margin-top: 0.5rem; box-sizing: border-box; }
     .vt-actions button { font-size: 0.82rem; padding: 0.3rem 0.6rem; cursor: pointer; margin-right: 0.4rem; }
     .vt-num { width: 3.2rem; }
+    .chat-thread {
+      max-height: 22rem;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+      background: #fafbfc;
+    }
+    .chat-thread:empty { display: none; }
+    .chat-msg { margin-bottom: 0.75rem; padding: 0.55rem 0.75rem; border-radius: 8px; line-height: 1.45; white-space: pre-wrap; }
+    .chat-msg.user { background: #e8f0fe; margin-left: 1.5rem; }
+    .chat-msg.assistant { background: #fff; border: 1px solid #e8e8e8; margin-right: 1.5rem; }
+    .chat-msg .role { font-size: 0.75rem; color: #666; margin-bottom: 0.25rem; font-weight: 600; }
+    .citation-score { font-size: 0.78rem; color: #2e7d32; margin-left: 0.35rem; }
+    .citation-snippet { margin-top: 0.35rem; }
+    .citation-snippet.collapsed { max-height: 4.5em; overflow: hidden; }
+    .citation-toggle { font-size: 0.78rem; color: var(--accent); cursor: pointer; border: none; background: none; padding: 0; }
+    .chat-toolbar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .chat-toolbar button { font-size: 0.82rem; padding: 0.3rem 0.6rem; cursor: pointer; border: 1px solid #bbb; border-radius: 5px; background: #fff; }
+    .mode-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .mode-tabs button { flex: 1; padding: 0.6rem; border: 1px solid #ccc; background: #fafafa; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .mode-tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .trainer-progress { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.75rem; }
+    .trainer-tracks { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+    .trainer-tracks button { font-size: 0.82rem; padding: 0.35rem 0.65rem; border: 1px solid #bbb; border-radius: 16px; background: #fff; cursor: pointer; }
+    .trainer-tracks button.active { border-color: var(--accent); background: #e8f0fe; }
+    .trainer-lesson-list { margin: 0.5rem 0 1rem; padding-left: 1.2rem; font-size: 0.9rem; }
+    .trainer-lesson-list li { margin: 0.35rem 0; cursor: pointer; }
+    .trainer-lesson-list li.done { color: #2e7d32; }
+    .trainer-lesson-list li.active { font-weight: 600; color: var(--accent); }
+    .trainer-q { font-size: 1.05rem; font-weight: 600; margin: 0.75rem 0; }
+    .trainer-hint { font-size: 0.85rem; color: #666; background: #f4f6f8; padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 0.75rem; }
+    .trainer-feedback { margin-top: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 6px; }
+    .trainer-feedback.ok { background: #e8f5e9; border: 1px solid #a5d6a7; }
+    .trainer-feedback.warn { background: #fff8e1; border: 1px solid #ffe082; }
+    .trainer-system { margin-top: 0.75rem; padding: 0.6rem 0.75rem; background: #f0f4ff; border-radius: 6px; font-size: 0.9rem; white-space: pre-wrap; }
   </style>
 </head>
 <body>
   <header>
-    <h1>TMKI — пробная версия: вопросы по регламентам</h1>
+    <h1>TMKI — диалог по регламентам</h1>
     <div class="status" id="status">Загрузка статуса…</div>
   </header>
 
   <main>
+    <div class="mode-tabs">
+      <button type="button" id="tab-chat" class="active">💬 Диалог</button>
+      <button type="button" id="tab-trainer">🎓 Обучалка</button>
+    </div>
+
+    <div id="panel-chat" class="panel active">
     <section class="card">
-      <label for="question">Ваш вопрос</label>
+      <div class="chat-toolbar">
+        <button type="button" id="new-chat" title="Новая сессия">Новый диалог</button>
+        <span id="session-label" style="font-size:0.8rem;color:#666"></span>
+      </div>
+      <div class="chat-thread" id="chat-thread" aria-live="polite"></div>
+      <label for="question">Сообщение</label>
       <textarea id="question" placeholder="Например: кран ростехнадзор"></textarea>
       <div class="presets">
         <span style="font-size:0.85rem;color:#666;align-self:center">Примеры:</span>
@@ -95,7 +145,7 @@
         </select>
       </div>
       <div class="actions">
-        <button type="button" class="primary" id="ask">Спросить</button>
+        <button type="button" class="primary" id="ask">Отправить</button>
         <button type="button" class="voice-btn" id="voice" title="Голосовой ввод (русский, fast + автофиксы)">🎤</button>
         <span class="spinner" id="spinner">Думаю… (обычно 3–10 сек)</span>
       </div>
@@ -142,17 +192,145 @@
     </section>
 
     <section class="card error" id="err" hidden></section>
+    </div>
+
+    <div id="panel-trainer" class="panel">
+      <section class="card">
+        <h2 style="margin:0 0 0.5rem;font-size:1.1rem">Обучалка: вопрос → ответ</h2>
+        <p style="margin:0 0 0.75rem;font-size:0.9rem;color:#666">
+          Четыре навыка: поиск, чтение форматов, смысл документа, диалог. Сформулируйте ответ сами, затем сравните с TMKI.
+        </p>
+        <div class="trainer-progress" id="trainer-progress">Загрузка…</div>
+        <div class="trainer-tracks" id="trainer-tracks"></div>
+        <ol class="trainer-lesson-list" id="trainer-lessons"></ol>
+        <div class="trainer-q" id="trainer-question">Выберите урок</div>
+        <div class="trainer-hint" id="trainer-hint" hidden></div>
+        <label for="trainer-answer">Ваш ответ</label>
+        <textarea id="trainer-answer" placeholder="Напишите ответ своими словами…"></textarea>
+        <div class="actions" style="margin-top:0.75rem">
+          <button type="button" class="primary" id="trainer-check">Проверить</button>
+          <button type="button" id="trainer-system">Спросить TMKI</button>
+          <button type="button" id="trainer-followup" hidden>Уточнение (диалог)</button>
+          <span class="spinner" id="trainer-spin">Думаю…</span>
+        </div>
+        <div class="trainer-feedback" id="trainer-feedback" hidden></div>
+        <div class="trainer-system" id="trainer-system-out" hidden></div>
+      </section>
+    </div>
   </main>
 
   <script>
+    let chatSessionId = localStorage.getItem('tmki_chat_session') || '';
+
+    function renderChatThread() {
+      const raw = localStorage.getItem('tmki_chat_log');
+      const thread = document.getElementById('chat-thread');
+      thread.innerHTML = '';
+      if (!raw) return;
+      try {
+        const items = JSON.parse(raw);
+        items.forEach((m) => {
+          const div = document.createElement('div');
+          div.className = 'chat-msg ' + (m.role === 'user' ? 'user' : 'assistant');
+          div.innerHTML = '<div class="role">' + (m.role === 'user' ? 'Вы' : 'TMKI') + '</div>' +
+            (m.content || '').replace(/</g, '&lt;');
+          thread.appendChild(div);
+        });
+        thread.scrollTop = thread.scrollHeight;
+      } catch (e) { /* ignore */ }
+    }
+
+    function appendChatLog(role, content) {
+      let items = [];
+      try { items = JSON.parse(localStorage.getItem('tmki_chat_log') || '[]'); } catch (e) { items = []; }
+      items.push({ role, content });
+      if (items.length > 40) items = items.slice(-40);
+      localStorage.setItem('tmki_chat_log', JSON.stringify(items));
+      renderChatThread();
+    }
+
+    function updateSessionLabel() {
+      const el = document.getElementById('session-label');
+      el.textContent = chatSessionId ? ('сессия: ' + chatSessionId.slice(0, 14) + '…') : 'новая сессия';
+    }
+
+    document.getElementById('new-chat').addEventListener('click', () => {
+      chatSessionId = '';
+      localStorage.removeItem('tmki_chat_session');
+      localStorage.removeItem('tmki_chat_log');
+      renderChatThread();
+      updateSessionLabel();
+      document.getElementById('result').hidden = true;
+    });
+
+    function renderCitations(citations) {
+      const cit = document.getElementById('citations');
+      cit.innerHTML = '';
+      (citations || []).slice(0, 8).forEach((c, i) => {
+        const div = document.createElement('div');
+        div.className = 'citation';
+        const snip = (c.snippet || '');
+        const fileLabel = c.file_name || c.relative_path || c.doc_id || '';
+        const pathLine = c.relative_path ? '<div class="citation-path">' + c.relative_path + '</div>' : '';
+        const score = c.score != null ? '<span class="citation-score">релевантность ' + c.score + '</span>' : '';
+        div.innerHTML = '<div class="citation-id">#' + (i + 1) + ' ' + fileLabel + score + '</div>' + pathLine;
+        const snDiv = document.createElement('div');
+        snDiv.className = 'citation-snippet collapsed';
+        snDiv.textContent = snip.slice(0, 1200);
+        div.appendChild(snDiv);
+        if (snip.length > 280) {
+          const toggle = document.createElement('button');
+          toggle.type = 'button';
+          toggle.className = 'citation-toggle';
+          toggle.textContent = 'Показать полностью';
+          toggle.addEventListener('click', () => {
+            const collapsed = snDiv.classList.toggle('collapsed');
+            toggle.textContent = collapsed ? 'Показать полностью' : 'Свернуть';
+          });
+          div.appendChild(toggle);
+        }
+        const actions = document.createElement('div');
+        actions.className = 'citation-actions';
+        if (c.absolute_path) {
+          const openBtn = document.createElement('button');
+          openBtn.type = 'button';
+          openBtn.textContent = 'Открыть';
+          openBtn.addEventListener('click', async () => {
+            openBtn.disabled = true;
+            try {
+              const r = await fetch('/api/doc/open', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ absolute_path: c.absolute_path }),
+              });
+              const payload = await r.json();
+              if (!r.ok || payload.status === 'not_found') throw new Error(payload.error || 'не найден');
+            } catch (e) {
+              alert('Не удалось открыть: ' + e.message);
+            } finally {
+              openBtn.disabled = false;
+            }
+          });
+          actions.appendChild(openBtn);
+        }
+        div.appendChild(actions);
+        cit.appendChild(div);
+      });
+    }
+
     async function loadStatus() {
       try {
         const res = await fetch('/api/status');
         const s = await res.json();
         const pct = s.percent != null ? s.percent.toFixed(1) + '%' : '—';
         const prog = s.progress != null && s.total ? `${s.progress}/${s.total}` : '—';
+        const r = s.retrieval || {};
+        const chat = s.chat || {};
         document.getElementById('status').textContent =
-          `Фаза: ${s.phase || '—'} | re-index: ${prog} (${pct}) | LLM: ${s.llm || '—'} | Docker: ${s.docker ? 'ok' : '—'}`;
+          `Фаза: ${s.phase || '—'} | re-index: ${prog} (${pct}) | LLM: ${s.llm || '—'}` +
+          ` | чат: ${chat.enabled ? 'on' : 'off'}` +
+          ` | parser: ${r.ingest_parser_resolved || r.ingest_parser || '—'}` +
+          (r.docling_installed ? ' (docling ✓)' : '');
       } catch (e) {
         document.getElementById('status').textContent = 'Статус недоступен';
       }
@@ -197,22 +375,34 @@
       result.hidden = true;
       btn.disabled = true;
       spin.classList.add('active');
+      appendChatLog('user', q);
+      document.getElementById('question').value = '';
       try {
         const corpus = document.getElementById('corpus').value;
-        const res = await fetch('/api/ask', {
+        const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q, corpus }),
+          body: JSON.stringify({ message: q, corpus, session_id: chatSessionId || undefined }),
           signal,
         });
         const data = await res.json();
         if (seq !== askSeq) return;
         if (!res.ok) throw new Error(data.error || res.statusText);
+        if (data.session_id) {
+          chatSessionId = data.session_id;
+          localStorage.setItem('tmki_chat_session', chatSessionId);
+          updateSessionLabel();
+        }
+        const answer = data.answer || '(пустой ответ)';
+        appendChatLog('assistant', answer);
         document.getElementById('meta').textContent =
-          `Запрос: «${q}» | Корпус: ${data.corpus_label || data.corpus_id || '—'} | Уверенность: ${data.confidence} | LLM: ${data.llm_provider} | backend: ${data.backend} (${data.index_rows} rows)` +
+          `Корпус: ${data.corpus_label || data.corpus_id || '—'} | Уверенность: ${data.confidence} | LLM: ${data.llm_provider} | backend: ${data.backend}` +
+          (data.index_rows != null ? ` (${data.index_rows} rows)` : '') +
           (data.intent ? ` | режим: ${data.intent}` : '') +
+          (data.follow_up ? ' | уточнение' : '') +
+          (data.turns ? ` | ходов: ${data.turns}` : '') +
           (data.llm_policy_note ? ` | политика: ${data.llm_policy_note}` : '');
-        document.getElementById('answer').textContent = data.answer || '(пустой ответ)';
+        document.getElementById('answer').textContent = answer;
         const hintBox = document.getElementById('corpus-hint');
         hintBox.hidden = true;
         hintBox.innerHTML = '';
@@ -230,42 +420,7 @@
           });
           hintBox.appendChild(sw);
         }
-        const cit = document.getElementById('citations');
-        cit.innerHTML = '';
-        (data.citations || []).slice(0, 6).forEach((c, i) => {
-          const div = document.createElement('div');
-          div.className = 'citation';
-          const snip = (c.snippet || '').slice(0, 400);
-          const fileLabel = c.file_name || c.relative_path || c.doc_id || '';
-          const pathLine = c.relative_path ? `<div class="citation-path">${c.relative_path}</div>` : '';
-          div.innerHTML = `<div class="citation-id">#${i + 1} ${fileLabel}</div>${pathLine}<div>${snip.replace(/</g, '&lt;')}</div>`;
-          const actions = document.createElement('div');
-          actions.className = 'citation-actions';
-          if (c.absolute_path) {
-            const openBtn = document.createElement('button');
-            openBtn.type = 'button';
-            openBtn.textContent = 'Открыть';
-            openBtn.addEventListener('click', async () => {
-              openBtn.disabled = true;
-              try {
-                const r = await fetch('/api/doc/open', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ absolute_path: c.absolute_path }),
-                });
-                const payload = await r.json();
-                if (!r.ok || payload.status === 'not_found') throw new Error(payload.error || 'не найден');
-              } catch (e) {
-                alert('Не удалось открыть: ' + e.message);
-              } finally {
-                openBtn.disabled = false;
-              }
-            });
-            actions.appendChild(openBtn);
-          }
-          div.appendChild(actions);
-          cit.appendChild(div);
-        });
+        renderCitations(data.citations || []);
         result.hidden = false;
       } catch (e) {
         if (e.name === 'AbortError' || seq !== askSeq) return;
@@ -518,7 +673,143 @@
     })();
 
     loadStatus();
+    renderChatThread();
+    updateSessionLabel();
     setInterval(loadStatus, 30000);
+
+    (function initTrainer() {
+      const tabChat = document.getElementById('tab-chat');
+      const tabTrainer = document.getElementById('tab-trainer');
+      const panelChat = document.getElementById('panel-chat');
+      const panelTrainer = document.getElementById('panel-trainer');
+      let trainerData = null;
+      let currentTrack = 0;
+      let currentLesson = null;
+      let practiceSessionId = '';
+
+      tabChat.addEventListener('click', () => {
+        tabChat.classList.add('active');
+        tabTrainer.classList.remove('active');
+        panelChat.classList.add('active');
+        panelTrainer.classList.remove('active');
+      });
+      tabTrainer.addEventListener('click', () => {
+        tabTrainer.classList.add('active');
+        tabChat.classList.remove('active');
+        panelTrainer.classList.add('active');
+        panelChat.classList.remove('active');
+        if (!trainerData) loadTrainer();
+      });
+
+      function renderLesson() {
+        const list = document.getElementById('trainer-lessons');
+        list.innerHTML = '';
+        if (!trainerData || !trainerData.curriculum.tracks[currentTrack]) return;
+        const track = trainerData.curriculum.tracks[currentTrack];
+        const done = new Set(trainerData.progress.lesson_ids || []);
+        track.lessons.forEach((L, idx) => {
+          const li = document.createElement('li');
+          li.textContent = L.question.slice(0, 72) + (L.question.length > 72 ? '…' : '');
+          if (done.has(L.id)) li.classList.add('done');
+          if (currentLesson && currentLesson.id === L.id) li.classList.add('active');
+          li.addEventListener('click', () => selectLesson(L.id));
+          list.appendChild(li);
+        });
+        document.getElementById('trainer-tracks').querySelectorAll('button').forEach((b, i) => {
+          b.classList.toggle('active', i === currentTrack);
+        });
+      }
+
+      function selectLesson(lessonId) {
+        const track = trainerData.curriculum.tracks[currentTrack];
+        currentLesson = track.lessons.find((L) => L.id === lessonId) || track.lessons[0];
+        if (!currentLesson) return;
+        document.getElementById('trainer-question').textContent = currentLesson.question;
+        const hint = document.getElementById('trainer-hint');
+        hint.textContent = currentLesson.hint || '';
+        hint.hidden = !currentLesson.hint;
+        document.getElementById('trainer-answer').value = '';
+        document.getElementById('trainer-feedback').hidden = true;
+        document.getElementById('trainer-system-out').hidden = true;
+        document.getElementById('trainer-followup').hidden = !currentLesson.has_follow_up;
+        practiceSessionId = '';
+        renderLesson();
+      }
+
+      async function loadTrainer() {
+        const res = await fetch('/api/trainer');
+        trainerData = await res.json();
+        const p = trainerData.progress;
+        document.getElementById('trainer-progress').textContent =
+          `Прогресс: ${p.completed}/${p.total_lessons} (${p.percent}%)`;
+        const tracksEl = document.getElementById('trainer-tracks');
+        tracksEl.innerHTML = '';
+        trainerData.curriculum.tracks.forEach((t, i) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = t.title;
+          btn.addEventListener('click', () => { currentTrack = i; selectLesson(t.lessons[0].id); });
+          tracksEl.appendChild(btn);
+        });
+        if (trainerData.curriculum.tracks[0] && trainerData.curriculum.tracks[0].lessons[0]) {
+          selectLesson(trainerData.curriculum.tracks[0].lessons[0].id);
+        }
+      }
+
+      document.getElementById('trainer-check').addEventListener('click', async () => {
+        const answer = document.getElementById('trainer-answer').value.trim();
+        if (!answer || !currentLesson) return;
+        const fb = document.getElementById('trainer-feedback');
+        const res = await fetch('/api/trainer/attempt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lesson_id: currentLesson.id, answer }),
+        });
+        const data = await res.json();
+        if (!res.ok) { fb.textContent = data.error; fb.className = 'trainer-feedback warn'; fb.hidden = false; return; }
+        const r = data.result;
+        fb.textContent = r.feedback + (r.passed ? ' ✓' : '');
+        fb.className = 'trainer-feedback ' + (r.passed ? 'ok' : 'warn');
+        fb.hidden = false;
+        if (data.progress) trainerData.progress.lesson_ids = data.progress;
+        document.getElementById('trainer-progress').textContent =
+          `Прогресс: ${data.progress.length}/${trainerData.progress.total_lessons}`;
+        renderLesson();
+      });
+
+      async function runPractice(followUp) {
+        if (!currentLesson) return;
+        const spin = document.getElementById('trainer-spin');
+        const out = document.getElementById('trainer-system-out');
+        spin.classList.add('active');
+        out.hidden = true;
+        try {
+          const res = await fetch('/api/trainer/practice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              lesson_id: currentLesson.id,
+              session_id: practiceSessionId || undefined,
+              follow_up: followUp,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || res.statusText);
+          if (data.session_id) practiceSessionId = data.session_id;
+          out.textContent = (data.answer || '(пусто)') +
+            (data.citations && data.citations.length ? '\n\nИсточников: ' + data.citations.length : '');
+          out.hidden = false;
+        } catch (e) {
+          out.textContent = 'Ошибка: ' + e.message;
+          out.hidden = false;
+        } finally {
+          spin.classList.remove('active');
+        }
+      }
+
+      document.getElementById('trainer-system').addEventListener('click', () => runPractice(false));
+      document.getElementById('trainer-followup').addEventListener('click', () => runPractice(true));
+    })();
   </script>
 </body>
 </html>

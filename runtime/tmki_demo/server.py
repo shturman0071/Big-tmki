@@ -12,7 +12,14 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from tmki_demo.qa import ask_regulations, resolve_document, resolve_llm_provider
+from tmki_demo.qa import (
+    analyze_document,
+    ask_regulations,
+    chat_message,
+    get_chat_session,
+    resolve_document,
+    resolve_llm_provider,
+)
 from tmki_rag.corpus_policy import corpus_policy_snapshot, normalize_corpus_id
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -46,6 +53,16 @@ def _demo_status_snapshot() -> dict[str, Any]:
         rag_fusion_enabled,
     )
 
+    from tmki_ocr.parser_backend import resolve_parser_backend
+
+    docling_ok = False
+    try:
+        import docling  # noqa: F401
+
+        docling_ok = True
+    except ImportError:
+        pass
+
     payload: dict[str, Any] = {
         "phase": "demo",
         "progress": None,
@@ -58,12 +75,18 @@ def _demo_status_snapshot() -> dict[str, Any]:
         "stt": os.environ.get("TMKI_STT_PROVIDER", "stub").lower(),
         "whisper_preset": os.environ.get("WHISPER_PRESET", "fast"),
         "stt_fix": stt_fix_selftest(),
+        "chat": {
+            "enabled": os.environ.get("TMKI_CHAT_MODE", "1").lower() not in ("0", "false", "no"),
+            "persist": os.environ.get("TMKI_CHAT_PERSIST", "1").lower() not in ("0", "false", "no"),
+        },
         "retrieval": {
             "rag_fusion": rag_fusion_enabled(),
             "cross_encoder_rerank": cross_encoder_rerank_enabled(),
             "cross_encoder_installed": ce_available(),
             "incremental_ingest": incremental_ingest_enabled(),
             "ingest_parser": ingest_parser_backend(),
+            "ingest_parser_resolved": resolve_parser_backend(),
+            "docling_installed": docling_ok,
             "pgvector_ready": pgvector_backend_enabled(),
         },
     }
@@ -191,9 +214,109 @@ class DemoHandler(BaseHTTPRequestHandler):
             corpus = normalize_corpus_id((params.get("corpus") or [None])[0])
             self._send_json(HTTPStatus.OK, resolve_document(doc_id=doc_id, query=query, corpus_id=corpus))
             return
+        if parsed.path == "/api/session":
+            params = parse_qs(parsed.query)
+            sid = (params.get("session_id") or [None])[0]
+            if not sid:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "session_id required"})
+                return
+            self._send_json(HTTPStatus.OK, get_chat_session(sid))
+            return
+        if parsed.path == "/api/trainer":
+            params = parse_qs(parsed.query)
+            user = (params.get("user") or ["default"])[0] or "default"
+            from tmki_trainer import trainer_snapshot
+
+            self._send_json(HTTPStatus.OK, trainer_snapshot(user))
+            return
+        if parsed.path == "/api/doc/profile":
+            params = parse_qs(parsed.query)
+            doc_id = (params.get("doc_id") or [None])[0]
+            corpus = normalize_corpus_id((params.get("corpus") or [None])[0])
+            if not doc_id:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "doc_id required"})
+                return
+            from tmki_demo.qa import _get_memory_store
+
+            store = _get_memory_store(corpus_id=corpus)
+            profile = store.get(doc_id)
+            if profile:
+                self._send_json(HTTPStatus.OK, {"status": "ok", "profile": profile.to_dict()})
+            else:
+                self._send_json(HTTPStatus.NOT_FOUND, {"status": "not_found", "doc_id": doc_id})
+            return
         self._send_json(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
+        if self.path == "/api/trainer/attempt":
+            try:
+                body = self._read_json()
+                lesson_id = (body.get("lesson_id") or "").strip()
+                user_answer = (body.get("answer") or "").strip()
+                user_id = (body.get("user_id") or "default").strip() or "default"
+                if not lesson_id or not user_answer:
+                    self._send_json(HTTPStatus.BAD_REQUEST, {"error": "lesson_id and answer required"})
+                    return
+                from tmki_trainer import evaluate_attempt, load_curriculum, record_attempt
+
+                curriculum = load_curriculum()
+                lesson = curriculum.lesson_by_id(lesson_id)
+                if not lesson:
+                    self._send_json(HTTPStatus.NOT_FOUND, {"error": "lesson not found"})
+                    return
+                result = evaluate_attempt(lesson, user_answer)
+                progress = record_attempt(user_id, lesson_id, result)
+                self._send_json(
+                    HTTPStatus.OK,
+                    {"result": result.to_dict(), "progress": progress.get("completed", [])},
+                )
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if self.path == "/api/trainer/practice":
+            try:
+                body = self._read_json()
+                lesson_id = (body.get("lesson_id") or "").strip()
+                session_id = (body.get("session_id") or "").strip() or None
+                follow_up = bool(body.get("follow_up"))
+                if not lesson_id:
+                    self._send_json(HTTPStatus.BAD_REQUEST, {"error": "lesson_id required"})
+                    return
+                from tmki_trainer.engine import load_curriculum, run_system_practice
+
+                curriculum = load_curriculum()
+                lesson = curriculum.lesson_by_id(lesson_id)
+                if not lesson:
+                    self._send_json(HTTPStatus.NOT_FOUND, {"error": "lesson not found"})
+                    return
+                out = run_system_practice(lesson, session_id=session_id, follow_up=follow_up)
+                self._send_json(HTTPStatus.OK, out)
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if self.path == "/api/chat":
+            try:
+                body = self._read_json()
+                message = (body.get("message") or body.get("question") or "").strip()
+                if not message:
+                    self._send_json(HTTPStatus.BAD_REQUEST, {"error": "message required"})
+                    return
+                llm = body.get("llm")
+                corpus = normalize_corpus_id(body.get("corpus"))
+                session_id = (body.get("session_id") or "").strip() or None
+                result = chat_message(
+                    message,
+                    session_id=session_id,
+                    llm_provider=llm,
+                    corpus_id=corpus,
+                )
+                if result.get("error"):
+                    self._send_json(HTTPStatus.BAD_REQUEST, result)
+                    return
+                self._send_json(HTTPStatus.OK, result)
+            except Exception as exc:  # noqa: BLE001 — demo boundary
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
         if self.path == "/api/ask":
             try:
                 body = self._read_json()
@@ -211,6 +334,33 @@ class DemoHandler(BaseHTTPRequestHandler):
         if self.path == "/api/transcribe":
             try:
                 self._handle_transcribe()
+            except Exception as exc:  # noqa: BLE001 — demo boundary
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if self.path == "/api/analyze":
+            try:
+                body = self._read_json()
+                message = (body.get("question") or body.get("message") or "").strip()
+                doc_id = (body.get("doc_id") or "").strip() or None
+                rel = (body.get("relative_path") or "").strip() or None
+                if not message and not doc_id and not rel:
+                    self._send_json(
+                        HTTPStatus.BAD_REQUEST,
+                        {"error": "question, doc_id or relative_path required"},
+                    )
+                    return
+                llm = body.get("llm")
+                corpus = normalize_corpus_id(body.get("corpus"))
+                force = bool(body.get("force"))
+                result = analyze_document(
+                    message or "анализ документа",
+                    doc_id=doc_id,
+                    relative_path=rel,
+                    llm_provider=llm,
+                    corpus_id=corpus,
+                    force=force,
+                )
+                self._send_json(HTTPStatus.OK, result)
             except Exception as exc:  # noqa: BLE001 — demo boundary
                 self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
             return

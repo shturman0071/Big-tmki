@@ -1,0 +1,146 @@
+{
+  "schema_version": "0.1",
+  "title": "TMKI — обучалка вопрос-ответ",
+  "description": "Четыре навыка: поиск, чтение форматов, понимание смысла, диалог по документу.",
+  "tracks": [
+    {
+      "id": "search",
+      "title": "Поиск по архиву",
+      "description": "Находить документы и фрагменты по ключевым словам и шифрам.",
+      "lessons": [
+        {
+          "id": "search-01",
+          "skill": "search",
+          "question": "Какие требования Ростехнадзора к подъёмным сооружениям и кранам на ОПО?",
+          "hint": "Ключевые слова: кран, ростехнадзор, промбезопасность. Архив СКРУ-2.",
+          "expected_keywords": ["кран", "подъем", "опо", "ростехнадзор"],
+          "expected_intent": "qa",
+          "corpus_id": "skru-2"
+        },
+        {
+          "id": "search-02",
+          "skill": "search",
+          "question": "Найди файл с замечаниями КМД КС18105",
+          "hint": "Это поиск по имени файла (intent open/file).",
+          "expected_keywords": ["кмд", "18105", "замечан"],
+          "expected_intent": "open",
+          "corpus_id": "arm-ks"
+        },
+        {
+          "id": "search-03",
+          "skill": "search",
+          "question": "промбезопасность кран",
+          "hint": "Короткий гибридный запрос — BM25 + вектор.",
+          "expected_keywords": ["промбезопас", "кран"],
+          "expected_intent": "qa",
+          "corpus_id": "skru-2"
+        }
+      ]
+    },
+    {
+      "id": "read",
+      "title": "Чтение форматов",
+      "description": "Какие форматы читает pipeline: PDF, DOCX, XLSX, чертежи через Docling.",
+      "lessons": [
+        {
+          "id": "read-01",
+          "skill": "read",
+          "question": "Какие форматы документов поддерживает ingest TMKI для полнотекстового поиска?",
+          "hint": "PDF, DOC/DOCX, изображения → OCR; XLSX — preview; DWG — catalog.",
+          "expected_keywords": ["pdf", "docx", "ocr"],
+          "reference_answer": "Ingest: PDF, DOC/DOCX, изображения (OCR/Tesseract), текст. XLSX — извлечение из sharedStrings. Чертежи и сложная вёрстка — Docling (TMKI_INGEST_PARSER=docling). DWG/CAD — только каталог."
+        },
+        {
+          "id": "read-02",
+          "skill": "read",
+          "question": "Чем отличается парсер default от Docling?",
+          "hint": "default: pypdf + tesseract. Docling: layout, таблицы, схемы.",
+          "expected_keywords": ["docling", "layout", "таблиц"],
+          "reference_answer": "default — быстрый локальный OCR/pypdf. Docling — layout-aware разбор PDF/Office: таблицы, блоки, markdown для RAG."
+        },
+        {
+          "id": "read-03",
+          "skill": "read",
+          "question": "Как включить Docling при индексации?",
+          "hint": "Переменная окружения TMKI_INGEST_PARSER",
+          "expected_keywords": ["tmki_ingest_parser", "docling"],
+          "reference_answer": "TMKI_INGEST_PARSER=docling и pip install docling. Профиль: configure_profile.ps1 -Profile chat"
+        }
+      ]
+    },
+    {
+      "id": "understand",
+      "title": "Смысл документа",
+      "description": "Кратко изложить суть, выделить главное, запомнить профиль документа.",
+      "lessons": [
+        {
+          "id": "understand-01",
+          "skill": "understand",
+          "question": "Кратко опиши, о чём обычно письмо с правками КМД по объекту.",
+          "hint": "Структура ответа: СУТЬ + ГЛАВНОЕ + ТИП.",
+          "expected_keywords": ["правк", "кмд", "согласован"],
+          "expected_intent": "summarize",
+          "corpus_id": "arm-ks",
+          "reference_answer": "СУТЬ: письмо о замечаниях/правках к конструкциям КМД. ГЛАВНОЕ: узлы, марки, согласование с заказчиком. ТИП: письмо."
+        },
+        {
+          "id": "understand-02",
+          "skill": "understand",
+          "question": "Проанализируй документ и выдели самое главное (любой регламент по промбезопасности).",
+          "hint": "Intent analyze — сохраняется в doc-profiles.json.",
+          "expected_keywords": ["главн", "требован", "безопас"],
+          "expected_intent": "analyze",
+          "corpus_id": "skru-2"
+        },
+        {
+          "id": "understand-03",
+          "skill": "understand",
+          "question": "Что такое «память документа» в TMKI?",
+          "hint": "artifacts/.../doc-profiles.json",
+          "expected_keywords": ["профил", "суть", "doc"],
+          "reference_answer": "Локальный кэш анализа: gist, key_points, doc_type, fingerprint. Повторный запрос — из памяти без LLM."
+        }
+      ]
+    },
+    {
+      "id": "dialogue",
+      "title": "Диалог по документу",
+      "description": "Уточняющие вопросы в одной сессии, контекст предыдущих ответов.",
+      "lessons": [
+        {
+          "id": "dialogue-01",
+          "skill": "dialogue",
+          "question": "опиши текст письма Проминвест",
+          "hint": "Первый ход диалога — найти письмо и дать суть.",
+          "expected_keywords": ["проминвест", "письм"],
+          "expected_intent": "summarize",
+          "corpus_id": "arm-ks",
+          "follow_up": {
+            "question": "подробнее про основные требования",
+            "expected_keywords": ["требован", "правк", "узел"]
+          }
+        },
+        {
+          "id": "dialogue-02",
+          "skill": "dialogue",
+          "question": "кран ростехнадзор",
+          "hint": "Задайте вопрос, затем уточните «а по инструктажу?» в той же сессии.",
+          "expected_keywords": ["кран", "ростехнадзор"],
+          "corpus_id": "skru-2",
+          "follow_up": {
+            "question": "а что с инструктажем по охране труда?",
+            "expected_keywords": ["инструктаж", "охран"]
+          }
+        },
+        {
+          "id": "dialogue-03",
+          "skill": "dialogue",
+          "question": "Что даёт session_id в /api/chat?",
+          "hint": "Теория: история, active_paths, follow-up.",
+          "expected_keywords": ["сесси", "истори", "контекст"],
+          "reference_answer": "session_id связывает реплики: история уходит в LLM, active_paths для уточнений, persist в artifacts/chat-sessions/."
+        }
+      ]
+    }
+  ]
+}

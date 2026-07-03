@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -31,7 +32,10 @@ DEFAULTS = {
     "TMKI_CROSS_ENCODER_RERANK": "1",
     "TMKI_QUALITY_RERANK": "1",
     "TMKI_INCREMENTAL_INGEST": "1",
-    "TMKI_INGEST_PARSER": "default",
+    "TMKI_INGEST_PARSER": "auto",
+    "TMKI_RAG_FUSION_LLM": "auto",
+    "TMKI_INDEX_BACKEND": "auto",
+    "TMKI_CROSS_ENCODER_RERANK": "auto",
 }
 
 from tmki_runtime.secrets import is_valid_api_secret, is_valid_openai_api_key
@@ -86,6 +90,14 @@ def main() -> int:
     else:
         merged["TMKI_OCR_MODE"] = "local"
 
+    locked = set(secrets.keys())
+    from tmki_runtime.env_autoconfigure import autoconfigure, apply_autoconfigure_to_secrets
+
+    auto_updates, auto_log = autoconfigure(merged, locked_keys=locked)
+    merged.update(auto_updates)
+    if os.environ.get("TMKI_AUTO_SYNC_SECRETS", "1").strip().lower() not in ("0", "false", "no"):
+        auto_log.extend(apply_autoconfigure_to_secrets(SECRETS, locked_keys=locked))
+
     missing = []
     if not has_openai:
         missing.append("OPENAI_API_KEY")
@@ -107,6 +119,15 @@ def main() -> int:
     print(f"WROTE:{ENV_TARGET}")
     print(f"TMKI_OCR_MODE={merged['TMKI_OCR_MODE']}")
     print(f"TMKI_LLM_PROVIDER={merged['TMKI_LLM_PROVIDER']}")
+    for line in auto_log:
+        if line.startswith("AUTO:"):
+            print(line)
+    if "TMKI_INGEST_PARSER" in merged:
+        print(f"TMKI_INGEST_PARSER={merged['TMKI_INGEST_PARSER']}")
+    if merged.get("TMKI_INDEX_BACKEND") == "pgvector":
+        print(f"TMKI_INDEX_BACKEND=pgvector")
+    if merged.get("TMKI_RAG_FUSION_LLM") == "1":
+        print("TMKI_RAG_FUSION_LLM=1")
     return 0
 
 

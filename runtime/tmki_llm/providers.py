@@ -25,6 +25,8 @@ class LlmProvider(Protocol):
         query: str,
         citations: list[dict[str, Any]],
         read_only_mode: bool = False,
+        mode: str = "qa",
+        history: list[dict[str, str]] | None = None,
     ) -> LlmGenerateResult: ...
 
 
@@ -46,17 +48,31 @@ def _format_citation_context(
     return "\n\n".join(lines) if lines else "Нет цитат."
 
 
-def _llm_system_prompt(*, query: str, read_only_mode: bool = False) -> str:
+def _llm_system_prompt(*, query: str, read_only_mode: bool = False, mode: str = "qa") -> str:
     from tmki_rag.retrieval import looks_like_content_summary_query
 
     system = (
         "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
         "Не выдумывай нормы и номера документов."
     )
-    if looks_like_content_summary_query(query):
+    if mode == "analyze":
         system += (
-            " Задача: кратко (3–6 предложений) пересказать содержание письма или документа "
-            "по приведённым фрагментам: о чём письмо, ключевые требования или замечания."
+            " Задача: структурированный разбор документа по фрагментам OCR.\n"
+            "Формат ответа СТРОГО:\n"
+            "СУТЬ: (1–2 предложения — о чём документ)\n"
+            "ГЛАВНОЕ:\n"
+            "- пункт 1\n"
+            "- пункт 2\n"
+            "(3–7 пунктов, только ключевое)\n"
+            "ТИП: (письмо / чертёж / акт / ТТН / регламент / замечания / прочее)"
+        )
+    elif mode in ("summarize",) or looks_like_content_summary_query(query):
+        system += (
+            " Задача: кратко пересказать содержание документа по фрагментам.\n"
+            "Формат:\n"
+            "СУТЬ: (2–4 предложения)\n"
+            "ГЛАВНОЕ:\n"
+            "- 2–5 ключевых пунктов"
         )
     else:
         system += (
@@ -68,6 +84,33 @@ def _llm_system_prompt(*, query: str, read_only_mode: bool = False) -> str:
     return system
 
 
+def _analysis_snippet_chars(mode: str) -> int:
+    return 1200 if mode in ("analyze", "summarize") else 280
+
+
+def _build_chat_messages(
+    *,
+    system: str,
+    query: str,
+    context: str,
+    history: list[dict[str, str]] | None,
+) -> list[dict[str, str]]:
+    messages: list[dict[str, str]] = [{"role": "system", "content": system}]
+    if history:
+        for item in history:
+            role = item.get("role") or ""
+            content = (item.get("content") or "").strip()
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+    messages.append(
+        {
+            "role": "user",
+            "content": f"Вопрос: {query}\n\nЦитаты:\n{context}",
+        }
+    )
+    return messages
+
+
 class StubLlmProvider:
     """MVP заглушка (без сети)."""
 
@@ -77,34 +120,46 @@ class StubLlmProvider:
         query: str,
         citations: list[dict[str, Any]],
         read_only_mode: bool = False,
+        mode: str = "qa",
+        history: list[dict[str, str]] | None = None,
     ) -> LlmGenerateResult:
+        from tmki_rag.document_intel import parse_analysis_text
         from tmki_rag.retrieval import looks_like_content_summary_query
 
-        if citations:
-            if looks_like_content_summary_query(query):
-                parts: list[str] = []
-                for i, c in enumerate(citations[:4], start=1):
-                    sn = (c.get("snippet") or "").strip()
-                    name = c.get("file_name") or c.get("relative_path") or ""
-                    if sn:
-                        parts.append(f"{i}. {name}\n{sn[:700]}")
-                body = "\n\n".join(parts) if parts else "фрагменты без текста"
-                answer = f"Кратко по документу:\n{body}"
+        use_analysis = mode in ("analyze", "summarize") or looks_like_content_summary_query(query)
+        if citations and use_analysis:
+            parts: list[str] = []
+            for c in citations[:6]:
+                sn = (c.get("snippet") or "").strip()
+                name = c.get("file_name") or c.get("relative_path") or ""
+                if sn:
+                    parts.append(f"{name}: {sn[:500]}")
+            body = " ".join(parts)[:1200] if parts else "фрагменты без текста"
+            if mode == "analyze":
+                parsed = parse_analysis_text(
+                    f"СУТЬ: {body[:400]}\nГЛАВНОЕ:\n- {body[:200]}\nТИП: прочее"
+                )
+                answer = parsed.format_answer(file_name=citations[0].get("file_name") or "")
             else:
-                first = citations[0]
-                snippet = (first.get("snippet") or "").strip()
-                doc_id = first.get("doc_id") or "?"
-                file_name = first.get("file_name") or first.get("relative_path") or ""
-                header = f"По регламентам проекта (doc_id={doc_id}"
-                if file_name:
-                    header += f", файл: {file_name}"
-                header += "):"
-                body = snippet[:420] if snippet else "фрагмент без текста"
-                answer = f"{header}\n{body}"
+                answer = f"СУТЬ: {body[:600]}\n\nГЛАВНОЕ:\n- см. фрагменты выше"
+            confidence = "high"
+        elif citations:
+            first = citations[0]
+            snippet = (first.get("snippet") or "").strip()
+            doc_id = first.get("doc_id") or "?"
+            file_name = first.get("file_name") or first.get("relative_path") or ""
+            header = f"По регламентам проекта (doc_id={doc_id}"
+            if file_name:
+                header += f", файл: {file_name}"
+            header += "):"
+            body = snippet[:420] if snippet else "фрагмент без текста"
+            answer = f"{header}\n{body}"
             confidence = "high"
         else:
             answer = f"Недостаточно источников по запросу «{query}». Уточните формулировку."
             confidence = "low"
+        if history and answer:
+            answer = f"{answer}\n\n(Учтено реплик в диалоге: {len(history)})"
         if read_only_mode and not citations:
             confidence = "low"
         return LlmGenerateResult(
@@ -135,24 +190,28 @@ class OpenAiLlmProvider:
         query: str,
         citations: list[dict[str, Any]],
         read_only_mode: bool = False,
+        mode: str = "qa",
+        history: list[dict[str, str]] | None = None,
     ) -> LlmGenerateResult:
         from tmki_rag.retrieval import looks_like_content_summary_query
 
+        effective_mode = mode
+        if effective_mode == "qa" and looks_like_content_summary_query(query):
+            effective_mode = "summarize"
         context = _format_citation_context(
             citations,
-            snippet_chars=800 if looks_like_content_summary_query(query) else 280,
+            snippet_chars=_analysis_snippet_chars(effective_mode),
         )
-        system = _llm_system_prompt(query=query, read_only_mode=read_only_mode)
+        system = _llm_system_prompt(query=query, read_only_mode=read_only_mode, mode=effective_mode)
 
         payload = {
             "model": self._model,
-            "messages": [
-                {"role": "system", "content": system},
-                {
-                    "role": "user",
-                    "content": f"Вопрос: {query}\n\nЦитаты:\n{context}",
-                },
-            ],
+            "messages": _build_chat_messages(
+                system=system,
+                query=query,
+                context=context,
+                history=history,
+            ),
             "temperature": 0.2,
         }
         req = urllib.request.Request(
@@ -202,21 +261,28 @@ class OllamaLlmProvider:
         query: str,
         citations: list[dict[str, Any]],
         read_only_mode: bool = False,
+        mode: str = "qa",
+        history: list[dict[str, str]] | None = None,
     ) -> LlmGenerateResult:
         from tmki_rag.retrieval import looks_like_content_summary_query
 
+        effective_mode = mode
+        if effective_mode == "qa" and looks_like_content_summary_query(query):
+            effective_mode = "summarize"
         context = _format_citation_context(
             citations,
-            snippet_chars=800 if looks_like_content_summary_query(query) else 280,
+            snippet_chars=_analysis_snippet_chars(effective_mode),
         )
-        system = _llm_system_prompt(query=query, read_only_mode=read_only_mode)
+        system = _llm_system_prompt(query=query, read_only_mode=read_only_mode, mode=effective_mode)
 
         payload = {
             "model": self._model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": f"Вопрос: {query}\n\nЦитаты:\n{context}"},
-            ],
+            "messages": _build_chat_messages(
+                system=system,
+                query=query,
+                context=context,
+                history=history,
+            ),
             "stream": False,
         }
         req = urllib.request.Request(

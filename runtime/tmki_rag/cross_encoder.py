@@ -7,6 +7,7 @@ from typing import Any
 
 _MODEL: Any = None
 _MODEL_NAME: str | None = None
+_MODEL_FAILED = False
 
 DEFAULT_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
@@ -16,25 +17,25 @@ def _model_name() -> str:
 
 
 def _load_model():
-    global _MODEL, _MODEL_NAME
+    global _MODEL, _MODEL_NAME, _MODEL_FAILED
+    if _MODEL_FAILED:
+        return None
     name = _model_name()
     if _MODEL is not None and _MODEL_NAME == name:
         return _MODEL
     try:
         from sentence_transformers import CrossEncoder
-    except ImportError:
+
+        _MODEL = CrossEncoder(name)
+        _MODEL_NAME = name
+        return _MODEL
+    except Exception:
+        _MODEL_FAILED = True
         return None
-    _MODEL = CrossEncoder(name)
-    _MODEL_NAME = name
-    return _MODEL
 
 
 def available() -> bool:
-    try:
-        from sentence_transformers import CrossEncoder  # noqa: F401
-    except ImportError:
-        return False
-    return True
+    return _load_model() is not None
 
 
 def rerank_results(

@@ -13,6 +13,20 @@ _INDEX_CACHE: dict[str, tuple[str, Any, list[dict[str, Any]]]] = {}
 _CATALOG_CACHE: dict[str, Any] = {}
 _POLICY_CACHE: dict[str, Any] | None = None
 _FOLDER_ACL_CACHE: Any = None
+_CHAT_STORE: Any = None
+
+
+def _chat_store() -> Any:
+    global _CHAT_STORE
+    if _CHAT_STORE is None:
+        from tmki_demo.chat_session import ChatSessionStore
+
+        persist = Path(__file__).resolve().parents[1] / "artifacts" / "chat-sessions"
+        if os.environ.get("TMKI_CHAT_PERSIST", "1").lower() not in ("0", "false", "no"):
+            _CHAT_STORE = ChatSessionStore(persist_dir=persist)
+        else:
+            _CHAT_STORE = ChatSessionStore(persist_dir=None)
+    return _CHAT_STORE
 
 
 def _artifacts_dir(corpus_id: str | None = None) -> Path:
@@ -521,6 +535,210 @@ def _fast_file_lookup(
     )
 
 
+def _get_memory_store(*, corpus_id: str | None = None) -> Any:
+    from tmki_rag.document_intel import DocumentMemoryStore, profiles_path
+
+    artifacts = _artifacts_dir(corpus_id)
+    return DocumentMemoryStore(profiles_path(artifacts))
+
+
+def _index_chunks_list(index: Any) -> list[dict[str, Any]]:
+    if index is None:
+        return []
+    if hasattr(index, "list"):
+        return list(index.list())
+    return []
+
+
+def analyze_document(
+    message: str,
+    *,
+    doc_id: str | None = None,
+    relative_path: str | None = None,
+    llm_provider: str | None = None,
+    corpus_id: str | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Разбор документа: суть, главное, сохранение в локальную память."""
+    from tmki_rag.corpus_policy import get_corpus
+    from tmki_rag.document_intel import (
+        DocumentProfile,
+        chunks_to_citations,
+        collect_chunks_for_doc,
+        fingerprint_chunks,
+        infer_doc_type_from_path,
+        low_text_coverage_hint,
+        parse_analysis_text,
+        rank_file_matches_for_content_query,
+        select_analysis_chunks,
+    )
+    from tmki_rag.retrieval import detect_query_intent, looks_like_content_summary_query
+
+    raw_message = message.strip()
+    corpus = get_corpus(corpus_id)
+    explicit_llm = llm_provider is not None
+    requested = llm_provider or resolve_llm_provider(corpus_id=corpus.corpus_id)
+    llm, policy_note = _apply_llm_policy(requested, corpus_id=corpus.corpus_id, explicit=explicit_llm)
+    _align_embedding_provider(llm)
+    catalog = _get_catalog(corpus_id=corpus.corpus_id)
+    backend_name, index, _chunks = _resolve_backend(corpus_id=corpus.corpus_id)
+    all_chunks = _index_chunks_list(index)
+    memory = _get_memory_store(corpus_id=corpus.corpus_id)
+
+    target_doc_id = doc_id
+    target_rel = relative_path
+    file_name = ""
+
+    if not target_rel and not target_doc_id and raw_message:
+        path_matches = catalog.search_paths(raw_message, limit=8)
+        ranked = rank_file_matches_for_content_query(
+            raw_message,
+            path_matches,
+            prefer_letters=looks_like_content_summary_query(raw_message),
+        )
+        if ranked:
+            target_rel = ranked[0].get("relative_path") or ""
+            file_name = ranked[0].get("file_name") or ""
+
+    if target_doc_id and not target_rel:
+        resolved = catalog.resolve_doc_id(target_doc_id)
+        if resolved:
+            target_rel = resolved.get("relative_path") or ""
+            file_name = resolved.get("file_name") or file_name
+
+    if target_rel and not target_doc_id:
+        full = catalog.archive_root / target_rel
+        if full.is_file():
+            from tmki_rag.doc_catalog import doc_id_from_path
+
+            try:
+                target_doc_id = doc_id_from_path(full)
+            except OSError:
+                target_doc_id = None
+
+    doc_chunks = collect_chunks_for_doc(
+        all_chunks,
+        doc_id=target_doc_id,
+        relative_path=target_rel,
+    )
+    if not doc_chunks and index is not None:
+        from tmki_rag.search import rag_search
+
+        scoped = _run_content_search_in_files(
+            raw_message or target_rel or "",
+            index=index,
+            paths=[target_rel] if target_rel else [],
+            llm=llm,
+            pool=int(os.environ.get("TMKI_SEARCH_POOL", "64")),
+        )
+        if scoped and scoped.get("citations"):
+            return {
+                **scoped,
+                "intent": "analyze",
+                "corpus_id": corpus.corpus_id,
+                "corpus_label": corpus.label,
+                "llm_policy_note": policy_note,
+                "backend": backend_name,
+                "analysis": None,
+                "from_memory": False,
+            }
+
+    fingerprint = fingerprint_chunks(doc_chunks) if doc_chunks else ""
+    if target_doc_id and not force:
+        cached = memory.get(target_doc_id)
+        if cached and cached.content_fingerprint == fingerprint and cached.gist:
+            answer = parse_analysis_text(
+                f"СУТЬ: {cached.gist}\nГЛАВНОЕ:\n"
+                + "\n".join(f"- {p}" for p in cached.key_points)
+                + f"\nТИП: {cached.doc_type}"
+            ).format_answer(file_name=file_name or Path(target_rel or "").name)
+            answer = f"(Из памяти, {cached.analyzed_at[:10]})\n\n{answer}"
+            return {
+                "answer": answer,
+                "confidence": "high",
+                "citations": chunks_to_citations(select_analysis_chunks(doc_chunks)),
+                "llm_provider": cached.llm_provider,
+                "corpus_id": corpus.corpus_id,
+                "corpus_label": corpus.label,
+                "llm_policy_note": policy_note,
+                "backend": backend_name,
+                "intent": "analyze",
+                "from_memory": True,
+                "analysis": cached.to_dict(),
+            }
+
+    selected = select_analysis_chunks(doc_chunks)
+    citations = chunks_to_citations(selected)
+    intent = detect_query_intent(raw_message or "")
+    mode = "analyze" if intent == "analyze" else "summarize"
+
+    os.environ["TMKI_LLM_PROVIDER"] = llm
+    from tmki_llm import get_llm_provider
+
+    try:
+        gen = get_llm_provider().generate(query=raw_message or "анализ документа", citations=citations, mode=mode)
+    except RuntimeError as exc:
+        err = str(exc)
+        if llm == "openai":
+            ollama_result = _try_ollama_fallback(query=raw_message, citations=citations)
+            if ollama_result is not None:
+                gen_answer = ollama_result.get("answer") or ""
+                parsed = parse_analysis_text(gen_answer)
+                ollama_result["analysis"] = {
+                    "gist": parsed.gist,
+                    "key_points": parsed.key_points,
+                    "doc_type": parsed.doc_type,
+                }
+                ollama_result["intent"] = "analyze"
+                ollama_result["from_memory"] = False
+                return ollama_result
+        raise RuntimeError(err) from exc
+
+    parsed = parse_analysis_text(gen.answer)
+    answer = parsed.format_answer(file_name=file_name or Path(target_rel or "").name)
+    vision_hint = low_text_coverage_hint(doc_chunks)
+    if vision_hint:
+        answer = f"{answer}\n\n{vision_hint}"
+
+    profile: DocumentProfile | None = None
+    if target_doc_id and parsed.gist:
+        from datetime import datetime, timezone
+
+        profile = DocumentProfile(
+            doc_id=target_doc_id,
+            relative_path=target_rel or "",
+            gist=parsed.gist,
+            key_points=parsed.key_points,
+            doc_type=parsed.doc_type or infer_doc_type_from_path(target_rel or ""),
+            content_fingerprint=fingerprint,
+            analyzed_at=datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            llm_provider=gen.provider or llm,
+            corpus_id=corpus.corpus_id,
+        )
+        memory.put(profile)
+
+    rows = index.count() if index is not None and hasattr(index, "count") else len(all_chunks)
+    return {
+        "answer": answer,
+        "confidence": gen.confidence,
+        "citations": catalog.enrich_citations(citations),
+        "llm_provider": gen.provider or llm,
+        "corpus_id": corpus.corpus_id,
+        "corpus_label": corpus.label,
+        "llm_policy_note": policy_note,
+        "backend": backend_name,
+        "index_rows": rows,
+        "loop_state": "loop_complete",
+        "intent": mode,
+        "from_memory": False,
+        "analysis": profile.to_dict() if profile else {
+            "gist": parsed.gist,
+            "key_points": parsed.key_points,
+            "doc_type": parsed.doc_type,
+        },
+    }
+
+
 def ask_regulations(
     message: str,
     *,
@@ -543,6 +761,19 @@ def ask_regulations(
     )
     _align_embedding_provider(llm)
     catalog = _get_catalog(corpus_id=corpus.corpus_id)
+
+    intent_early = detect_query_intent(raw_message)
+    if intent_early in ("summarize", "analyze"):
+        try:
+            analyzed = analyze_document(
+                raw_message,
+                llm_provider=llm,
+                corpus_id=corpus.corpus_id,
+            )
+            if analyzed.get("answer") and (analyzed.get("citations") or analyzed.get("from_memory")):
+                return _clean_demo_payload(analyzed)
+        except Exception:
+            pass
 
     open_result = _answer_open_intent(raw_message, catalog)
     if open_result is not None:
@@ -583,11 +814,17 @@ def ask_regulations(
     backend_name, index, chunks = _resolve_backend(corpus_id=corpus.corpus_id)
     pool = int(os.environ.get("TMKI_SEARCH_POOL", "64"))
     from tmki_rag.retrieval import looks_like_content_summary_query
+    from tmki_rag.document_intel import rank_file_matches_for_content_query
 
     output: dict[str, Any] | None = None
     if looks_like_content_summary_query(raw_message) and index is not None:
-        path_matches = catalog.search_paths(raw_message, limit=3)
-        file_paths = [m["relative_path"] for m in path_matches if m.get("relative_path")]
+        path_matches = catalog.search_paths(raw_message, limit=8)
+        ranked = rank_file_matches_for_content_query(
+            raw_message,
+            path_matches,
+            prefer_letters=True,
+        )
+        file_paths = [m["relative_path"] for m in ranked[:3] if m.get("relative_path")]
         if file_paths:
             output = _run_content_search_in_files(
                 query,
@@ -671,6 +908,148 @@ def ask_regulations(
         "loop_state": output.get("loop_state"),
         "intent": intent,
     }
+
+
+def chat_message(
+    message: str,
+    *,
+    session_id: str | None = None,
+    llm_provider: str | None = None,
+    corpus_id: str | None = None,
+) -> dict[str, Any]:
+    """Диалог с историей: follow-up в рамках сессии + RAG (Open WebUI / mem0-паттерн)."""
+    from tmki_demo.chat_session import ChatTurn, augment_query_with_session, is_follow_up_query
+    from tmki_rag.corpus_policy import get_corpus
+
+    raw = message.strip()
+    if not raw:
+        return {"error": "message required", "session_id": session_id}
+
+    corpus = get_corpus(corpus_id)
+    store = _chat_store()
+    session = store.get_or_create(session_id, corpus_id=corpus.corpus_id)
+
+    store.append_turn(session, ChatTurn(role="user", content=raw, at=_iso_now()))
+
+    rag_query = augment_query_with_session(raw, session)
+    if is_follow_up_query(raw) and session.active_paths:
+        backend_name, index, _ = _resolve_backend(corpus_id=corpus.corpus_id)
+        explicit_llm = llm_provider is not None
+        llm = llm_provider or resolve_llm_provider(corpus_id=corpus.corpus_id)
+        llm, _ = _apply_llm_policy(llm, corpus_id=corpus.corpus_id, explicit=explicit_llm)
+        pool = int(os.environ.get("TMKI_SEARCH_POOL", "64"))
+        scoped = _run_content_search_in_files(
+            rag_query,
+            index=index,
+            paths=session.active_paths,
+            llm=llm,
+            pool=pool,
+        )
+        if scoped and scoped.get("citations"):
+            history = store.history_for_llm(session)
+            os.environ["TMKI_LLM_PROVIDER"] = llm
+            from tmki_llm import get_llm_provider
+
+            gen = get_llm_provider().generate(
+                query=raw,
+                citations=scoped["citations"],
+                history=history[:-1] if history else None,
+            )
+            answer = _maybe_fix_mojibake_text(gen.answer)
+            citations = _get_catalog(corpus_id=corpus.corpus_id).enrich_citations(scoped["citations"])
+            payload = {
+                "answer": answer,
+                "confidence": gen.confidence,
+                "citations": _enrich_citation_scores(citations),
+                "llm_provider": gen.provider or llm,
+                "corpus_id": corpus.corpus_id,
+                "corpus_label": corpus.label,
+                "backend": backend_name,
+                "intent": "chat_followup",
+                "session_id": session.session_id,
+                "follow_up": True,
+                "loop_state": "loop_complete",
+            }
+            store.append_turn(
+                session,
+                ChatTurn(
+                    role="assistant",
+                    content=answer,
+                    citations=citations,
+                    doc_ids=[c.get("doc_id") or "" for c in citations if c.get("doc_id")],
+                    intent="chat_followup",
+                    confidence=payload["confidence"],
+                    at=_iso_now(),
+                ),
+            )
+            payload["turns"] = len(session.turns)
+            return _clean_demo_payload(payload)
+
+    result = ask_regulations(raw, llm_provider=llm_provider, corpus_id=corpus.corpus_id)
+    if rag_query != raw and result.get("answer"):
+        result["rag_query_expanded"] = True
+
+    history = store.history_for_llm(session)
+    citations = result.get("citations") or []
+    if len(session.turns) > 1 and citations and result.get("llm_provider"):
+        os.environ["TMKI_LLM_PROVIDER"] = result["llm_provider"]
+        from tmki_llm import get_llm_provider
+
+        try:
+            gen = get_llm_provider().generate(
+                query=raw,
+                citations=citations,
+                history=history[:-1] if history else None,
+                mode=result.get("intent") if result.get("intent") in ("analyze", "summarize") else "qa",
+            )
+            if gen.answer:
+                result["answer"] = _maybe_fix_mojibake_text(gen.answer)
+                result["confidence"] = gen.confidence or result.get("confidence")
+        except Exception:
+            pass
+
+    result["citations"] = _enrich_citation_scores(result.get("citations") or [])
+    result["session_id"] = session.session_id
+    result["follow_up"] = is_follow_up_query(raw)
+    store.append_turn(
+        session,
+        ChatTurn(
+            role="assistant",
+            content=str(result.get("answer") or ""),
+            citations=result.get("citations") or [],
+            doc_ids=[c.get("doc_id") or "" for c in (result.get("citations") or []) if c.get("doc_id")],
+            intent=str(result.get("intent") or "qa"),
+            confidence=str(result.get("confidence") or "low"),
+            at=_iso_now(),
+        ),
+    )
+    result["turns"] = len(session.turns)
+    return _clean_demo_payload(result)
+
+
+def _enrich_citation_scores(citations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Kotaemon-style: relevance score для UI."""
+    out: list[dict[str, Any]] = []
+    for i, c in enumerate(citations):
+        item = dict(c)
+        if item.get("score") is None:
+            item["score"] = round(max(0.35, 0.92 - i * 0.08), 3)
+        out.append(item)
+    return out
+
+
+def _iso_now() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def get_chat_session(session_id: str) -> dict[str, Any]:
+    store = _chat_store()
+    session = store.get(session_id)
+    if not session:
+        return {"status": "not_found", "session_id": session_id}
+    return {"status": "ok", "session": session.to_dict()}
 
 
 def resolve_document(

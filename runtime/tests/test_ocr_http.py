@@ -33,9 +33,10 @@ def test_http_mistral_fallback(monkeypatch):
         return {"markdown": "", "page_count": 0, "avg_confidence": 0.0}
 
     def mistral_ok(url, payload, headers, timeout):
+        assert payload.get("model") == "mistral-ocr-latest"
+        assert payload["document"]["type"] == "document_url"
         return {
-            "pages": [{"text": "Fallback HTTP Mistral OCR текст маркшейдерская съёмка"}],
-            "avg_confidence": 0.87,
+            "pages": [{"markdown": "Fallback HTTP Mistral OCR текст маркшейдерская съёмка"}],
         }
 
     mineru = HttpMinerUProvider(api_url="http://mineru.test/ocr", http_post=mineru_fail)

@@ -28,17 +28,44 @@ class LlmProvider(Protocol):
     ) -> LlmGenerateResult: ...
 
 
-def _format_citation_context(citations: list[dict[str, Any]], *, limit: int = 6) -> str:
+def _format_citation_context(
+    citations: list[dict[str, Any]],
+    *,
+    limit: int = 6,
+    snippet_chars: int = 280,
+) -> str:
     lines: list[str] = []
     for i, citation in enumerate(citations[:limit], start=1):
         doc_id = citation.get("doc_id") or "?"
         file_name = citation.get("file_name") or citation.get("relative_path") or ""
-        snippet = (citation.get("snippet") or "").strip()
+        snippet = (citation.get("snippet") or "").strip()[:snippet_chars]
         header = f"[{i}] doc_id={doc_id}"
         if file_name:
             header += f" | файл: {file_name}"
         lines.append(f"{header}\n{snippet}")
     return "\n\n".join(lines) if lines else "Нет цитат."
+
+
+def _llm_system_prompt(*, query: str, read_only_mode: bool = False) -> str:
+    from tmki_rag.retrieval import looks_like_content_summary_query
+
+    system = (
+        "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
+        "Не выдумывай нормы и номера документов."
+    )
+    if looks_like_content_summary_query(query):
+        system += (
+            " Задача: кратко (3–6 предложений) пересказать содержание письма или документа "
+            "по приведённым фрагментам: о чём письмо, ключевые требования или замечания."
+        )
+    else:
+        system += (
+            " Формат: 2–4 предложения по сути, затем источники (doc_id и имя файла). "
+            "Если цитат недостаточно — скажи об этом."
+        )
+    if read_only_mode:
+        system += " Режим read-only: не предлагай действий с side-effects."
+    return system
 
 
 class StubLlmProvider:
@@ -51,17 +78,29 @@ class StubLlmProvider:
         citations: list[dict[str, Any]],
         read_only_mode: bool = False,
     ) -> LlmGenerateResult:
+        from tmki_rag.retrieval import looks_like_content_summary_query
+
         if citations:
-            first = citations[0]
-            snippet = (first.get("snippet") or "").strip()
-            doc_id = first.get("doc_id") or "?"
-            file_name = first.get("file_name") or first.get("relative_path") or ""
-            header = f"По регламентам проекта (doc_id={doc_id}"
-            if file_name:
-                header += f", файл: {file_name}"
-            header += "):"
-            body = snippet[:420] if snippet else "фрагмент без текста"
-            answer = f"{header}\n{body}"
+            if looks_like_content_summary_query(query):
+                parts: list[str] = []
+                for i, c in enumerate(citations[:4], start=1):
+                    sn = (c.get("snippet") or "").strip()
+                    name = c.get("file_name") or c.get("relative_path") or ""
+                    if sn:
+                        parts.append(f"{i}. {name}\n{sn[:700]}")
+                body = "\n\n".join(parts) if parts else "фрагменты без текста"
+                answer = f"Кратко по документу:\n{body}"
+            else:
+                first = citations[0]
+                snippet = (first.get("snippet") or "").strip()
+                doc_id = first.get("doc_id") or "?"
+                file_name = first.get("file_name") or first.get("relative_path") or ""
+                header = f"По регламентам проекта (doc_id={doc_id}"
+                if file_name:
+                    header += f", файл: {file_name}"
+                header += "):"
+                body = snippet[:420] if snippet else "фрагмент без текста"
+                answer = f"{header}\n{body}"
             confidence = "high"
         else:
             answer = f"Недостаточно источников по запросу «{query}». Уточните формулировку."
@@ -97,15 +136,13 @@ class OpenAiLlmProvider:
         citations: list[dict[str, Any]],
         read_only_mode: bool = False,
     ) -> LlmGenerateResult:
-        context = _format_citation_context(citations)
-        system = (
-            "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
-            "Формат: 2–4 предложения по сути, затем источники (doc_id и имя файла). "
-            "Если цитат недостаточно — скажи об этом. "
-            "Не выдумывай нормы и номера документов."
+        from tmki_rag.retrieval import looks_like_content_summary_query
+
+        context = _format_citation_context(
+            citations,
+            snippet_chars=800 if looks_like_content_summary_query(query) else 280,
         )
-        if read_only_mode:
-            system += " Режим read-only: не предлагай действий с side-effects."
+        system = _llm_system_prompt(query=query, read_only_mode=read_only_mode)
 
         payload = {
             "model": self._model,
@@ -166,15 +203,13 @@ class OllamaLlmProvider:
         citations: list[dict[str, Any]],
         read_only_mode: bool = False,
     ) -> LlmGenerateResult:
-        context = _format_citation_context(citations)
-        system = (
-            "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
-            "Формат: 2–4 предложения по сути, затем источники (doc_id и имя файла). "
-            "Если цитат недостаточно — скажи об этом. "
-            "Не выдумывай нормы и номера документов."
+        from tmki_rag.retrieval import looks_like_content_summary_query
+
+        context = _format_citation_context(
+            citations,
+            snippet_chars=800 if looks_like_content_summary_query(query) else 280,
         )
-        if read_only_mode:
-            system += " Режим read-only: не предлагай действий с side-effects."
+        system = _llm_system_prompt(query=query, read_only_mode=read_only_mode)
 
         payload = {
             "model": self._model,
@@ -210,6 +245,9 @@ class OllamaLlmProvider:
         )
 
 
+from tmki_runtime.secrets import is_valid_openai_api_key
+
+
 def get_llm_provider() -> LlmProvider:
     """
     TMKI_LLM_PROVIDER=stub|openai|ollama (default stub).
@@ -217,9 +255,11 @@ def get_llm_provider() -> LlmProvider:
     name = os.environ.get("TMKI_LLM_PROVIDER", "stub").lower()
     if name == "openai":
         key = os.environ.get("OPENAI_API_KEY")
-        if not key:
-            raise RuntimeError("OPENAI_API_KEY не задан для TMKI_LLM_PROVIDER=openai")
-        return OpenAiLlmProvider(key)
+        if not is_valid_openai_api_key(key):
+            raise RuntimeError(
+                "OPENAI_API_KEY не задан или это placeholder (sk-...) для TMKI_LLM_PROVIDER=openai"
+            )
+        return OpenAiLlmProvider(key or "")
     if name == "ollama":
         return OllamaLlmProvider()
     return StubLlmProvider()

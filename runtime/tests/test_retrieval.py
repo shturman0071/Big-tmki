@@ -4,6 +4,8 @@ from tmki_rag.doc_catalog import DocCatalog, doc_id_from_bytes
 from tmki_rag.retrieval import (
     chunk_text_quality,
     detect_query_intent,
+    looks_like_content_summary_query,
+    looks_like_filename_query,
     normalize_query,
     rerank_results,
 )
@@ -14,10 +16,23 @@ def test_detect_open_intent():
     assert detect_query_intent("кран ростехнадзор") == "qa"
 
 
+def test_detect_summarize_intent():
+    assert detect_query_intent("кратко опиши текст письма Проминвест") == "summarize"
+    assert looks_like_content_summary_query("о чем письмо от Балыко")
+    assert detect_query_intent("найди ТТН и опиши содержание") == "summarize"
+
+
+def test_looks_like_filename_query():
+    assert looks_like_filename_query("Замечания_КМД_КС18105_05.11.21_1")
+    assert looks_like_filename_query("ПРИ 50314-18105-КМД")
+    assert not looks_like_filename_query("кран ростехнадзор")
+
+
 def test_normalize_query():
     assert "ростехнадзор" in normalize_query("кран ростех надзор").lower()
     assert "опасный производственный объект" in normalize_query("ОПО требования").lower()
     assert "пожарная безопасность" in normalize_query("инструкция по пожарной безопасности").lower()
+    assert "Ог-1" in normalize_query("замечания ограждение 1")
 
 
 def test_chunk_text_quality_filters_noise():

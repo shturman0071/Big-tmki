@@ -47,6 +47,70 @@ def _pdf_max_pages() -> int:
         return 300
 
 
+def _find_tesseract() -> str | None:
+    import shutil
+
+    found = shutil.which("tesseract")
+    if found:
+        return found
+    for candidate in (
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    ):
+        if Path(candidate).is_file():
+            return candidate
+    return None
+
+
+def _tessdata_prefix() -> str | None:
+    """Проектный tessdata (rus+eng) если скачан в runtime/tessdata."""
+    custom = os.environ.get("TESSDATA_PREFIX", "").strip()
+    if custom and Path(custom).is_dir():
+        return custom
+    project = Path(__file__).resolve().parents[1] / "tessdata"
+    if (project / "rus.traineddata").is_file():
+        return str(project)
+    return None
+
+
+def extract_pdf_tesseract(raw_bytes: bytes, *, max_pages: int | None = None) -> tuple[str, int] | None:
+    """OCR сканов PDF через Tesseract (офлайн, русский)."""
+    if os.environ.get("TMKI_LOCAL_TESSERACT", "1").lower() in ("0", "false", "no"):
+        return None
+    tess = _find_tesseract()
+    if not tess:
+        return None
+    try:
+        import fitz  # pymupdf
+        import pytesseract
+    except ImportError:
+        return None
+
+    pytesseract.pytesseract.tesseract_cmd = tess
+    prefix = _tessdata_prefix()
+    if prefix:
+        os.environ["TESSDATA_PREFIX"] = prefix
+    lang = os.environ.get("TESSERACT_LANG", "rus+eng" if prefix else "eng")
+    limit = max_pages if max_pages is not None else _pdf_max_pages()
+    doc = fitz.open(stream=raw_bytes, filetype="pdf")
+    pages: list[str] = []
+    total = min(len(doc), limit)
+    for i in range(total):
+        pix = doc.load_page(i).get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+        img_bytes = pix.tobytes("png")
+        try:
+            from PIL import Image
+
+            pages.append(
+                pytesseract.image_to_string(Image.open(io.BytesIO(img_bytes)), lang=lang).strip()
+            )
+        except Exception:
+            pages.append("")
+    doc.close()
+    text = "\n".join(p for p in pages if p).strip()
+    return text, total
+
+
 def extract_pdf(raw_bytes: bytes, *, max_pages: int | None = None) -> tuple[str, int] | None:
     limit = max_pages if max_pages is not None else _pdf_max_pages()
     try:
@@ -99,6 +163,12 @@ def extract_local_text(raw_bytes: bytes, *, suffix: str) -> dict[str, Any]:
         if pdf is None:
             return {"text": "", "page_count": 0, "confidence": 0.0, "method": "pdf_missing_pypdf"}
         text, pages = pdf
+        if len(text) < 20 and pages > 0:
+            ocr = extract_pdf_tesseract(raw_bytes, max_pages=pages)
+            if ocr and ocr[0]:
+                text, pages = ocr
+                conf = 0.82 if len(text) > 50 else 0.55
+                return {"text": text, "page_count": pages, "confidence": conf, "method": "tesseract"}
         conf = 0.93 if len(text) > 50 else 0.35
         return {"text": text, "page_count": pages, "confidence": conf, "method": "pypdf"}
 

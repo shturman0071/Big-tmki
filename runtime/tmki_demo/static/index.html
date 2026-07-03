@@ -17,9 +17,26 @@
     .presets { margin: 0.75rem 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .presets button { font-size: 0.85rem; padding: 0.35rem 0.65rem; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #fafafa; }
     .presets button:hover { border-color: var(--accent); }
-    .actions { margin-top: 0.75rem; display: flex; gap: 0.75rem; align-items: center; }
+    .actions { margin-top: 0.75rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     button.primary { background: var(--accent); color: #fff; border: none; padding: 0.55rem 1.2rem; border-radius: 6px; font-size: 1rem; cursor: pointer; }
     button.primary:disabled { opacity: 0.5; cursor: wait; }
+    button.voice-btn {
+      background: #fff; border: 1px solid #bbb; border-radius: 6px;
+      padding: 0.55rem 0.85rem; font-size: 1.25rem; line-height: 1; cursor: pointer;
+      min-width: 3rem;
+    }
+    button.voice-btn:hover:not(:disabled) { border-color: var(--accent); }
+    button.voice-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    button.voice-btn.listening {
+      background: #fde8e8; border-color: #c62828; color: #c62828;
+      animation: pulse-mic 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-mic {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.35); }
+      50% { box-shadow: 0 0 0 8px rgba(198, 40, 40, 0); }
+    }
+    .voice-hint { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+    textarea.listening { border-color: #c62828; outline: none; }
     .answer { white-space: pre-wrap; line-height: 1.5; }
     .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem; }
     .citation { border-left: 3px solid var(--accent); padding: 0.5rem 0.75rem; margin: 0.5rem 0; background: #f9fafb; font-size: 0.9rem; }
@@ -30,6 +47,22 @@
     .error { color: #b00020; }
     .spinner { display: none; color: var(--muted); }
     .spinner.active { display: inline; }
+    .corpus-row { margin: 0.75rem 0; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+    .corpus-row label { margin: 0; font-weight: 600; }
+    .corpus-hint { margin: 0.5rem 0; padding: 0.6rem 0.75rem; background: #fff8e6; border: 1px solid #e6c200; border-radius: 6px; font-size: 0.9rem; }
+    .corpus-hint button { margin-left: 0.5rem; font-size: 0.85rem; padding: 0.25rem 0.55rem; cursor: pointer; }
+    .voice-test { margin-top: 1rem; border-top: 1px dashed #ddd; padding-top: 0.75rem; }
+    .voice-test summary { cursor: pointer; font-weight: 600; font-size: 0.92rem; }
+    .vt-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin: 0.6rem 0; }
+    .vt-row label { margin: 0; font-weight: 600; font-size: 0.85rem; }
+    .vt-recognized { font-size: 0.9rem; padding: 0.4rem 0.6rem; background: #f4f6f8; border-radius: 6px; min-height: 1.2em; word-break: break-word; }
+    .vt-mark button { font-size: 0.82rem; padding: 0.3rem 0.6rem; cursor: pointer; border: 1px solid #bbb; border-radius: 5px; background: #fff; margin-right: 0.35rem; }
+    .vt-mark button.ok { border-color: #2e7d32; color: #2e7d32; }
+    .vt-mark button.warn { border-color: #c62828; color: #c62828; }
+    .vt-mark button.miss { border-color: #b8860b; color: #8a6d00; }
+    .vt-log { width: 100%; min-height: 8rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.82rem; margin-top: 0.5rem; box-sizing: border-box; }
+    .vt-actions button { font-size: 0.82rem; padding: 0.3rem 0.6rem; cursor: pointer; margin-right: 0.4rem; }
+    .vt-num { width: 3.2rem; }
   </style>
 </head>
 <body>
@@ -52,15 +85,57 @@
         <button type="button" data-q="инструкция по пожарной безопасности">Пожарная безопасность</button>
         <button type="button" data-q="порядок проведения инструктажа по охране труда">Инструктаж</button>
         <button type="button" data-q="открой акт маркшейдерской опорной сети">Открыть документ</button>
+        <button type="button" data-q="Замечания_КМД_КС18105_05.11.21" data-corpus="arm-ks">КМД 18105 (Армировка КС)</button>
+      </div>
+      <div class="corpus-row">
+        <label for="corpus">Архив</label>
+        <select id="corpus">
+          <option value="skru-2" selected>СКРУ-2 (локальная LLM)</option>
+          <option value="arm-ks">Армировка КС (облачная LLM)</option>
+        </select>
       </div>
       <div class="actions">
         <button type="button" class="primary" id="ask">Спросить</button>
-        <span class="spinner" id="spinner">Думаю… (до 1–2 мин)</span>
+        <button type="button" class="voice-btn" id="voice" title="Голосовой ввод (русский, fast + автофиксы)">🎤</button>
+        <span class="spinner" id="spinner">Думаю… (обычно 3–10 сек)</span>
       </div>
+      <div class="voice-hint" id="voice-hint" aria-live="polite"></div>
+
+      <details class="voice-test" id="voice-test">
+        <summary>Тест распознавания (лог по пресетам)</summary>
+        <div class="vt-row">
+          <label for="vt-preset">Пресет</label>
+          <select id="vt-preset">
+            <option value="fast" selected>fast (medium, быстро)</option>
+            <option value="voice">voice (small, макс. скорость)</option>
+            <option value="quality">quality (large-v3-turbo, медленно)</option>
+            <option value="balanced">balanced (medium, beam 5)</option>
+          </select>
+          <label for="vt-num">Фраза №</label>
+          <input type="number" id="vt-num" class="vt-num" min="1" value="1" />
+          <span id="vt-preset-note" style="font-size:0.8rem;color:#888"></span>
+        </div>
+        <div class="vt-row">
+          <span style="font-size:0.85rem;color:#666">Распознано:</span>
+        </div>
+        <div class="vt-recognized" id="vt-recognized">—</div>
+        <div class="vt-row vt-mark">
+          <button type="button" class="ok" data-mark="ok">✓ распозналось</button>
+          <button type="button" class="miss" data-mark="miss">— не распозналось</button>
+          <button type="button" class="warn" data-mark="err">✗ с ошибкой</button>
+          <input type="text" id="vt-errnote" placeholder="какая ошибка (для ✗)" style="flex:1;min-width:12rem;font-size:0.85rem;padding:0.3rem 0.5rem" />
+        </div>
+        <textarea class="vt-log" id="vt-log" placeholder="Здесь копится лог теста. После каждой фразы жмите одну из трёх кнопок."></textarea>
+        <div class="vt-row vt-actions">
+          <button type="button" id="vt-copy">Копировать лог</button>
+          <button type="button" id="vt-clear">Очистить</button>
+        </div>
+      </details>
     </section>
 
     <section class="card" id="result" hidden>
       <div class="meta" id="meta"></div>
+      <div id="corpus-hint" class="corpus-hint" hidden></div>
       <div class="answer" id="answer"></div>
       <h3 style="font-size:1rem;margin:1rem 0 0.5rem">Источники</h3>
       <div id="citations"></div>
@@ -86,12 +161,34 @@
     document.querySelectorAll('[data-q]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.getElementById('question').value = btn.dataset.q;
+        if (btn.dataset.corpus) {
+          document.getElementById('corpus').value = btn.dataset.corpus;
+          localStorage.setItem('tmki_corpus', btn.dataset.corpus);
+        }
       });
     });
 
-    document.getElementById('ask').addEventListener('click', async () => {
+    const savedCorpus = localStorage.getItem('tmki_corpus');
+    if (savedCorpus) {
+      const sel = document.getElementById('corpus');
+      if ([...sel.options].some(o => o.value === savedCorpus)) sel.value = savedCorpus;
+    }
+    document.getElementById('corpus').addEventListener('change', (e) => {
+      localStorage.setItem('tmki_corpus', e.target.value);
+    });
+
+    let askSeq = 0;
+    let askAbort = null;
+
+    async function submitQuestion() {
       const q = document.getElementById('question').value.trim();
       if (!q) return;
+      const seq = ++askSeq;
+      if (askAbort) {
+        askAbort.abort();
+      }
+      askAbort = new AbortController();
+      const signal = askAbort.signal;
       const btn = document.getElementById('ask');
       const spin = document.getElementById('spinner');
       const err = document.getElementById('err');
@@ -101,17 +198,38 @@
       btn.disabled = true;
       spin.classList.add('active');
       try {
+        const corpus = document.getElementById('corpus').value;
         const res = await fetch('/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q }),
+          body: JSON.stringify({ question: q, corpus }),
+          signal,
         });
         const data = await res.json();
+        if (seq !== askSeq) return;
         if (!res.ok) throw new Error(data.error || res.statusText);
         document.getElementById('meta').textContent =
-          `Уверенность: ${data.confidence} | LLM: ${data.llm_provider} | backend: ${data.backend} (${data.index_rows} rows)` +
-          (data.intent ? ` | режим: ${data.intent}` : '');
+          `Запрос: «${q}» | Корпус: ${data.corpus_label || data.corpus_id || '—'} | Уверенность: ${data.confidence} | LLM: ${data.llm_provider} | backend: ${data.backend} (${data.index_rows} rows)` +
+          (data.intent ? ` | режим: ${data.intent}` : '') +
+          (data.llm_policy_note ? ` | политика: ${data.llm_policy_note}` : '');
         document.getElementById('answer').textContent = data.answer || '(пустой ответ)';
+        const hintBox = document.getElementById('corpus-hint');
+        hintBox.hidden = true;
+        hintBox.innerHTML = '';
+        if (data.suggested_corpus) {
+          hintBox.hidden = false;
+          const label = data.corpus_label || data.corpus_id || 'другой архив';
+          hintBox.appendChild(document.createTextNode(`Документ в другом архиве. Переключить с «${label}»? `));
+          const sw = document.createElement('button');
+          sw.type = 'button';
+          sw.textContent = 'Переключить и искать снова';
+          sw.addEventListener('click', () => {
+            document.getElementById('corpus').value = data.suggested_corpus;
+            localStorage.setItem('tmki_corpus', data.suggested_corpus);
+            submitQuestion();
+          });
+          hintBox.appendChild(sw);
+        }
         const cit = document.getElementById('citations');
         cit.innerHTML = '';
         (data.citations || []).slice(0, 6).forEach((c, i) => {
@@ -150,13 +268,254 @@
         });
         result.hidden = false;
       } catch (e) {
+        if (e.name === 'AbortError' || seq !== askSeq) return;
         err.textContent = 'Ошибка: ' + e.message;
         err.hidden = false;
       } finally {
-        btn.disabled = false;
-        spin.classList.remove('active');
+        if (seq === askSeq) {
+          btn.disabled = false;
+          spin.classList.remove('active');
+        }
+      }
+    }
+
+    document.getElementById('ask').addEventListener('click', submitQuestion);
+    document.getElementById('question').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitQuestion();
       }
     });
+
+    (function initVoiceInput() {
+      const voiceBtn = document.getElementById('voice');
+      const questionEl = document.getElementById('question');
+      const hintEl = document.getElementById('voice-hint');
+
+      let mediaRecorder = null;
+      let chunks = [];
+      let stream = null;
+      let recording = false;
+
+      const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+      if (!canRecord) {
+        voiceBtn.disabled = true;
+        voiceBtn.title = 'Голосовой ввод недоступен в этом браузере';
+        return;
+      }
+
+      function setListening(on) {
+        recording = on;
+        voiceBtn.classList.toggle('listening', on);
+        questionEl.classList.toggle('listening', on);
+        voiceBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        voiceBtn.title = on ? 'Остановить запись' : 'Голосовой ввод (русский, локальный Whisper)';
+      }
+
+      function pickMimeType() {
+        const candidates = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/ogg;codecs=opus',
+          'audio/ogg',
+          'audio/mp4',
+        ];
+        for (const t of candidates) {
+          if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+        }
+        return '';
+      }
+
+      async function startRecording() {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              channelCount: 1,
+            },
+          });
+        } catch (e) {
+          hintEl.textContent = 'Разрешите доступ к микрофону в браузере';
+          return;
+        }
+        chunks = [];
+        const mimeType = pickMimeType();
+        try {
+          mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        } catch (e) {
+          mediaRecorder = new MediaRecorder(stream);
+        }
+        mediaRecorder.ondataavailable = (ev) => {
+          if (ev.data && ev.data.size > 0) chunks.push(ev.data);
+        };
+        mediaRecorder.onstop = () => {
+          if (stream) {
+            stream.getTracks().forEach((t) => t.stop());
+            stream = null;
+          }
+          const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+          sendAudio(blob);
+        };
+        mediaRecorder.start();
+        setListening(true);
+        hintEl.textContent = 'Слушаю… говорите запрос, затем нажмите ещё раз';
+      }
+
+      function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+        setListening(false);
+      }
+
+      async function sendAudio(blob) {
+        if (!blob || blob.size === 0) {
+          hintEl.textContent = 'Ничего не записано — повторите';
+          return;
+        }
+        const testPanel = document.getElementById('voice-test');
+        const useTestPreset = testPanel && testPanel.open;
+        const preset = useTestPreset ? ((document.getElementById('vt-preset') || {}).value || 'fast') : 'fast';
+        hintEl.textContent = useTestPreset
+          ? `Распознаю речь (тест: ${preset})…`
+          : 'Распознаю речь… (обычно 3–8 сек)';
+        voiceBtn.disabled = true;
+        try {
+          const headers = { 'Content-Type': blob.type || 'audio/webm' };
+          if (useTestPreset) {
+            headers['X-Whisper-Test'] = '1';
+            headers['X-Whisper-Preset'] = preset;
+          }
+          const res = await fetch('/api/transcribe', {
+            method: 'POST',
+            headers,
+            body: blob,
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.hint || data.error || res.statusText);
+          const text = (data.text || '').trim();
+          if (window.__voiceTest) window.__voiceTest.setRecognized(text, data.provider || preset, data.raw_text);
+          if (!text) {
+            hintEl.textContent = 'Речь не распознана — повторите';
+            return;
+          }
+          questionEl.value = text;
+          hintEl.textContent = 'Распознано, отправляю запрос…';
+          submitQuestion();
+        } catch (e) {
+          hintEl.textContent = 'Ошибка распознавания: ' + e.message;
+          if (window.__voiceTest) window.__voiceTest.setError(e.message);
+        } finally {
+          voiceBtn.disabled = false;
+        }
+      }
+
+      voiceBtn.addEventListener('click', () => {
+        if (recording) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
+      });
+    })();
+
+    (function initVoiceTest() {
+      const presetEl = document.getElementById('vt-preset');
+      const numEl = document.getElementById('vt-num');
+      const recEl = document.getElementById('vt-recognized');
+      const noteEl = document.getElementById('vt-preset-note');
+      const errNoteEl = document.getElementById('vt-errnote');
+      const logEl = document.getElementById('vt-log');
+      if (!presetEl || !logEl) return;
+
+      const saved = localStorage.getItem('tmki_vt_preset');
+      if (saved && [...presetEl.options].some(o => o.value === saved)) presetEl.value = saved;
+      const savedLog = localStorage.getItem('tmki_vt_log');
+      if (savedLog) logEl.value = savedLog;
+
+      let lastText = '';
+      let lastProvider = '';
+
+      function updateNote() {
+        noteEl.textContent = 'тест-пресет только при открытой панели; иначе fast с сервера';
+      }
+      updateNote();
+
+      presetEl.addEventListener('change', () => {
+        localStorage.setItem('tmki_vt_preset', presetEl.value);
+      });
+
+      function appendLog(line) {
+        logEl.value += (logEl.value && !logEl.value.endsWith('\n') ? '\n' : '') + line + '\n';
+        logEl.scrollTop = logEl.scrollHeight;
+        localStorage.setItem('tmki_vt_log', logEl.value);
+      }
+
+      function nextNum() {
+        const n = parseInt(numEl.value, 10) || 1;
+        numEl.value = String(n + 1);
+        return n;
+      }
+
+      window.__voiceTest = {
+        setRecognized(text, provider, rawText) {
+          lastText = text;
+          lastProvider = provider || presetEl.value;
+          if (rawText && rawText !== text) {
+            recEl.textContent = text + '  (было: «' + rawText + '»)';
+          } else {
+            recEl.textContent = text || '(пусто — не распозналось)';
+          }
+        },
+        setError(msg) {
+          lastText = '';
+          lastProvider = presetEl.value;
+          recEl.textContent = 'ОШИБКА: ' + msg;
+          const n = parseInt(numEl.value, 10) || 1;
+          appendLog(`[${presetEl.value}] #${n}: ✗ ошибка запроса — ${msg}`);
+        },
+      };
+
+      document.querySelectorAll('#voice-test .vt-mark button[data-mark]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mark = btn.dataset.mark;
+          const n = nextNum();
+          const preset = presetEl.value;
+          const rec = lastText ? `«${lastText}»` : '(пусто)';
+          let line;
+          if (mark === 'ok') {
+            line = `[${preset}] #${n}: ✓ распозналось — ${rec}`;
+          } else if (mark === 'miss') {
+            line = `[${preset}] #${n}: — не распозналось — ${rec}`;
+          } else {
+            const note = (errNoteEl.value || '').trim() || 'ошибка не описана';
+            line = `[${preset}] #${n}: ✗ с ошибкой (${note}) — ${rec}`;
+            errNoteEl.value = '';
+          }
+          appendLog(line);
+        });
+      });
+
+      document.getElementById('vt-copy').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(logEl.value);
+          document.getElementById('vt-copy').textContent = 'Скопировано ✓';
+          setTimeout(() => { document.getElementById('vt-copy').textContent = 'Копировать лог'; }, 1500);
+        } catch (e) {
+          logEl.select();
+        }
+      });
+
+      document.getElementById('vt-clear').addEventListener('click', () => {
+        if (!confirm('Очистить лог теста?')) return;
+        logEl.value = '';
+        localStorage.removeItem('tmki_vt_log');
+        numEl.value = '1';
+        recEl.textContent = '—';
+      });
+    })();
 
     loadStatus();
     setInterval(loadStatus, 30000);

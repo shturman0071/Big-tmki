@@ -130,20 +130,35 @@ class DocCatalog:
         return added
 
     def search_paths(self, query: str, *, limit: int = 10) -> list[dict[str, Any]]:
-        """Поиск файлов по токенам в имени/пути (как в проводнике)."""
+        """Поиск файлов: сначала точное имя, затем регистр, затем токены."""
         self._ensure_path_index()
-        tokens = [t for t in _TOKEN_RE.findall(query.lower()) if len(t) >= 2]
-        if not tokens:
+        q_raw = query.strip()
+        q_lower = q_raw.lower()
+        tokens = [t for t in _TOKEN_RE.findall(q_lower) if len(t) >= 2]
+        if not q_raw and not tokens:
             return []
         scored: list[tuple[float, str]] = []
         for rel in self.paths:
+            full_name = Path(rel).name
             target = rel.lower()
-            name = Path(rel).name.lower()
+            name = full_name.lower()
+            if q_raw and q_raw in full_name:
+                scored.append((10.0, rel))
+                continue
+            if q_lower and q_lower in name:
+                scored.append((8.0, rel))
+                continue
+            if not tokens:
+                continue
             hits = sum(1 for tok in tokens if tok in target)
             if hits == 0:
                 continue
             name_hits = sum(1 for tok in tokens if tok in name)
-            score = hits + 0.5 * name_hits + (0.25 if all(tok in target for tok in tokens[:2]) else 0.0)
+            if len(tokens) >= 2 and hits < len(tokens):
+                score = (hits / len(tokens)) * 3.0 + 0.5 * name_hits
+                scored.append((score, rel))
+                continue
+            score = hits + 0.5 * name_hits + (0.25 if all(tok in target for tok in tokens) else 0.0)
             scored.append((score, rel))
         scored.sort(key=lambda x: x[0], reverse=True)
         out: list[dict[str, Any]] = []

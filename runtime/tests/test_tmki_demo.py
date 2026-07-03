@@ -10,21 +10,20 @@ def test_resolve_llm_provider_env():
 
 def test_ask_regulations_stub():
     fake_output = {
-        "output": {
-            "answer": "Тестовый ответ",
-            "confidence": "high",
-            "citations": [{"doc_id": "doc_x", "snippet": "фрагмент"}],
-            "llm_provider": "stub",
-        },
-        "loop_state": {"loop_state": "loop_complete"},
+        "answer": "Тестовый ответ",
+        "confidence": "high",
+        "citations": [{"doc_id": "doc_x", "snippet": "фрагмент"}],
+        "llm_provider": "stub",
+        "loop_state": "loop_complete",
     }
     mock_index = MagicMock()
     mock_index.count.return_value = 10
     with patch("tmki_demo.qa._answer_open_intent", return_value=None):
-        with patch("tmki_rag.doc_catalog.DocCatalog.load") as catalog_cls:
-            catalog_cls.return_value.enrich_citations.side_effect = lambda items: items
+        with patch("tmki_demo.qa._get_catalog") as catalog_get:
+            catalog_get.return_value.enrich_citations.side_effect = lambda items: items
+            catalog_get.return_value.search_paths.return_value = []
             with patch("tmki_demo.qa._resolve_backend", return_value=("json", mock_index, [])):
-                with patch("tmki_runtime.run_mvp", return_value=fake_output):
+                with patch("tmki_demo.qa._run_content_search", return_value=fake_output):
                     result = ask_regulations("тест", llm_provider="stub")
     assert result["answer"] == "Тестовый ответ"
     assert result["citations"][0]["doc_id"] == "doc_x"
@@ -50,11 +49,28 @@ def test_ask_regulations_open_intent():
     assert "Нашёл" in result["answer"]
 
 
-def test_resolve_document_query(tmp_path):
-    with patch("tmki_demo.qa.DEFAULT_ARTIFACTS", tmp_path):
-        with patch("tmki_rag.doc_catalog.DocCatalog.load") as load_mock:
-            load_mock.return_value.search_paths.return_value = [{"file_name": "x.pdf"}]
-            out = resolve_document(query="x.pdf")
+def test_ask_regulations_fast_filename_lookup():
+    mock_index = MagicMock()
+    mock_index.count.return_value = 10
+    fast_payload = {
+        "answer": "Нашёл файлы",
+        "confidence": "high",
+        "citations": [{"file_name": "z.docx", "absolute_path": "C:/z.docx", "relative_path": "z.docx"}],
+        "intent": "file",
+        "matched_files": [],
+    }
+    with patch("tmki_demo.qa._answer_open_intent", return_value=None):
+        with patch("tmki_demo.qa._fast_file_lookup", return_value=fast_payload):
+            with patch("tmki_demo.qa._resolve_backend", return_value=("json", mock_index, [])):
+                result = ask_regulations("Замечания_КМД_КС18105", llm_provider="stub", corpus_id="arm-ks")
+    assert result["intent"] == "file"
+    assert result["citations"][0]["file_name"] == "z.docx"
+
+
+def test_resolve_document_query():
+    with patch("tmki_demo.qa._get_catalog") as catalog_get:
+        catalog_get.return_value.search_paths.return_value = [{"file_name": "x.pdf"}]
+        out = resolve_document(query="x.pdf")
     assert out["status"] == "ok"
     assert out["matches"][0]["file_name"] == "x.pdf"
 

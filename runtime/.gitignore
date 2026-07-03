@@ -4,3 +4,6 @@ __pycache__/
 *.egg-info/
 .venv/
 artifacts/
+.env
+secrets.local
+tessdata/*.traineddata

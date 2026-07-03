@@ -8,7 +8,8 @@ requires-python = ">=3.10"
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 pgvector = ["psycopg[binary]>=3.2"]
-ocr = ["pypdf>=4.0", "cryptography>=3.1"]
+ocr = ["pypdf>=4.0", "cryptography>=3.1", "pymupdf>=1.24.0", "pytesseract>=0.3.10"]
+search = ["pymorphy3>=2.0", "pymorphy3-dicts-ru>=2.4", "rank_bm25>=0.2.2"]
 voice = ["piper-tts>=1.4.0"]
 stt = ["faster-whisper>=1.0.0"]
 

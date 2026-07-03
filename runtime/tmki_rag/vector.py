@@ -73,10 +73,16 @@ class VectorChunkIndex(ChunkIndex):
 
 
 def hybrid_score_fn(index: VectorChunkIndex, keyword_score):
+    kw_weight = float(os.environ.get("TMKI_KEYWORD_WEIGHT", "0.5"))
+    if os.environ.get("TMKI_EMBEDDING_PROVIDER", "local").lower() == "local":
+        kw_weight = max(kw_weight, 0.85)
+
     def score(query: str, chunk: dict[str, Any]) -> float:
         kw = keyword_score(query, chunk)
+        if kw >= 0.99:
+            return kw
         vec = index.vector_score(query, chunk)
-        return 0.5 * kw + 0.5 * vec
+        return kw_weight * kw + (1.0 - kw_weight) * vec
 
     return score
 

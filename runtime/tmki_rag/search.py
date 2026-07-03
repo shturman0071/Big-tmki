@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, TYPE_CHECKING
@@ -11,6 +13,8 @@ from tmki_rag.scope import resolve_department_scope
 if TYPE_CHECKING:
     from tmki_rag.vector import VectorChunkIndex
 
+_TOKEN_RE = re.compile(r"[а-яёa-z0-9]{2,}", re.IGNORECASE)
+
 
 def _token_in_text(word: str, text: str) -> bool:
     if len(word) < 4:
@@ -21,18 +25,45 @@ def _token_in_text(word: str, text: str) -> bool:
     return False
 
 
-def _default_score(query: str, chunk: dict[str, Any]) -> float:
+def _query_tokens(query: str) -> list[str]:
+    return [t for t in _TOKEN_RE.findall(query.lower()) if len(t) >= 2]
+
+
+def _literal_prefilter(query: str, chunk: dict[str, Any]) -> bool:
+    """Дешёвый отсев: не гонять лемматизацию по всему индексу."""
     text = (chunk.get("content_preview") or "").lower()
-    q = query.lower()
-    if not text or not q:
+    if not text:
+        return False
+    q_lower = query.lower().strip()
+    if len(q_lower) >= 4 and q_lower in text:
+        return True
+    tokens = _query_tokens(query)
+    if not tokens:
+        return True
+    if len(tokens) >= 2:
+        return all(tok in text for tok in tokens)
+    return any(tok in text for tok in tokens)
+
+
+def _chunk_lemmas(chunk: dict[str, Any], text: str) -> set[str]:
+    """Кеш лемм текста фрагмента прямо на chunk (считаем один раз)."""
+    cached = chunk.get("_lemma_set")
+    if cached is not None:
+        return cached
+    from tmki_rag.lemmatize import lemma_set
+
+    lemmas = lemma_set(text)
+    chunk["_lemma_set"] = lemmas
+    return lemmas
+
+
+def _default_score(query: str, chunk: dict[str, Any]) -> float:
+    from tmki_rag.match_score import text_match_score
+
+    text = chunk.get("content_preview") or ""
+    if not text:
         return 0.0
-    if q in text:
-        return 1.0
-    words = [w for w in q.split() if w]
-    if not words:
-        return 0.0
-    hits = sum(1 for w in words if _token_in_text(w, text))
-    return float(hits) / len(words)
+    return text_match_score(query, text, lemma_set_fn=lambda t: _chunk_lemmas(chunk, t))
 
 
 def _to_citation(chunk: dict[str, Any]) -> dict[str, Any]:
@@ -61,6 +92,8 @@ def rag_search(
     RAG retrieval: RLS-фильтр до ранжирования (MUST server-side).
     Контракт: schemas/document/search-response.schema.json
     """
+    from tmki_rag.match_score import significant_query_tokens
+
     score_fn = score_fn or _default_score
     policy_context = request["policy_context"]
     trace_id = request["trace_id"]
@@ -104,10 +137,27 @@ def rag_search(
 
     allowed.sort(key=lambda x: x[0], reverse=True)
     pool_k = request.get("candidate_pool") or max(top_k * 4, top_k)
+    from tmki_rag.match_score import (
+        all_query_tokens_in_text,
+        ocr_alias_tokens,
+        significant_query_tokens,
+        split_required_optional_tokens,
+    )
+
+    corpus_blob = "\n".join((chunk.get("content_preview") or "") for _score, chunk in allowed[:500])
+    required, _optional = split_required_optional_tokens(query, corpus_blob)
+    if not required:
+        required = [t for t in significant_query_tokens(query) if t not in ocr_alias_tokens()]
+    require_all = len(required) >= 1 and len(significant_query_tokens(query)) >= 2
     results = []
     for score, chunk in allowed[:pool_k]:
         if score <= 0:
             continue
+        if require_all:
+            text = chunk.get("content_preview") or ""
+            must = " ".join(required)
+            if not all_query_tokens_in_text(must, text):
+                continue
         results.append(
             {
                 "chunk_id": chunk["chunk_id"],
@@ -136,6 +186,114 @@ def rag_search(
     }
 
 
+def _bm25_disabled() -> bool:
+    return os.environ.get("TMKI_DISABLE_BM25") == "1"
+
+
+def _get_bm25_index(index: "VectorChunkIndex", allowed_chunks: list[dict[str, Any]]):
+    """BM25-индекс кешируется на объекте index (строится один раз для его chunks)."""
+    from tmki_rag.bm25 import Bm25Index
+
+    cached = getattr(index, "_bm25_index", None)
+    cached_n = getattr(index, "_bm25_index_n", -1)
+    if cached is not None and cached_n == len(allowed_chunks):
+        return cached
+    bm25 = Bm25Index(allowed_chunks)
+    index._bm25_index = bm25
+    index._bm25_index_n = len(allowed_chunks)
+    return bm25
+
+
+def _full_scan_index_chunks(
+    request: dict[str, Any],
+    index: "VectorChunkIndex",
+    *,
+    score_fn: Callable[[str, dict[str, Any]], float],
+    folder_acl: FolderAclContext | None,
+    pool: int,
+) -> list[dict[str, Any]]:
+    """Полнотекстовый проход по всем chunks: keyword-скан + BM25, слитые через RRF."""
+    policy_context = request["policy_context"]
+    query = request["query"]
+    department_scope = resolve_department_scope(policy_context)
+    extra_filters = request.get("filters") or {}
+
+    allowed: list[dict[str, Any]] = []
+    scored: list[tuple[float, dict[str, Any]]] = []
+    from tmki_rag.match_score import (
+        all_query_tokens_in_text,
+        ocr_alias_tokens,
+        significant_query_tokens,
+        split_required_optional_tokens,
+    )
+
+    for chunk in index.list():
+        if not passes_rls(
+            chunk,
+            policy_context,
+            department_scope=department_scope,
+            extra_filters=extra_filters,
+            folder_acl=folder_acl,
+        ):
+            continue
+        allowed.append(chunk)
+
+    corpus_blob = "\n".join((c.get("content_preview") or "") for c in allowed)
+    required, _optional = split_required_optional_tokens(query, corpus_blob)
+    if not required:
+        required = [t for t in significant_query_tokens(query) if t not in ocr_alias_tokens()]
+    require_all = len(required) >= 1 and len(significant_query_tokens(query)) >= 2
+    for chunk in allowed:
+        if not _literal_prefilter(query, chunk):
+            continue
+        if require_all:
+            text = chunk.get("content_preview") or ""
+            must = " ".join(required)
+            if not all_query_tokens_in_text(must, text):
+                continue
+        score = score_fn(query, chunk)
+        if score > 0:
+            scored.append((score, chunk))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    keyword_ranked = [chunk for _, chunk in scored[:pool]]
+
+    if _bm25_disabled():
+        return keyword_ranked
+
+    bm25 = _get_bm25_index(index, allowed)
+    if not bm25.available:
+        return keyword_ranked
+    bm25_ranked = [chunk for _, chunk in bm25.top(query, top_k=pool)]
+    if require_all:
+        must = " ".join(required)
+        bm25_ranked = [
+            chunk
+            for chunk in bm25_ranked
+            if all_query_tokens_in_text(must, chunk.get("content_preview") or "")
+        ]
+    if not bm25_ranked:
+        return keyword_ranked
+
+    from tmki_rag.bm25 import reciprocal_rank_fusion
+
+    return reciprocal_rank_fusion([keyword_ranked, bm25_ranked], top_k=pool)
+
+
+def _use_full_text_scan(index: "VectorChunkIndex") -> bool:
+    mode = os.environ.get("TMKI_SEARCH_MODE", "auto").lower()
+    if mode == "vector":
+        return False
+    if mode in ("keyword", "fulltext", "full"):
+        return True
+    try:
+        from tmki_rag.pgvector import PgVectorChunkIndex
+    except ImportError:
+        PgVectorChunkIndex = type(None)  # type: ignore[misc, assignment]
+    if isinstance(index, PgVectorChunkIndex):
+        return mode == "auto" and len(index.list()) <= 5000
+    return True
+
+
 def rag_search_with_index(
     request: dict[str, Any],
     index: "VectorChunkIndex",
@@ -144,11 +302,20 @@ def rag_search_with_index(
     folder_acl: FolderAclContext | None = None,
     candidate_pool: int | None = None,
 ) -> dict[str, Any]:
-    """RAG через VectorChunkIndex/PgVectorChunkIndex (vector pre-filter, затем RLS)."""
+    """RAG через VectorChunkIndex: полный keyword/hybrid scan или vector pre-filter."""
     score_fn = score_fn or _default_score
     policy_context = request["policy_context"]
     top_k = request.get("top_k", 8)
-    pool = candidate_pool or max(top_k * 5, 20)
+    pool = candidate_pool or max(top_k * 8, 64)
+    if _use_full_text_scan(index):
+        chunks = _full_scan_index_chunks(
+            request,
+            index,
+            score_fn=score_fn,
+            folder_acl=folder_acl,
+            pool=pool,
+        )
+        return rag_search(request, chunks, score_fn=score_fn, folder_acl=folder_acl)
     similar = index.search_similar(
         request["query"],
         company_id=policy_context["company_id"],

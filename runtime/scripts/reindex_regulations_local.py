@@ -17,6 +17,7 @@ DEFAULT_OUTPUT = Path(__file__).resolve().parents[1] / "artifacts" / "regulation
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Re-index regulations with local text extraction")
+    parser.add_argument("--corpus", choices=["skru-2", "arm-ks"], default=None, help="корпус (переопределяет --archive/--output)")
     parser.add_argument("--archive", type=Path, default=DEFAULT_ARCHIVE)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--limit", type=int, default=None)
@@ -30,6 +31,12 @@ def main() -> int:
     )
     parser.add_argument("--force-lock", action="store_true", help="Захватить lock даже если другой PID жив")
     args = parser.parse_args()
+
+    if args.corpus:
+        from tmki_rag.corpus_policy import resolve_corpus_archive, resolve_corpus_artifacts_dir
+
+        args.archive = resolve_corpus_archive(args.corpus)
+        args.output = resolve_corpus_artifacts_dir(args.corpus)
 
     os.environ["TMKI_OCR_MODE"] = args.ocr_mode
 

@@ -159,6 +159,67 @@ class StubMinerUProvider:
         )
 
 
+def _mime_for_bytes(raw_bytes: bytes, source_name: str | None = None) -> str:
+    if source_name and source_name.lower().endswith(".png"):
+        return "image/png"
+    if source_name and source_name.lower().endswith((".jpg", ".jpeg")):
+        return "image/jpeg"
+    if raw_bytes.startswith(b"%PDF"):
+        return "application/pdf"
+    if raw_bytes.startswith(b"PK\x03\x04"):
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    return "application/octet-stream"
+
+
+def _parse_mistral_ocr_response(data: dict[str, Any]) -> tuple[str, int, float]:
+    pages = data.get("pages") or []
+    parts: list[str] = []
+    for page in pages:
+        if isinstance(page, dict):
+            md = page.get("markdown") or page.get("text") or ""
+            if md:
+                parts.append(str(md))
+    text = data.get("markdown") or "\n\n".join(parts)
+    page_count = int(data.get("page_count") or len(pages) or (1 if text else 0))
+    confidence = float(data.get("avg_confidence", 0.88 if text else 0.0))
+    return text, page_count, confidence
+
+
+def _parse_mineru_json_response(data: dict[str, Any]) -> tuple[str, int, float]:
+    text = data.get("markdown") or data.get("text") or ""
+    if not text and isinstance(data.get("data"), dict):
+        inner = data["data"]
+        text = inner.get("markdown") or inner.get("text") or ""
+    pages = data.get("pages") or []
+    if not text and pages:
+        text = "\n\n".join(
+            str(p.get("markdown") or p.get("text") or "")
+            for p in pages
+            if isinstance(p, dict)
+        )
+    page_count = int(data.get("page_count") or len(pages) or (1 if text else 0))
+    confidence = float(data.get("avg_confidence", 0.85 if text else 0.0))
+    return text, page_count, confidence
+
+
+def _http_post_mineru_file_parse(
+    http_post: HttpPostFn,
+    url: str,
+    raw_bytes: bytes,
+    headers: dict[str, str],
+    timeout: int,
+) -> dict[str, Any]:
+    """mineru-api POST /file_parse через JSON-прокси (file_base64) для совместимости."""
+    payload = {
+        "file_base64": base64.b64encode(raw_bytes).decode("ascii"),
+        "output_format": "markdown",
+        "parse_method": "ocr",
+    }
+    hdrs = dict(headers)
+    hdrs["Content-Type"] = "application/json"
+    return http_post(url, payload, hdrs, timeout)
+
+
 class HttpMinerUProvider:
     name = "mineru"
     parser_version = MINERU_PARSER_VERSION
@@ -179,18 +240,40 @@ class HttpMinerUProvider:
     def extract(self, raw_bytes: bytes) -> OcrAttempt:
         if not self._api_url:
             raise RuntimeError("MINERU_API_URL не задан для TMKI_OCR_MODE=http")
-        headers = {"Content-Type": "application/json"}
+        headers: dict[str, str] = {}
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
-        payload = {
-            "file_base64": base64.b64encode(raw_bytes).decode("ascii"),
-            "output_format": "markdown",
-        }
         started = datetime.now(timezone.utc)
-        data = _http_post_with_retry(self._http_post, self._api_url, payload, headers, self._timeout)
-        text = data.get("markdown") or data.get("text") or ""
-        page_count = int(data.get("page_count") or len(data.get("pages", [])) or 1)
-        confidence = float(data.get("avg_confidence", 0.85))
+        url = self._api_url.rstrip("/")
+        if url.endswith("/file_parse") or "/file_parse" in url:
+            data = _http_post_mineru_file_parse(
+                self._http_post,
+                url,
+                raw_bytes,
+                headers,
+                self._timeout,
+            )
+        elif "mineru.net" in url:
+            headers["Content-Type"] = "application/json"
+            b64 = base64.b64encode(raw_bytes).decode("ascii")
+            mime = _mime_for_bytes(raw_bytes)
+            task_url = url if url.endswith("/extract/task") else f"{url}/extract/task"
+            payload = {
+                "url": f"data:{mime};base64,{b64}",
+                "is_ocr": True,
+                "enable_formula": True,
+                "enable_table": True,
+                "language": os.environ.get("MINERU_OCR_LANG", "ch"),
+            }
+            data = _http_post_with_retry(self._http_post, task_url, payload, headers, self._timeout)
+        else:
+            headers["Content-Type"] = "application/json"
+            payload = {
+                "file_base64": base64.b64encode(raw_bytes).decode("ascii"),
+                "output_format": "markdown",
+            }
+            data = _http_post_with_retry(self._http_post, url, payload, headers, self._timeout)
+        text, page_count, confidence = _parse_mineru_json_response(data)
         duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
         status = "completed" if text else "failed"
         return OcrAttempt(
@@ -243,18 +326,25 @@ class HttpMistralOcrProvider:
         headers = {"Content-Type": "application/json"}
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
-        payload = {
-            "document": {
-                "type": "base64",
-                "content": base64.b64encode(raw_bytes).decode("ascii"),
+        mime = _mime_for_bytes(raw_bytes)
+        b64 = base64.b64encode(raw_bytes).decode("ascii")
+        if mime.startswith("image/"):
+            document: dict[str, Any] = {
+                "type": "image_url",
+                "image_url": f"data:{mime};base64,{b64}",
             }
+        else:
+            document = {
+                "type": "document_url",
+                "document_url": f"data:{mime};base64,{b64}",
+            }
+        payload = {
+            "model": os.environ.get("MISTRAL_OCR_MODEL", "mistral-ocr-latest"),
+            "document": document,
         }
         started = datetime.now(timezone.utc)
         data = _http_post_with_retry(self._http_post, self._api_url, payload, headers, self._timeout)
-        pages = data.get("pages") or []
-        text = data.get("markdown") or "\n".join(p.get("text", "") for p in pages)
-        page_count = int(data.get("page_count") or len(pages) or 1)
-        confidence = float(data.get("avg_confidence", 0.88))
+        text, page_count, confidence = _parse_mistral_ocr_response(data)
         duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
         return OcrAttempt(
             provider=self.name,
@@ -342,13 +432,16 @@ def run_ocr(
     if primary.error_code:
         primary_attempt["error_code"] = primary.error_code
 
-    if fallback_reason:
+    ocr_mode = os.environ.get("TMKI_OCR_MODE", "stub").lower()
+    if fallback_reason and ocr_mode != "local":
         fallback_used = True
         mistral = (mistral_provider or get_mistral_provider()).extract(raw_bytes)
         final = mistral
         provider_used = "mistral_ocr_4"
         parser_version = MISTRAL_PARSER_VERSION
         warnings.append(f"fallback:{fallback_reason}")
+    elif fallback_reason:
+        warnings.append(f"local_no_fallback:{fallback_reason}")
 
     ocr_status = "completed" if final.status == "completed" and final.text else "failed"
     if ocr_status == "failed":

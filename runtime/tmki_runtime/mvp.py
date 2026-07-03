@@ -126,6 +126,7 @@ def run_mvp(
     index: VectorChunkIndex | None = None,
     use_hybrid_search: bool = False,
     quality_rerank: bool = False,
+    candidate_pool: int | None = None,
 ) -> dict[str, Any]:
     """
     MVP flow: schemas/runtime/mvp-flow.json (стадии 1–8).
@@ -185,6 +186,7 @@ def run_mvp(
             "query": message,
             "top_k": 8,
             **({"quality_rerank": True} if quality_rerank else {}),
+            **({"candidate_pool": candidate_pool} if candidate_pool else {}),
         },
     }
     rag_resp = registry.execute(rag_req)

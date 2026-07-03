@@ -10,16 +10,33 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import"
 _INDEX_CACHE: dict[str, tuple[str, Any, list[dict[str, Any]]]] = {}
-_CATALOG_CACHE: Any | None = None
+_CATALOG_CACHE: dict[str, Any] = {}
+_POLICY_CACHE: dict[str, Any] | None = None
+_FOLDER_ACL_CACHE: Any = None
 
 
-def _get_catalog() -> Any:
-    global _CATALOG_CACHE
-    if _CATALOG_CACHE is None:
-        from tmki_rag.doc_catalog import DocCatalog
+def _artifacts_dir(corpus_id: str | None = None) -> Path:
+    from tmki_rag.corpus_policy import resolve_corpus_artifacts_dir
 
-        _CATALOG_CACHE = DocCatalog.load(artifacts_dir=DEFAULT_ARTIFACTS, index_paths=False)
-    return _CATALOG_CACHE
+    return resolve_corpus_artifacts_dir(corpus_id)
+
+
+def _get_catalog(*, corpus_id: str | None = None) -> Any:
+    from tmki_rag.corpus_policy import get_corpus, resolve_corpus_archive
+
+    cid = get_corpus(corpus_id).corpus_id
+    if cid in _CATALOG_CACHE:
+        return _CATALOG_CACHE[cid]
+    from tmki_rag.doc_catalog import DocCatalog
+
+    artifacts = _artifacts_dir(cid)
+    catalog = DocCatalog.load(
+        archive_root=resolve_corpus_archive(cid),
+        artifacts_dir=artifacts,
+        index_paths=False,
+    )
+    _CATALOG_CACHE[cid] = catalog
+    return catalog
 
 
 
@@ -56,10 +73,13 @@ def _clean_demo_payload(value: Any) -> Any:
     return value
 
 
-def resolve_llm_provider() -> str:
+def resolve_llm_provider(*, corpus_id: str | None = None) -> str:
+    from tmki_rag.corpus_policy import enforce_llm_for_corpus
+
     env = os.environ.get("TMKI_LLM_PROVIDER", "").lower()
     if env in ("stub", "ollama", "openai"):
-        return env
+        provider, _ = enforce_llm_for_corpus(env, corpus_id)
+        return provider
     try:
         import importlib.util
 
@@ -68,10 +88,30 @@ def resolve_llm_provider() -> str:
         if spec and spec.loader:
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
-            return mod.resolve_demo_llm(prefer="auto")
+            auto = mod.resolve_demo_llm(prefer="auto")
+            provider, _ = enforce_llm_for_corpus(auto, corpus_id)
+            return provider
     except Exception:
         pass
-    return "stub"
+    provider, _ = enforce_llm_for_corpus("stub", corpus_id)
+    return provider
+
+
+def _apply_llm_policy(
+    provider: str,
+    *,
+    corpus_id: str | None,
+    citation_paths: list[str] | None = None,
+    explicit: bool = False,
+) -> tuple[str, str | None]:
+    from tmki_rag.corpus_policy import enforce_llm_for_corpus, enforce_llm_for_paths
+
+    llm, note = enforce_llm_for_corpus(provider, corpus_id, explicit=explicit)
+    if citation_paths:
+        llm, path_note = enforce_llm_for_paths(llm, citation_paths)
+        if path_note:
+            note = path_note if not note else f"{note} {path_note}"
+    return llm, note
 
 
 def _align_embedding_provider(llm: str) -> None:
@@ -82,26 +122,232 @@ def _align_embedding_provider(llm: str) -> None:
 
 
 def _policy_context() -> dict[str, Any]:
+    global _POLICY_CACHE
+    if _POLICY_CACHE is not None:
+        return _POLICY_CACHE
     from tmki_policy import build_policy_context, load_org_snapshot
 
     snapshot = load_org_snapshot(ROOT / "schemas/org/examples/satimol-snapshot.example.json")
-    return build_policy_context(
+    _POLICY_CACHE = build_policy_context(
         snapshot,
         employee_id="emp_litovsky_d",
         env="production",
         as_of=date(2025, 9, 10),
     )
+    return _POLICY_CACHE
 
 
-def _resolve_backend() -> tuple[str, Any | None, list[dict[str, Any]]]:
-    from tmki_rag import VectorChunkIndex, get_chunk_index, load_regulations_chunks, resolve_regulations_chunks_path
+def _folder_acl() -> Any:
+    global _FOLDER_ACL_CACHE
+    if _FOLDER_ACL_CACHE is None:
+        from tmki_runtime.mvp import load_satimol_folder_acl
+
+        _FOLDER_ACL_CACHE = load_satimol_folder_acl()
+    return _FOLDER_ACL_CACHE
+
+
+def _try_ollama_fallback(
+    *,
+    query: str,
+    citations: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Локальный Ollama, если OpenAI недоступен (без биллинга)."""
+    if os.environ.get("TMKI_DISABLE_OLLAMA_FALLBACK", "").lower() in ("1", "true", "yes"):
+        return None
+    try:
+        os.environ["TMKI_LLM_PROVIDER"] = "ollama"
+        from tmki_llm import get_llm_provider
+
+        gen = get_llm_provider().generate(query=query, citations=citations)
+        note = (
+            "(Ответ через локальную Ollama — OpenAI недоступен. "
+            "Для облачных ответов пополните биллинг OpenAI.)"
+        )
+        answer = f"{gen.answer}\n\n{note}" if gen.answer else note
+        return {
+            "answer": _maybe_fix_mojibake_text(answer),
+            "confidence": gen.confidence or ("high" if citations else "low"),
+            "citations": citations,
+            "llm_provider": gen.provider or "ollama",
+            "loop_state": "loop_complete",
+        }
+    except Exception:
+        return None
+
+
+def _chunk_in_paths(chunk: dict[str, Any], paths: list[str]) -> bool:
+    cr = (chunk.get("source_relative_path") or "").replace("\\", "/").lower()
+    for p in paths:
+        pl = p.replace("\\", "/").lower()
+        if cr == pl or pl in cr:
+            return True
+    return False
+
+
+def _run_content_search_in_files(
+    query: str,
+    *,
+    index: Any,
+    paths: list[str],
+    llm: str,
+    pool: int,
+) -> dict[str, Any] | None:
+    """Поиск по тексту внутри уже найденных по имени файлов (для «опиши письмо»)."""
+    if index is None or not paths:
+        return None
+    from tmki_rag.search import rag_search
+
+    chunks = [c for c in index.list() if _chunk_in_paths(c, paths)]
+    if not chunks:
+        return None
+    resp = rag_search(
+        {
+            "policy_context": _policy_context(),
+            "trace_id": "demo",
+            "query": query,
+            "top_k": 8,
+            "candidate_pool": min(max(pool, 32), len(chunks)),
+        },
+        chunks,
+        folder_acl=_folder_acl(),
+    )
+    citations = [r["citation"] for r in resp.get("results", [])]
+    if not citations:
+        return None
+    os.environ["TMKI_LLM_PROVIDER"] = llm
+    from tmki_llm import get_llm_provider
+
+    try:
+        gen = get_llm_provider().generate(query=query, citations=citations)
+    except RuntimeError as exc:
+        err = str(exc)
+        if llm == "openai" and (
+            "insufficient_quota" in err
+            or "OpenAI API error 429" in err
+            or "OpenAI API error 401" in err
+        ):
+            ollama_result = _try_ollama_fallback(query=query, citations=citations)
+            if ollama_result is not None:
+                return ollama_result
+        return None
+    return {
+        "answer": _maybe_fix_mojibake_text(gen.answer),
+        "confidence": gen.confidence or ("high" if citations else "low"),
+        "citations": citations,
+        "llm_provider": gen.provider or llm,
+        "loop_state": "loop_complete",
+    }
+
+
+def _run_content_search(
+    query: str,
+    *,
+    index: Any,
+    llm: str,
+    pool: int,
+) -> dict[str, Any]:
+    """Быстрый RAG для demo UI (без LoopEngine / двойного LLM)."""
+    from tmki_llm import get_llm_provider
+    from tmki_rag.search import rag_search_with_index
+
+    resp = rag_search_with_index(
+        {
+            "policy_context": _policy_context(),
+            "trace_id": "demo",
+            "query": query,
+            "top_k": 8,
+            "candidate_pool": pool,
+        },
+        index,
+        folder_acl=_folder_acl(),
+    )
+    citations = [r["citation"] for r in resp.get("results", [])]
+    os.environ["TMKI_LLM_PROVIDER"] = llm
+    try:
+        gen = get_llm_provider().generate(query=query, citations=citations)
+    except RuntimeError as exc:
+        err = str(exc)
+        if llm == "openai" and (
+            "insufficient_quota" in err
+            or "OpenAI API error 429" in err
+            or "OpenAI API error 401" in err
+        ):
+            ollama_result = _try_ollama_fallback(query=query, citations=citations)
+            if ollama_result is not None:
+                return ollama_result
+            from tmki_llm.providers import StubLlmProvider
+
+            gen = StubLlmProvider().generate(query=query, citations=citations)
+            note = (
+                "OpenAI недоступен (квота/ключ). Ответ по найденным фрагментам (stub). "
+                "Бесплатно: установите Ollama и модель qwen2.5:7b, либо пополните "
+                "https://platform.openai.com/account/billing"
+            )
+            answer = f"{gen.answer}\n\n{note}" if gen.answer else note
+            return {
+                "answer": _maybe_fix_mojibake_text(answer),
+                "confidence": gen.confidence,
+                "citations": citations,
+                "llm_provider": "stub",
+                "loop_state": "loop_complete",
+            }
+        raise
+    confidence = gen.confidence or ("high" if citations else "low")
+    return {
+        "answer": _maybe_fix_mojibake_text(gen.answer),
+        "confidence": confidence,
+        "citations": citations,
+        "llm_provider": gen.provider or llm,
+        "loop_state": "loop_complete",
+    }
+
+
+def _ocr_alias_search(
+    message: str,
+    *,
+    index: Any,
+    llm: str,
+    pool: int,
+) -> dict[str, Any] | None:
+    from tmki_rag.match_score import _OCR_ALIASES
+
+    lowered = message.lower()
+    for token, aliases in _OCR_ALIASES.items():
+        if token not in lowered:
+            continue
+        for alias in aliases:
+            out = _run_content_search(alias, index=index, llm=llm, pool=pool)
+            if out.get("citations"):
+                return out
+    return None
+
+
+def _missing_optional_tokens_note(message: str, index: Any) -> str | None:
+    from tmki_rag.match_score import split_required_optional_tokens
+
+    blob = "\n".join((c.get("content_preview") or "") for c in index.list())
+    _required, optional = split_required_optional_tokens(message, blob)
+    if optional:
+        words = ", ".join(f"«{t}»" for t in optional)
+        return f"В индексе не найдено: {words} (возможно, не распознано OCR или нет в документах)."
+    return None
+
+
+def _resolve_backend(*, corpus_id: str | None = None) -> tuple[str, Any | None, list[dict[str, Any]]]:
+    from tmki_rag import get_chunk_index, load_regulations_chunks, resolve_regulations_chunks_path
+    from tmki_rag.corpus_policy import get_corpus
+    from tmki_rag.index import ChunkIndex
     from tmki_rag.pgvector import PgVectorChunkIndex
 
-    use_pgvector = os.environ.get("TMKI_INDEX_BACKEND", "").lower() == "pgvector" and bool(
-        os.environ.get("DATABASE_URL")
+    cid = get_corpus(corpus_id).corpus_id
+    artifacts = _artifacts_dir(cid)
+    use_pgvector = (
+        cid == "skru-2"
+        and os.environ.get("TMKI_INDEX_BACKEND", "").lower() == "pgvector"
+        and bool(os.environ.get("DATABASE_URL"))
     )
     if use_pgvector:
-        cache_key = "pgvector"
+        cache_key = f"pgvector:{cid}"
         if cache_key in _INDEX_CACHE:
             return _INDEX_CACHE[cache_key]
         backend = get_chunk_index()
@@ -109,21 +355,89 @@ def _resolve_backend() -> tuple[str, Any | None, list[dict[str, Any]]]:
             payload = ("pgvector", backend, [])
             _INDEX_CACHE[cache_key] = payload
             return payload
-    chunks_path = resolve_regulations_chunks_path("v2")
-    cache_key = f"json:{chunks_path.resolve()}"
+    chunks_path = artifacts / "chunks-v2.json"
+    if not chunks_path.is_file():
+        chunks_path = resolve_regulations_chunks_path("v2")
+    cache_key = f"json:{cid}:{chunks_path.resolve()}"
     if cache_key in _INDEX_CACHE:
         return _INDEX_CACHE[cache_key]
-    chunks = load_regulations_chunks(chunks_path)
-    index = VectorChunkIndex()
-    index.add(chunks)
+    if chunks_path.is_file():
+        chunks = load_regulations_chunks(chunks_path)
+    else:
+        chunks = []
+    index = ChunkIndex(chunks)
     payload = ("json", index, [])
     _INDEX_CACHE[cache_key] = payload
     return payload
 
 
-def _answer_open_intent(message: str, catalog: Any) -> dict[str, Any] | None:
-    from tmki_rag.retrieval import detect_query_intent
+def _regenerate_answer(
+    query: str,
+    citations: list[dict[str, Any]],
+    llm: str,
+    confidence: str,
+) -> tuple[str, str, str]:
+    import os
 
+    from tmki_llm import get_llm_provider
+
+    os.environ["TMKI_LLM_PROVIDER"] = llm
+    try:
+        regen = get_llm_provider().generate(query=query, citations=citations)
+        return (
+            _maybe_fix_mojibake_text(regen.answer),
+            regen.confidence or confidence,
+            regen.provider or llm,
+        )
+    except Exception:
+        from tmki_llm.providers import StubLlmProvider
+
+        regen = StubLlmProvider().generate(query=query, citations=citations)
+        return (
+            _maybe_fix_mojibake_text(regen.answer),
+            regen.confidence or confidence,
+            "stub",
+        )
+
+
+def _build_file_search_response(
+    matches: list[dict[str, Any]],
+    *,
+    intent: str = "open",
+    headline: str | None = None,
+    suggested_corpus: str | None = None,
+) -> dict[str, Any]:
+    lines = [headline or "Нашёл файлы в архиве регламентов:"]
+    citations: list[dict[str, Any]] = []
+    for i, item in enumerate(matches[:6], start=1):
+        lines.append(f"{i}. {item['file_name']} — {item['relative_path']}")
+        citations.append(
+            {
+                "doc_id": item.get("doc_id") or "",
+                "snippet": item["relative_path"],
+                "file_name": item["file_name"],
+                "relative_path": item["relative_path"],
+                "absolute_path": item["absolute_path"],
+            }
+        )
+    lines.append("\nНажмите «Открыть» у нужного источника или скопируйте путь.")
+    out: dict[str, Any] = {
+        "answer": "\n".join(lines),
+        "confidence": "high" if matches else "low",
+        "citations": citations,
+        "intent": intent,
+        "matched_files": matches,
+    }
+    if suggested_corpus:
+        out["suggested_corpus"] = suggested_corpus
+    return out
+
+
+def _answer_open_intent(message: str, catalog: Any) -> dict[str, Any] | None:
+    from tmki_rag.retrieval import detect_query_intent, looks_like_content_summary_query
+
+    if looks_like_content_summary_query(message):
+        return None
     if detect_query_intent(message) != "open":
         return None
     matches = catalog.search_paths(message, limit=8)
@@ -138,27 +452,73 @@ def _answer_open_intent(message: str, catalog: Any) -> dict[str, Any] | None:
             "intent": "open",
             "matched_files": [],
         }
-    lines = ["Нашёл файлы в архиве регламентов:"]
-    citations: list[dict[str, Any]] = []
-    for i, item in enumerate(matches[:6], start=1):
-        lines.append(f"{i}. {item['file_name']} — {item['relative_path']}")
-        citations.append(
-            {
-                "doc_id": item.get("doc_id") or "",
-                "snippet": item["relative_path"],
-                "file_name": item["file_name"],
-                "relative_path": item["relative_path"],
-                "absolute_path": item["absolute_path"],
-            }
-        )
-    lines.append("\nНажмите «Открыть» у нужного источника или скопируйте путь.")
-    return {
-        "answer": "\n".join(lines),
-        "confidence": "high" if matches else "low",
-        "citations": citations,
-        "intent": "open",
-        "matched_files": matches,
-    }
+    return _build_file_search_response(matches, intent="open")
+
+
+def _cross_corpus_file_matches(
+    query: str,
+    current_corpus: str,
+    *,
+    limit: int = 6,
+) -> tuple[str, str, list[dict[str, Any]]] | None:
+    from tmki_rag.corpus_policy import CORPORA, get_corpus
+
+    best: tuple[str, str, list[dict[str, Any]], float] | None = None
+    for cid in CORPORA:
+        if cid == current_corpus:
+            continue
+        other = get_corpus(cid)
+        cat = _get_catalog(corpus_id=cid)
+        matches = cat.search_paths(query, limit=limit)
+        if not matches:
+            continue
+        top_score = float(matches[0].get("score") or 0)
+        if best is None or top_score > best[3]:
+            best = (cid, other.label, matches, top_score)
+    if best is None or best[3] < 2.0:
+        return None
+    return best[0], best[1], best[2]
+
+
+def _fast_file_lookup(
+    message: str,
+    catalog: Any,
+    *,
+    corpus_id: str,
+) -> dict[str, Any] | None:
+    """Быстрый поиск по имени файла — без тяжёлого RAG (до 1–2 мин)."""
+    from tmki_rag.corpus_policy import get_corpus
+    from tmki_rag.retrieval import detect_query_intent, looks_like_content_summary_query, looks_like_filename_query
+
+    if looks_like_content_summary_query(message):
+        return None
+
+    matches = catalog.search_paths(message, limit=8)
+    if matches:
+        top_score = float(matches[0].get("score") or 0)
+        if detect_query_intent(message) == "open" and top_score >= 2.0:
+            return _build_file_search_response(matches, intent="open")
+        if looks_like_filename_query(message) and top_score >= 2.0:
+            return _build_file_search_response(matches, intent="file")
+
+    if not looks_like_filename_query(message):
+        return None
+
+    cross = _cross_corpus_file_matches(message, corpus_id)
+    if not cross:
+        return None
+    other_id, other_label, other_matches = cross
+    current_label = get_corpus(corpus_id).label
+    headline = (
+        f"В архиве «{current_label}» такого файла нет. "
+        f"Найдено в «{other_label}» — переключите архив в списке выше и повторите поиск."
+    )
+    return _build_file_search_response(
+        other_matches,
+        intent="file",
+        headline=headline,
+        suggested_corpus=other_id,
+    )
 
 
 def ask_regulations(
@@ -166,42 +526,87 @@ def ask_regulations(
     *,
     llm_provider: str | None = None,
     hybrid: bool = True,
+    corpus_id: str | None = None,
 ) -> dict[str, Any]:
-    from tmki_rag.doc_catalog import DocCatalog
+    from tmki_rag.corpus_policy import get_corpus
     from tmki_rag.retrieval import detect_query_intent, normalize_query
     from tmki_runtime import run_mvp
 
     raw_message = message.strip()
-    llm = llm_provider or resolve_llm_provider()
+    corpus = get_corpus(corpus_id)
+    explicit_llm = llm_provider is not None
+    requested = llm_provider or resolve_llm_provider(corpus_id=corpus.corpus_id)
+    llm, policy_note = _apply_llm_policy(
+        requested,
+        corpus_id=corpus.corpus_id,
+        explicit=explicit_llm,
+    )
     _align_embedding_provider(llm)
-    catalog = _get_catalog()
+    catalog = _get_catalog(corpus_id=corpus.corpus_id)
 
     open_result = _answer_open_intent(raw_message, catalog)
     if open_result is not None:
-        backend_name, index, chunks = _resolve_backend()
+        backend_name, index, chunks = _resolve_backend(corpus_id=corpus.corpus_id)
         rows = index.count() if index is not None and hasattr(index, "count") else len(chunks)
         return {
             **_clean_demo_payload(open_result),
             "llm_provider": llm,
+            "corpus_id": corpus.corpus_id,
+            "corpus_label": corpus.label,
+            "llm_policy_note": policy_note,
             "backend": backend_name,
             "index_rows": rows,
             "loop_state": "loop_complete",
             "intent": "open",
         }
 
+    fast_files = _fast_file_lookup(raw_message, catalog, corpus_id=corpus.corpus_id)
+    if fast_files is not None:
+        backend_name, index, chunks = _resolve_backend(corpus_id=corpus.corpus_id)
+        rows = index.count() if index is not None and hasattr(index, "count") else len(chunks)
+        payload = {
+            **_clean_demo_payload(fast_files),
+            "llm_provider": llm,
+            "corpus_id": corpus.corpus_id,
+            "corpus_label": corpus.label,
+            "llm_policy_note": policy_note,
+            "backend": backend_name,
+            "index_rows": rows,
+            "loop_state": "loop_complete",
+            "intent": fast_files.get("intent", "file"),
+        }
+        if fast_files.get("suggested_corpus"):
+            payload["suggested_corpus"] = fast_files["suggested_corpus"]
+        return payload
+
     query = normalize_query(raw_message)
-    backend_name, index, chunks = _resolve_backend()
-    use_hybrid = hybrid and backend_name != "pgvector"
-    result = run_mvp(
-        message=query,
-        policy_context=_policy_context(),
-        chunks=chunks,
-        index=index,
-        use_hybrid_search=use_hybrid,
-        quality_rerank=True,
-        llm_provider=llm,
-    )
-    output = result.get("output") or {}
+    backend_name, index, chunks = _resolve_backend(corpus_id=corpus.corpus_id)
+    pool = int(os.environ.get("TMKI_SEARCH_POOL", "64"))
+    from tmki_rag.retrieval import looks_like_content_summary_query
+
+    output: dict[str, Any] | None = None
+    if looks_like_content_summary_query(raw_message) and index is not None:
+        path_matches = catalog.search_paths(raw_message, limit=3)
+        file_paths = [m["relative_path"] for m in path_matches if m.get("relative_path")]
+        if file_paths:
+            output = _run_content_search_in_files(
+                query,
+                index=index,
+                paths=file_paths,
+                llm=llm,
+                pool=pool,
+            )
+    if output is None:
+        output = _run_content_search(query, index=index, llm=llm, pool=pool)
+    ocr_output = _ocr_alias_search(raw_message, index=index, llm=llm, pool=pool)
+    if ocr_output and ocr_output.get("citations"):
+        if "проминвест" in raw_message.lower():
+            output = ocr_output
+        else:
+            main_paths = {c.get("relative_path") for c in (output.get("citations") or [])}
+            if ocr_output["citations"][0].get("relative_path") not in main_paths:
+                output = ocr_output
+    optional_note = _missing_optional_tokens_note(raw_message, index) if index is not None else None
     if index is not None:
         if hasattr(index, "count"):
             rows = index.count()
@@ -210,28 +615,71 @@ def ask_regulations(
     else:
         rows = len(chunks)
     citations = catalog.enrich_citations(_clean_demo_payload(output.get("citations") or []))
-    answer = _maybe_fix_mojibake_text(output.get("answer", ""))
-    if llm == "stub" and citations:
-        from tmki_llm.providers import StubLlmProvider
+    path_matches = catalog.search_paths(raw_message, limit=6)
+    seen_paths = {str(c.get("relative_path") or "") for c in citations}
+    if not looks_like_content_summary_query(raw_message):
+        for item in path_matches:
+            rel = item.get("relative_path") or ""
+            if not rel or rel in seen_paths:
+                continue
+            citations.append(
+                {
+                    "doc_id": item.get("doc_id") or "",
+                    "snippet": f"Совпадение в имени файла: {item.get('file_name', '')}",
+                    "file_name": item.get("file_name"),
+                    "relative_path": rel,
+                    "absolute_path": item.get("absolute_path"),
+                }
+            )
+            seen_paths.add(rel)
+    citations = citations[:8]
 
-        regen = StubLlmProvider().generate(query=query, citations=citations)
-        answer = _maybe_fix_mojibake_text(regen.answer)
+    intent = detect_query_intent(raw_message)
+
+    citation_paths = [
+        str(c.get("absolute_path") or "")
+        for c in citations
+        if c.get("absolute_path")
+    ]
+    llm, path_note = _apply_llm_policy(
+        llm,
+        corpus_id=corpus.corpus_id,
+        citation_paths=citation_paths,
+        explicit=explicit_llm,
+    )
+    if path_note:
+        policy_note = path_note if not policy_note else (
+            path_note if path_note in policy_note else f"{policy_note} {path_note}"
+        )
+
+    used_llm = (output.get("llm_provider") or llm).lower()
+    answer = output.get("answer", "")
+    if optional_note and optional_note not in answer:
+        answer = f"{answer}\n\n{optional_note}" if answer else optional_note
+    confidence = output.get("confidence", "low")
+
     return {
         "answer": answer,
-        "confidence": output.get("confidence", "low"),
+        "confidence": confidence,
         "citations": citations,
-        "llm_provider": output.get("llm_provider") or llm,
+        "llm_provider": used_llm,
+        "corpus_id": corpus.corpus_id,
+        "corpus_label": corpus.label,
+        "llm_policy_note": policy_note,
         "backend": backend_name,
         "index_rows": rows,
-        "loop_state": (result.get("loop_state") or {}).get("loop_state"),
-        "intent": detect_query_intent(raw_message),
+        "loop_state": output.get("loop_state"),
+        "intent": intent,
     }
 
 
-def resolve_document(doc_id: str | None = None, *, query: str | None = None) -> dict[str, Any]:
-    from tmki_rag.doc_catalog import DocCatalog
-
-    catalog = _get_catalog()
+def resolve_document(
+    doc_id: str | None = None,
+    *,
+    query: str | None = None,
+    corpus_id: str | None = None,
+) -> dict[str, Any]:
+    catalog = _get_catalog(corpus_id=corpus_id)
     if doc_id:
         resolved = catalog.resolve_doc_id(doc_id)
         if resolved:
@@ -243,8 +691,8 @@ def resolve_document(doc_id: str | None = None, *, query: str | None = None) -> 
     return {"status": "error", "error": "doc_id or query required"}
 
 
-def pipeline_status_snapshot(*, artifacts_dir: Path | None = None) -> dict[str, Any]:
-    artifacts = artifacts_dir or DEFAULT_ARTIFACTS
+def pipeline_status_snapshot(*, artifacts_dir: Path | None = None, corpus_id: str | None = None) -> dict[str, Any]:
+    artifacts = artifacts_dir or _artifacts_dir(corpus_id)
     state = artifacts / "reindex-state.json"
     if not state.is_file():
         return {"phase": "unknown", "detail": "reindex-state.json not found"}

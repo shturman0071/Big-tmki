@@ -525,3 +525,56 @@ pgvector + RLS-поля до выдачи в RAG.
 - ~~`tmki_ingest` — resolve `source_path` + gate upload/delete~~ ✅
 - ~~UI галочек deny/grant~~ ✅ — `runtime/tmki_admin` (`python -m tmki_admin`)
 - ~~Stub SharePoint sync~~ ✅ — `runtime/tmki_sharepoint` (production Graph API — backlog)
+
+---
+
+## Phase 4.6 — Качество поиска (retrieval quality, v0.3)
+
+> Цель: поиск по архиву регламентов не хуже Windows Search — находить документ
+> по тексту внутри и по имени файла. Отраслевой паттерн 2026: полный текст в
+> индексе → лемматизация (RU) → hybrid (BM25 + вектор) через RRF → rerank → eval.
+> Референсы: `tim-ponomarev/hybrid-rag`, `vltech55/acuity-rag`, Хабр «Top-1 62→88%».
+
+### #87 [phase-4] [runtime] Полнотекстовый индекс + мульти-чанкинг
+
+**Статус:** MVP (v0.3) — исправлен корень «поиск хуже Проводника»
+
+- `build_chunks_from_ocr` режет документ на окна ~1200 симв. с overlap (было: первые 500 символов, один chunk на файл)
+- `split_text_windows` в `tmki_ingest/chunking.py` (env `TMKI_CHUNK_SIZE`, `TMKI_CHUNK_OVERLAP`)
+- `rechunk_regulations_index.py` — пересборка `chunks-v2.json` без повторного OCR API
+- Полнотекстовый scan по всем chunks (`_full_scan_index_chunks`), а не только vector top-K
+- Demo подмешивает совпадения по имени файла в источники (`qa.py`)
+
+### #88 [phase-4] [runtime] Лемматизация RU + hybrid BM25 + RRF
+
+**Статус:** MVP (v0.3) — падежи + лексический поиск
+
+- `tmki_rag/lemmatize.py` — pymorphy3, кеш; «договору/договоры» → «договор» (fallback без pymorphy3)
+- `_default_score` сопоставляет по леммам (env `TMKI_DISABLE_LEMMATIZE`)
+- `tmki_rag/bm25.py` — `Bm25Index` (rank_bm25) + `reciprocal_rank_fusion` (k=60)
+- Hybrid scan: keyword + BM25, слитые через RRF (env `TMKI_DISABLE_BM25`, `TMKI_RRF_K`)
+- Веса hybrid: keyword приоритетнее при local embeddings (env `TMKI_KEYWORD_WEIGHT`)
+- Опциональная зависимость: `pip install -e .[search]`
+
+### #89 [phase-4] [runtime] Eval-гарнесс качества поиска
+
+**Статус:** MVP (v0.3) — измеряем прогресс числом
+
+- `eval_search_quality.py` — Hit@K и MRR на наборе вопросов (ground truth по ключевым словам)
+- `--save` для истории прогонов (сравнение «было/стало»)
+
+### #90 [phase-4] [runtime] Cross-encoder reranker (backlog)
+
+**Статус:** backlog — включать только если после #88 Hit@K недостаточно
+
+- `bge-reranker-v2-m3` (ONNX, офлайн) поверх топ-50 после RRF
+- +15-40% точности по бенчмаркам, но +~0.2 сек latency
+
+### #91 [phase-6] [runtime] Облачная LLM для ответов (по gating)
+
+**Статус:** backlog — provider уже есть (#23), нужен ключ + security-review
+
+- OpenAI/Anthropic через `tmki_llm/providers.py` (env `TMKI_LLM_PROVIDER`, `OPENAI_API_KEY` в `.env`)
+- MUST: audit сетевого вызова (trace_id, провайдер, без PII), gating по env/role
+- MUST: security-review перед production egress (`schemas/security/mvp-security-review.checklist.json`)
+- ⚠️ данные регламентов уходят в облако — допустимо для demo, для production требует решения custodian + Security owner

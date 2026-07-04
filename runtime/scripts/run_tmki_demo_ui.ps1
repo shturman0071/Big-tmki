@@ -42,8 +42,6 @@ if (-not $env:TMKI_EMBEDDING_PROVIDER) { $env:TMKI_EMBEDDING_PROVIDER = "local" 
 if (-not $env:TMKI_SEARCH_POOL) { $env:TMKI_SEARCH_POOL = "64" }
 # Retrieval: значения из merge_env / autoconfigure (.env)
 if (-not $env:TMKI_INDEX_BACKEND) { $env:TMKI_INDEX_BACKEND = "json" }
-if (-not $env:TMKI_CHAT_MODE) { $env:TMKI_CHAT_MODE = "1" }
-if (-not $env:TMKI_CHAT_PERSIST) { $env:TMKI_CHAT_PERSIST = "1" }
 if (-not $env:TMKI_DEMO_WARMUP) { $env:TMKI_DEMO_WARMUP = "1" }
 
 # Локальное распознавание речи (faster-whisper, пресеты в tmki_voice/whisper_presets.py)
@@ -81,7 +79,7 @@ foreach ($conn in $listeners) {
 }
 
 Write-Host "TMKI Demo UI: $url" -ForegroundColor Cyan
-Write-Host "  backend=$env:TMKI_INDEX_BACKEND parser=$env:TMKI_INGEST_PARSER fusion_llm=$env:TMKI_RAG_FUSION_LLM LLM=$env:TMKI_LLM_PROVIDER chat=$env:TMKI_CHAT_MODE" -ForegroundColor DarkGray
+Write-Host "  backend=$env:TMKI_INDEX_BACKEND parser=$env:TMKI_INGEST_PARSER fusion_llm=$env:TMKI_RAG_FUSION_LLM LLM=$env:TMKI_LLM_PROVIDER" -ForegroundColor DarkGray
 Write-Host "  STT=$env:TMKI_STT_PROVIDER (preset=$env:WHISPER_PRESET, $env:WHISPER_DEVICE/$env:WHISPER_COMPUTE_TYPE)" -ForegroundColor DarkGray
 Write-Host "  Keep this window open while using the demo." -ForegroundColor Yellow
 

@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.1",
+  "description": "Ожидаемый формат цитирования для проверки",
+  "format": {
+    "required_fields": ["doc_id", "page", "snippet"],
+    "optional_fields": ["start_offset", "end_offset", "url"],
+    "example": {
+      "doc_id": "doc_grd_0142",
+      "page": 12,
+      "snippet": "Маркшейдерская съёмка на участке КС выполняется...",
+      "start_offset": 1024,
+      "end_offset": 1456
+    }
+  }
+}

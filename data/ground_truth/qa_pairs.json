@@ -1,0 +1,34 @@
+{
+  "schema_version": "0.1",
+  "description": "Тестовые вопросы-ответы для оценки качества RAG",
+  "tests": [
+    {
+      "id": "test_001",
+      "question": "Какие требования к маркшейдерской съёмке на участке КС?",
+      "expected_answer_contains": ["маркшейдер", "съёмка", "участок КС"],
+      "expected_doc_ids": ["doc_grd_0142"],
+      "expected_citations_min": 1
+    },
+    {
+      "id": "test_002",
+      "question": "Какая глубина шахты Сатимол?",
+      "expected_answer_contains": ["глубина", "метр"],
+      "expected_doc_ids": ["doc_satimol_grd"],
+      "expected_citations_min": 1
+    },
+    {
+      "id": "test_003",
+      "question": "Нормативы по буровзрывным работам",
+      "expected_answer_contains": ["БВР", "взрыв", "норматив"],
+      "expected_doc_ids": ["doc_bvr_regulations"],
+      "expected_citations_min": 1
+    },
+    {
+      "id": "test_004",
+      "question": "Требования промышленной безопасности для угольных шахт",
+      "expected_answer_contains": ["промышленная безопасность", "ФНП", "шахта"],
+      "expected_doc_ids": ["doc_fnp_507"],
+      "expected_citations_min": 1
+    }
+  ]
+}

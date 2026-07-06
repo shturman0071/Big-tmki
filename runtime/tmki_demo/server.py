@@ -138,6 +138,8 @@ def _demo_status_snapshot() -> dict[str, Any]:
     except ImportError:
         pass
 
+    from tmki_voice.tts import tts_voice_catalog
+
     payload: dict[str, Any] = {
         "phase": "demo",
         "progress": None,
@@ -148,6 +150,7 @@ def _demo_status_snapshot() -> dict[str, Any]:
         "llm": resolve_llm_provider(),
         "corpora": corpus_policy_snapshot(),
         "stt": os.environ.get("TMKI_STT_PROVIDER", "stub").lower(),
+        "tts": tts_voice_catalog(),
         "whisper_preset": os.environ.get("WHISPER_PRESET", "fast"),
         "stt_fix": stt_fix_selftest(),
         "retrieval": {
@@ -453,6 +456,18 @@ class DemoHandler(BaseHTTPRequestHandler):
             except Exception as exc:  # noqa: BLE001 — demo boundary
                 self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
             return
+        if self.path == "/api/tts/preview":
+            try:
+                from tmki_demo.doc_voice import synthesize_tts_payload
+
+                body = self._read_json()
+                text = (body.get("text") or "Проверка голоса.").strip()
+                voice = (body.get("voice") or body.get("tts_voice") or "").strip() or None
+                payload = synthesize_tts_payload(text[:200], voice_id=voice)
+                self._send_json(HTTPStatus.OK, payload)
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
         if self.path == "/api/voice-doc/open":
             try:
                 body = self._read_json()
@@ -461,6 +476,7 @@ class DemoHandler(BaseHTTPRequestHandler):
                     relative_path=str(body.get("relative_path") or ""),
                     session_id=(body.get("session_id") or None),
                     llm=(body.get("llm") or "ollama").lower(),
+                    tts_voice=(body.get("tts_voice") or None),
                 )
                 self._send_json(HTTPStatus.OK, snap)
             except Exception as exc:  # noqa: BLE001
@@ -475,6 +491,7 @@ class DemoHandler(BaseHTTPRequestHandler):
                     text=str(body.get("text") or ""),
                     raw_text=(body.get("raw_text") or None),
                     llm=(body.get("llm") or None),
+                    tts_voice=(body.get("tts_voice") or None),
                 )
                 self._send_json(HTTPStatus.OK, snap)
             except ValueError as exc:
@@ -516,6 +533,23 @@ def _warmup_whisper() -> None:
         print(f"  Whisper warmup skipped: {exc}", flush=True)  # noqa: T201
 
 
+def _warmup_silero() -> None:
+    try:
+        from tmki_voice.silero_tts import preload_silero_model
+
+        model_id = preload_silero_model()
+        print(f"  Warmup: Silero ready ({model_id})", flush=True)  # noqa: T201
+    except Exception as exc:  # noqa: BLE001
+        print(f"  Silero warmup skipped: {exc}", flush=True)  # noqa: T201
+
+
+def _warmup_audio() -> None:
+    if os.environ.get("TMKI_TTS_PROVIDER", "stub").lower() == "silero":
+        _warmup_silero()
+    if os.environ.get("TMKI_STT_PROVIDER", "stub").lower() == "whisper":
+        _warmup_whisper()
+
+
 def _warmup_demo() -> None:
     """Прогрев индекса при старте — первый вопрос в UI не ждёт минуты."""
     try:
@@ -547,8 +581,7 @@ def serve(host: str = "127.0.0.1", port: int = 8770) -> None:
             name="tmki-demo-browser",
             daemon=True,
         ).start()
-    if os.environ.get("TMKI_STT_PROVIDER", "stub").lower() == "whisper":
-        threading.Thread(target=_warmup_whisper, name="tmki-whisper-warmup", daemon=True).start()
+    threading.Thread(target=_warmup_audio, name="tmki-audio-warmup", daemon=True).start()
     if os.environ.get("TMKI_DEMO_WARMUP", "").lower() in ("1", "true", "yes"):
         threading.Thread(target=_warmup_demo, name="tmki-demo-warmup", daemon=True).start()
     server.serve_forever()

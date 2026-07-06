@@ -113,12 +113,42 @@ class PiperTtsProvider:
         )
 
 
-def get_tts_provider() -> TtsProvider:
+def get_tts_provider(*, voice_id: str | None = None) -> TtsProvider:
     mode = os.environ.get("TMKI_TTS_PROVIDER", "stub").lower()
+    if mode == "silero":
+        from tmki_voice.silero_tts import SileroTtsProvider
+
+        return SileroTtsProvider(voice_id=voice_id)
     if mode == "piper":
-        return PiperTtsProvider()
-    return StubTtsProvider(voice_id="generated_default")
+        return PiperTtsProvider(voice_id=voice_id)
+    return StubTtsProvider(voice_id=voice_id or "generated_default")
 
 
-def synthesize_speech(text: str) -> TtsResult:
-    return get_tts_provider().synthesize(text)
+def tts_voice_catalog() -> dict[str, object]:
+    """Список голосов для UI demo (по активному TTS-провайдеру)."""
+    mode = os.environ.get("TMKI_TTS_PROVIDER", "stub").lower()
+    if mode == "silero":
+        from tmki_voice.silero_tts import (
+            DEFAULT_SILERO_MODEL,
+            DEFAULT_SILERO_VOICE,
+            list_silero_voices,
+        )
+
+        return {
+            "provider": "silero",
+            "model_id": os.environ.get("SILERO_MODEL_ID", DEFAULT_SILERO_MODEL),
+            "default_voice": os.environ.get("SILERO_VOICE", DEFAULT_SILERO_VOICE),
+            "voices": list_silero_voices(),
+        }
+    if mode == "piper":
+        voice = os.environ.get("PIPER_VOICE", DEFAULT_PIPER_VOICE)
+        return {
+            "provider": "piper",
+            "default_voice": voice,
+            "voices": [{"id": voice, "label": "Ruslan (Piper)"}],
+        }
+    return {"provider": mode, "default_voice": None, "voices": []}
+
+
+def synthesize_speech(text: str, *, voice_id: str | None = None) -> TtsResult:
+    return get_tts_provider(voice_id=voice_id).synthesize(text)

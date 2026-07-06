@@ -37,6 +37,11 @@ if (Test-Path $dotenv) {
 
 python -c "from tmki_runtime.rag_env import reconcile_rag_config_after_secrets; reconcile_rag_config_after_secrets()" 2>$null
 
+# Silero v5 — основной TTS demo (явный Piper: TMKI_TTS_PROVIDER=piper в .env)
+if (-not $env:TMKI_TTS_PROVIDER -or $env:TMKI_TTS_PROVIDER -eq "piper") {
+    $env:TMKI_TTS_PROVIDER = "silero"
+}
+
 if ($env:OPENAI_API_KEY -and $env:OPENAI_API_KEY -notmatch '^sk-[A-Za-z0-9_-]{20,}$') {
     Remove-Item Env:OPENAI_API_KEY -ErrorAction SilentlyContinue
 }
@@ -55,19 +60,34 @@ if (-not $env:TMKI_STT_PROVIDER) { $env:TMKI_STT_PROVIDER = "whisper" }
 $env:WHISPER_PRESET = "fast"
 if (-not $env:WHISPER_DEVICE) { $env:WHISPER_DEVICE = "cpu" }
 if (-not $env:WHISPER_COMPUTE_TYPE) { $env:WHISPER_COMPUTE_TYPE = "int8" }
-# Нейро-TTS Piper (ru_RU-ruslan-medium) — не браузерный speechSynthesis
-if (-not $env:TMKI_TTS_PROVIDER) { $env:TMKI_TTS_PROVIDER = "piper" }
-$env:PIPER_VOICE = "ru_RU-ruslan-medium"
-if (-not $env:PIPER_VOICE_DIR) { $env:PIPER_VOICE_DIR = Join-Path $env:USERPROFILE ".local\share\piper-voices" }
-$piperOnnx = Join-Path $env:PIPER_VOICE_DIR "$($env:PIPER_VOICE).onnx"
-if (-not (Test-Path $piperOnnx)) {
-    Write-Host "  Downloading Piper voice $($env:PIPER_VOICE)..." -ForegroundColor Yellow
-    python scripts/download_piper_voice.py --voice $env:PIPER_VOICE --dir $env:PIPER_VOICE_DIR
+# Нейро-TTS: Silero v5 (русский, омографы) или Piper
+if (-not $env:TMKI_TTS_PROVIDER) { $env:TMKI_TTS_PROVIDER = "silero" }
+if (-not $env:SILERO_VOICE) { $env:SILERO_VOICE = "kseniya" }
+if (-not $env:SILERO_MODEL_ID) { $env:SILERO_MODEL_ID = "v5_3_ru" }
+if (-not $env:SILERO_SAMPLE_RATE) { $env:SILERO_SAMPLE_RATE = "24000" }
+if ($env:TMKI_TTS_PROVIDER -eq "silero") {
+    $sileroModel = Join-Path $env:USERPROFILE ".local\share\tmki-models\silero\v5_3_ru.pt"
+    if (-not (Test-Path $sileroModel)) {
+        Write-Host "  Downloading Silero v5_3_ru (~140 MB)..." -ForegroundColor Yellow
+        python scripts/download_silero_model.py
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  Silero download failed - TTS may use browser fallback" -ForegroundColor Yellow
+        }
+    }
 }
-python -c "import shutil, sys; sys.exit(0 if shutil.which('piper') else 1)" 2>$null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "  Installing piper-tts..." -ForegroundColor Yellow
-    pip install -q "piper-tts>=1.4.0"
+if ($env:TMKI_TTS_PROVIDER -eq "piper") {
+    if (-not $env:PIPER_VOICE) { $env:PIPER_VOICE = "ru_RU-ruslan-medium" }
+    if (-not $env:PIPER_VOICE_DIR) { $env:PIPER_VOICE_DIR = Join-Path $env:USERPROFILE ".local\share\piper-voices" }
+    $piperOnnx = Join-Path $env:PIPER_VOICE_DIR "$($env:PIPER_VOICE).onnx"
+    if (-not (Test-Path $piperOnnx)) {
+        Write-Host "  Downloading Piper voice $($env:PIPER_VOICE)..." -ForegroundColor Yellow
+        python scripts/download_piper_voice.py --voice $env:PIPER_VOICE --dir $env:PIPER_VOICE_DIR
+    }
+    python -c "import shutil, sys; sys.exit(0 if shutil.which('piper') else 1)" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Installing piper-tts..." -ForegroundColor Yellow
+        pip install -q "piper-tts>=1.4.0"
+    }
 }
 # OpenAI отложен: по умолчанию Ollama (если не задано в .env)
 if (-not $env:TMKI_LLM_PROVIDER) {
@@ -105,7 +125,7 @@ foreach ($conn in $listeners) {
 Write-Host "TMKI Demo UI: $url" -ForegroundColor Cyan
 Write-Host "  backend=$env:TMKI_INDEX_BACKEND table=$env:TMKI_PGVECTOR_TABLE embed=$env:TMKI_EMBEDDING_PROVIDER dims=$env:TMKI_EMBEDDING_DIMS parser=$env:TMKI_INGEST_PARSER fusion_llm=$env:TMKI_RAG_FUSION_LLM LLM=$env:TMKI_LLM_PROVIDER" -ForegroundColor DarkGray
 Write-Host "  STT=$env:TMKI_STT_PROVIDER (preset=$env:WHISPER_PRESET, $env:WHISPER_DEVICE/$env:WHISPER_COMPUTE_TYPE)" -ForegroundColor DarkGray
-Write-Host "  TTS=$env:TMKI_TTS_PROVIDER voice=$env:PIPER_VOICE" -ForegroundColor DarkGray
+Write-Host "  TTS=$env:TMKI_TTS_PROVIDER voice=$env:SILERO_VOICE model=$env:SILERO_MODEL_ID" -ForegroundColor DarkGray
 Write-Host "  Keep this window open while using the demo." -ForegroundColor Yellow
 
 if ($OpenBrowser) {

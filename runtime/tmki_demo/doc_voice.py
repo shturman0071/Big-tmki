@@ -134,16 +134,25 @@ def open_document(
     relative_path: str,
     session_id: str | None = None,
     llm: str = "ollama",
+    tts_voice: str | None = None,
 ) -> dict[str, Any]:
     doc = _enrich_doc(corpus_id, relative_path)
     if not doc.get("exists"):
         raise FileNotFoundError(f"файл не найден: {relative_path}")
     sid = session_id or f"vd_{uuid.uuid4().hex[:12]}"
+    from tmki_voice.tts import tts_voice_catalog
+
+    tts_catalog = tts_voice_catalog()
+    from tmki_voice.silero_tts import normalize_silero_voice
+
+    default_voice = tts_catalog.get("default_voice")
+    voice = normalize_silero_voice(tts_voice or default_voice)
     state: dict[str, Any] = {
         "session_id": sid,
         "corpus_id": corpus_id,
         "document": doc,
         "llm": llm,
+        "tts_voice": voice,
         "turns": [],
         "pending_ai_question": None,
         "corrections": [],
@@ -154,7 +163,7 @@ def open_document(
     _save_session(state)
     out = get_session_snapshot(sid)
     out["greeting"] = greeting
-    out["tts"] = synthesize_tts_payload(greeting)
+    out["tts"] = synthesize_tts_payload(greeting, voice_id=voice)
     return out
 
 
@@ -169,6 +178,7 @@ def get_session_snapshot(session_id: str) -> dict[str, Any]:
         "turns": state.get("turns") or [],
         "pending_ai_question": state.get("pending_ai_question"),
         "llm": state.get("llm"),
+        "tts_voice": state.get("tts_voice"),
         "updated_at": state.get("updated_at"),
     }
 
@@ -486,6 +496,7 @@ def process_turn(
     text: str = "",
     raw_text: str | None = None,
     llm: str | None = None,
+    tts_voice: str | None = None,
 ) -> dict[str, Any]:
     state = _load_session(session_id)
     if not state:
@@ -495,6 +506,10 @@ def process_turn(
     corpus = state.get("corpus_id") or "skru-2"
     model = (llm or state.get("llm") or "ollama").lower()
     state["llm"] = model
+    if tts_voice is not None and str(tts_voice).strip():
+        from tmki_voice.silero_tts import normalize_silero_voice
+
+        state["tts_voice"] = normalize_silero_voice(str(tts_voice))
     citations = _doc_citations(corpus, rel) if rel else []
     history = _dialog_history(state)
 
@@ -638,18 +653,18 @@ def process_turn(
         snap["stt_learned"] = stt_learned
     if kind == "user_feedback":
         snap["feedback_recorded"] = True
-    snap["tts"] = synthesize_tts_payload(assistant_text)
+    snap["tts"] = synthesize_tts_payload(assistant_text, voice_id=state.get("tts_voice"))
     return snap
 
 
-def synthesize_tts_payload(text: str) -> dict[str, Any]:
+def synthesize_tts_payload(text: str, *, voice_id: str | None = None) -> dict[str, Any]:
     text = (text or "").strip()
     if not text:
         return {"provider": "none", "audio_base64": None}
     try:
         from tmki_voice import synthesize_speech
 
-        result = synthesize_speech(text[:800])
+        result = synthesize_speech(text[:800], voice_id=voice_id)
         if result.audio_path and Path(result.audio_path).is_file():
             raw = Path(result.audio_path).read_bytes()
             try:
@@ -658,6 +673,7 @@ def synthesize_tts_payload(text: str) -> dict[str, Any]:
                 pass
             return {
                 "provider": result.provider,
+                "voice_id": result.voice_id,
                 "audio_base64": base64.b64encode(raw).decode("ascii"),
                 "mime": "audio/wav",
             }

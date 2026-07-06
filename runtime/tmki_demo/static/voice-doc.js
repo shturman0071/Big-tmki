@@ -20,6 +20,56 @@ const VoiceDoc = (() => {
     return document.getElementById('llm').value || 'ollama';
   }
 
+  function ttsVoice() {
+    const sel = document.getElementById('tts-voice');
+    return sel ? (sel.value || '') : '';
+  }
+
+  async function loadTtsVoices() {
+    const sel = document.getElementById('tts-voice');
+    if (!sel) return;
+    const saved = localStorage.getItem('tmki_tts_voice');
+    if (saved && Array.from(sel.options).some((o) => o.value === saved)) {
+      sel.value = saved;
+    }
+    try {
+      const status = await api('/api/status');
+      const tts = status.tts || {};
+      const voices = tts.voices || [];
+      if (voices.length) {
+        const cur = sel.value;
+        sel.innerHTML = '';
+        voices.forEach((v) => {
+          const opt = document.createElement('option');
+          opt.value = v.id;
+          opt.textContent = v.label || v.id;
+          sel.appendChild(opt);
+        });
+        const pick = saved || cur || tts.default_voice || voices[0].id;
+        if (pick && voices.some((v) => v.id === pick)) sel.value = pick;
+      }
+    } catch (_) {
+      /* встроенные option в HTML */
+    }
+    if (!sel.dataset.bound) {
+      sel.dataset.bound = '1';
+      sel.addEventListener('change', async () => {
+        localStorage.setItem('tmki_tts_voice', sel.value);
+        const label = sel.options[sel.selectedIndex].textContent;
+        hint('Голос: ' + label);
+        try {
+          const preview = await api('/api/tts/preview', {
+            voice: sel.value,
+            text: 'Проверка голоса ' + label + '.',
+          });
+          await speak('Проверка голоса.', preview);
+        } catch (e) {
+          hint('Голос: ' + label + ' — ' + e.message);
+        }
+      });
+    }
+  }
+
   function hint(text) {
     document.getElementById('voice-hint').textContent = text || '';
   }
@@ -304,6 +354,7 @@ const VoiceDoc = (() => {
         relative_path: relativePath,
         session_id: sessionId,
         llm: llm(),
+        tts_voice: ttsVoice() || undefined,
       });
       sessionId = snap.session_id;
       pendingQuestion = snap.pending_ai_question || null;
@@ -328,6 +379,7 @@ const VoiceDoc = (() => {
       kind,
       text,
       llm: llm(),
+      tts_voice: ttsVoice() || undefined,
     };
     if (rawText && rawText.trim() && rawText.trim() !== (text || '').trim()) {
       body.raw_text = rawText.trim();
@@ -530,6 +582,7 @@ const VoiceDoc = (() => {
       });
     }
     initMic();
+    loadTtsVoices().catch(() => {});
     loadDocs('').catch(() => {});
   }
 

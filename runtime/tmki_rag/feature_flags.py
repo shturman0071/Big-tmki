@@ -13,7 +13,9 @@ def _env_bool(name: str, *, default: bool = False) -> bool:
 
 
 def cross_encoder_rerank_enabled() -> bool:
-    """TMKI_CROSS_ENCODER_RERANK=1 — neural rerank (sentence-transformers)."""
+    """TMKI_CROSS_ENCODER_RERANK=1 или TMKI_RERANK_ENABLED=1."""
+    if _env_bool("TMKI_RERANK_ENABLED", default=False):
+        return True
     return _env_bool("TMKI_CROSS_ENCODER_RERANK", default=True)
 
 

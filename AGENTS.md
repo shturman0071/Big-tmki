@@ -115,6 +115,14 @@ Workflow `.github/workflows/handbook-ci.yml`: проверка markdown + gitlea
 |-------|-------------------|
 | `tmki-handbook-update` | Дополнение/синхронизация глав хэндбука |
 | `vsdx-org-import` | Импорт оргструктуры из Visio `.vsdx` |
+| `code-review` | Ревью diff (standards + spec) |
+| `diagnosing-bugs` | Диагностика багов и регрессий |
+| `domain-modeling` | ADR, ubiquitous language |
+| `wayfinder` | Крупный план / issue map |
+
+Маршрутизация skills и MCP: `.cursor/rules/skills-routing.mdc`.
+
+Утилиты (не skills): `scripts/watch_load_skru2.py`, `scripts/legal_corpus_curator.py`, `scripts/eval_pdf_oxide_poc.py`.
 
 ## План работ
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -129,10 +130,12 @@ def _apply_llm_policy(
 
 
 def _align_embedding_provider(llm: str) -> None:
-    """Demo: всегда local embeddings (совпадает с pgvector индексом, без сети)."""
-    if os.environ.get("TMKI_EMBEDDING_PROVIDER"):
-        return
-    os.environ["TMKI_EMBEDDING_PROVIDER"] = "local"
+    """Demo: embedding provider из config (ollama 768-dim или local 64-dim)."""
+    if not os.environ.get("TMKI_EMBEDDING_PROVIDER"):
+        os.environ["TMKI_EMBEDDING_PROVIDER"] = "ollama"
+    dim = os.environ.get("TMKI_EMBEDDING_DIMS") or os.environ.get("TMKI_EMBEDDING_DIM")
+    if dim and not os.environ.get("TMKI_EMBEDDING_DIMS"):
+        os.environ["TMKI_EMBEDDING_DIMS"] = dim
 
 
 def _policy_context() -> dict[str, Any]:
@@ -189,6 +192,14 @@ def _try_ollama_fallback(
         return None
 
 
+def _rag_top_k() -> int:
+    raw = os.environ.get("TMKI_RAG_FINAL_K") or os.environ.get("TMKI_RERANK_TOP_K") or "8"
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 8
+
+
 def _chunk_in_paths(chunk: dict[str, Any], paths: list[str]) -> bool:
     cr = (chunk.get("source_relative_path") or "").replace("\\", "/").lower()
     for p in paths:
@@ -219,7 +230,7 @@ def _run_content_search_in_files(
             "policy_context": _policy_context(),
             "trace_id": "demo",
             "query": query,
-            "top_k": 8,
+            "top_k": _rag_top_k(),
             "candidate_pool": min(max(pool, 32), len(chunks)),
         },
         chunks,
@@ -259,6 +270,7 @@ def _run_content_search(
     index: Any,
     llm: str,
     pool: int,
+    corpus_id: str | None = None,
 ) -> dict[str, Any]:
     """Быстрый RAG для demo UI (без LoopEngine / двойного LLM)."""
     from tmki_llm import get_llm_provider
@@ -269,8 +281,9 @@ def _run_content_search(
             "policy_context": _policy_context(),
             "trace_id": "demo",
             "query": query,
-            "top_k": 8,
+            "top_k": _rag_top_k(),
             "candidate_pool": pool,
+            "corpus_id": corpus_id,
         },
         index,
         folder_acl=_folder_acl(),
@@ -356,19 +369,30 @@ def _resolve_backend(*, corpus_id: str | None = None) -> tuple[str, Any | None, 
     cid = get_corpus(corpus_id).corpus_id
     artifacts = _artifacts_dir(cid)
     use_pgvector = (
-        cid == "skru-2"
-        and os.environ.get("TMKI_INDEX_BACKEND", "").lower() == "pgvector"
+        os.environ.get("TMKI_INDEX_BACKEND", "").lower() == "pgvector"
         and bool(os.environ.get("DATABASE_URL"))
     )
     if use_pgvector:
-        cache_key = f"pgvector:{cid}"
+        cache_key = f"pgvector:{cid}:{os.environ.get('TMKI_PGVECTOR_TABLE', 'chunks')}"
         if cache_key in _INDEX_CACHE:
             return _INDEX_CACHE[cache_key]
+        from tmki_rag.pgvector_simple import SimpleChunksPgIndex
+
+        simple = SimpleChunksPgIndex.from_env()
+        if simple is not None:
+            rows = simple.count_for_corpus(cid)
+            if rows > 0:
+                payload = ("pgvector", simple, [])
+                _INDEX_CACHE[cache_key] = payload
+                return payload
         backend = get_chunk_index()
-        if isinstance(backend, PgVectorChunkIndex) and backend.count() > 0:
-            payload = ("pgvector", backend, [])
-            _INDEX_CACHE[cache_key] = payload
-            return payload
+        if backend is not None and backend.count() > 0:
+            from tmki_rag.pgvector import PgVectorChunkIndex
+
+            if isinstance(backend, (PgVectorChunkIndex, SimpleChunksPgIndex)):
+                payload = ("pgvector", backend, [])
+                _INDEX_CACHE[cache_key] = payload
+                return payload
     chunks_path = artifacts / "chunks-v2.json"
     if not chunks_path.is_file():
         chunks_path = resolve_regulations_chunks_path("v2")
@@ -834,7 +858,9 @@ def ask_regulations(
                 pool=pool,
             )
     if output is None:
-        output = _run_content_search(query, index=index, llm=llm, pool=pool)
+        output = _run_content_search(
+            query, index=index, llm=llm, pool=pool, corpus_id=corpus.corpus_id
+        )
     ocr_output = _ocr_alias_search(raw_message, index=index, llm=llm, pool=pool)
     if ocr_output and ocr_output.get("citations"):
         if "проминвест" in raw_message.lower():
@@ -845,14 +871,28 @@ def ask_regulations(
                 output = ocr_output
     optional_note = _missing_optional_tokens_note(raw_message, index) if index is not None else None
     if index is not None:
-        if hasattr(index, "count"):
+        if hasattr(index, "count_for_corpus"):
+            rows = index.count_for_corpus(corpus.corpus_id)
+        elif hasattr(index, "count"):
             rows = index.count()
         else:
             rows = len(index.list())
     else:
         rows = len(chunks)
     citations = catalog.enrich_citations(_clean_demo_payload(output.get("citations") or []))
-    path_matches = catalog.search_paths(raw_message, limit=6)
+    content_hit_count = len(citations)
+    path_matches = catalog.search_paths(raw_message, limit=12)
+    from tmki_rag.match_score import citation_doc_number_score, filename_contains_doc_number
+
+    query_nums = re.findall(r"\d{2,}", raw_message)
+    if query_nums:
+        filtered = [
+            item
+            for item in path_matches
+            if any(filename_contains_doc_number(item.get("file_name") or "", num) for num in query_nums)
+        ]
+        if filtered:
+            path_matches = filtered
     seen_paths = {str(c.get("relative_path") or "") for c in citations}
     if not looks_like_content_summary_query(raw_message):
         for item in path_matches:
@@ -869,7 +909,28 @@ def ask_regulations(
                 }
             )
             seen_paths.add(rel)
+    if query_nums:
+        citations.sort(key=lambda c: citation_doc_number_score(c, query_nums), reverse=True)
     citations = citations[:8]
+
+    # Каталог нашёл файл по имени после пустого векторного поиска — ответ иначе «нет источников».
+    content_citations_before_paths = bool(_clean_demo_payload(output.get("citations") or []))
+    answer_preview = output.get("answer") or ""
+    if citations and not content_citations_before_paths:
+        first = citations[0]
+        sn = (first.get("snippet") or "").strip()
+        if sn.startswith("Совпадение в имени файла") or "Недостаточно источников" in answer_preview:
+            fname = first.get("file_name") or first.get("relative_path") or "документ"
+            output = {
+                **output,
+                "answer": (
+                    f"Нашёл в архиве файл «{fname}». "
+                    "Текст этого файла пока не в поисковом индексе (найдено только по имени). "
+                    "Откройте файл из списка источников или задайте вопрос по документу, "
+                    "который уже проиндексирован."
+                ),
+                "confidence": "medium",
+            }
 
     intent = detect_query_intent(raw_message)
 
@@ -895,6 +956,22 @@ def ask_regulations(
         answer = f"{answer}\n\n{optional_note}" if answer else optional_note
     confidence = output.get("confidence", "low")
 
+    path_only = sum(
+        1
+        for c in citations
+        if str(c.get("snippet") or "").startswith("Совпадение в имени файла")
+    )
+    search_debug = {
+        "content_hits": content_hit_count,
+        "path_only_hits": path_only,
+        "path_catalog_matches": len(path_matches),
+        "search_mode": (
+            "file_list"
+            if intent == "open"
+            else ("path_only" if path_only and not content_hit_count else "content")
+        ),
+    }
+
     return {
         "answer": answer,
         "confidence": confidence,
@@ -907,6 +984,7 @@ def ask_regulations(
         "index_rows": rows,
         "loop_state": output.get("loop_state"),
         "intent": intent,
+        "search_debug": search_debug,
     }
 
 

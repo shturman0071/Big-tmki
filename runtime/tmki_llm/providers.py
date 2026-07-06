@@ -50,11 +50,16 @@ def _format_citation_context(
 
 def _llm_system_prompt(*, query: str, read_only_mode: bool = False, mode: str = "qa") -> str:
     from tmki_rag.retrieval import looks_like_content_summary_query
+    from tmki_runtime.rag_env import resolve_system_prompt_path
 
-    system = (
-        "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
-        "Не выдумывай нормы и номера документов."
-    )
+    prompt_path = resolve_system_prompt_path()
+    if prompt_path is not None:
+        system = prompt_path.read_text(encoding="utf-8").strip()
+    else:
+        system = (
+            "Ты инженерный ассистент TMKI. Отвечай по-русски, только на основе цитат. "
+            "Не выдумывай нормы и номера документов."
+        )
     if mode == "analyze":
         system += (
             " Задача: структурированный разбор документа по фрагментам OCR.\n"
@@ -74,6 +79,12 @@ def _llm_system_prompt(*, query: str, read_only_mode: bool = False, mode: str = 
             "ГЛАВНОЕ:\n"
             "- 2–5 ключевых пунктов"
         )
+    elif mode == "voice":
+        system += (
+            " Задача: короткий ответ по открытому документу (1–4 предложения или список).\n"
+            "Без названия файла, без doc_id, без блока «Источник». Только факты из цитат.\n"
+            "Если в цитатах действительно нет данных для ответа — одна фраза: «Нет ответа в документе.»"
+        )
     else:
         system += (
             " Формат: 2–4 предложения по сути, затем источники (doc_id и имя файла). "
@@ -85,6 +96,8 @@ def _llm_system_prompt(*, query: str, read_only_mode: bool = False, mode: str = 
 
 
 def _analysis_snippet_chars(mode: str) -> int:
+    if mode == "voice":
+        return 6000
     return 1200 if mode in ("analyze", "summarize") else 280
 
 
@@ -252,8 +265,18 @@ class OllamaLlmProvider:
         base_url: str | None = None,
         model: str | None = None,
     ) -> None:
-        self._base_url = (base_url or os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")).rstrip("/")
-        self._model = model or os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+        self._base_url = (
+            base_url
+            or os.environ.get("OLLAMA_BASE_URL")
+            or os.environ.get("OLLAMA_URL")
+            or "http://127.0.0.1:11434"
+        ).rstrip("/")
+        self._model = (
+            model
+            or os.environ.get("OLLAMA_MODEL")
+            or os.environ.get("OLLAMA_LLM_MODEL")
+            or "qwen2.5:7b"
+        )
 
     def generate(
         self,

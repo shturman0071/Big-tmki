@@ -2,8 +2,7 @@ import os
 from docling.document_converter import DocumentConverter
 from docling.datamodel.pipeline_options import PdfPipelineOptions, PdfFormatOption
 from docling.chunking import HybridChunker
-from docling.datamodel.base_models import InputDocument, DocumentStream
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 # Загрузка конфига из переменных окружения
 def get_config(key: str, default: any = None) -> any:
@@ -53,22 +52,10 @@ def get_converter() -> DocumentConverter:
 def process_document(filepath: str) -> List[Dict[str, Any]]:
     """
     Обработать документ и получить чанки с метаданными
-    
-    Args:
-        filepath: путь к файлу (PDF, DOCX, TXT)
-    
-    Returns:
-        List[Dict]: список чанков с полями:
-            - text: текст чанка
-            - metadata: словарь с doc_id, page, has_table, section
     """
     converter = get_converter()
     chunker = get_chunker()
-    
-    # Конвертировать документ
     result = converter.convert(filepath)
-    
-    # Извлечь чанки
     chunks = []
     for chunk in chunker.chunk(result.document):
         chunk_data = {
@@ -82,16 +69,12 @@ def process_document(filepath: str) -> List[Dict[str, Any]]:
             }
         }
         chunks.append(chunk_data)
-    
     return chunks
 
 def get_document_metadata(filepath: str) -> Dict[str, Any]:
-    """
-    Получить метаданные документа без полного чанкинга
-    """
+    """Получить метаданные документа без полного чанкинга"""
     converter = get_converter()
     result = converter.convert(filepath)
-    
     return {
         "doc_id": os.path.basename(filepath),
         "doc_path": filepath,
@@ -101,7 +84,6 @@ def get_document_metadata(filepath: str) -> Dict[str, Any]:
     }
 
 if __name__ == "__main__":
-    # Тест: обработать пример документа
     import sys
     if len(sys.argv) > 1:
         test_file = sys.argv[1]

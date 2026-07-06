@@ -96,7 +96,7 @@ class LocalMinerUProvider:
     def extract(self, raw_bytes: bytes) -> OcrAttempt:
         started = datetime.now(timezone.utc)
         suffix = guess_suffix(raw_bytes, self._source_name)
-        result = extract_document(raw_bytes, suffix=suffix)
+        result = extract_document(raw_bytes, suffix=suffix, source_name=self._source_name)
         text = result["text"]
         page_count = int(result["page_count"] or 1)
         confidence = float(result["confidence"])

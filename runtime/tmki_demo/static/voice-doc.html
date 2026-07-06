@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>TMKI — голосовой опрос по документу</title>
+  <link rel="stylesheet" href="/static/voice-doc.css" />
+</head>
+<body class="voice-page">
+  <header class="top-bar">
+    <div>
+      <h1>Голосовой опрос по документу</h1>
+      <p class="muted">Откройте проиндексированный файл → диалог голосом: вы спрашиваете — я отвечаю, я спрашиваю — вы отвечаете</p>
+    </div>
+    <div class="top-actions">
+      <label>Корпус <select id="corpus"><option value="skru-2" selected>СКРУ-2</option><option value="vks">ВКС</option><option value="test_docs">test_docs</option></select></label>
+      <select id="llm"><option value="ollama" selected>ollama</option><option value="stub">stub</option></select>
+      <a href="/">← Поиск</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel col-files">
+      <div class="panel-head">Документы <span id="doc-count" class="badge">0</span></div>
+      <div class="panel-body">
+        <input type="search" id="doc-search" placeholder="Поиск по имени файла…" />
+        <ul id="doc-list" class="file-list"></ul>
+      </div>
+    </aside>
+
+    <section class="panel col-viewer">
+      <div class="panel-head">Документ <span id="doc-fmt" class="badge"></span></div>
+      <div class="panel-body">
+        <div id="doc-title" class="doc-title">Выберите файл слева</div>
+        <div id="doc-path" class="doc-path"></div>
+        <div id="viewer" class="viewer"><div class="placeholder">—</div></div>
+        <button type="button" id="open-os" hidden>Открыть в приложении</button>
+      </div>
+    </section>
+
+    <section class="panel col-chat">
+      <div class="panel-head">Голосовой диалог</div>
+      <div class="panel-body chat-body">
+        <div id="chat-log" class="chat-log"></div>
+        <div id="pending-hint" class="pending-hint" hidden></div>
+        <div id="draft-panel" class="draft-panel" hidden>
+          <label for="draft-text">Распознано — проверьте и исправьте:</label>
+          <textarea id="draft-text" rows="3" placeholder="Текст после распознавания…"></textarea>
+          <div class="draft-actions">
+            <button type="button" class="draft-send" id="draft-send">Отправить</button>
+            <button type="button" class="draft-cancel" id="draft-cancel">Отмена</button>
+          </div>
+        </div>
+        <div id="feedback-panel" class="feedback-panel" hidden>
+          <label for="feedback-text">Замечание к ответу модели:</label>
+          <textarea id="feedback-text" rows="2" placeholder="Нет, правильно: …"></textarea>
+          <button type="button" class="feedback-send" id="feedback-send">Исправить ответ</button>
+        </div>
+        <div class="voice-controls">
+          <button type="button" class="mic-btn" id="mic" title="Говорить">🎤</button>
+          <button type="button" class="quiz-btn" id="ai-quiz">Спроси меня</button>
+          <button type="button" class="skip-btn" id="skip-speak" hidden title="Остановить озвучку">Пропустить</button>
+        </div>
+        <div id="voice-hint" class="voice-hint" aria-live="polite">Выберите документ</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/static/voice-doc.js"></script>
+  <script>VoiceDoc.init();</script>
+</body>
+</html>

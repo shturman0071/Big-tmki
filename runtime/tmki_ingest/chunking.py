@@ -6,11 +6,11 @@ from typing import Any
 
 
 def _chunk_size() -> int:
-    return int(os.environ.get("TMKI_CHUNK_SIZE", "1200"))
+    return int(os.environ.get("TMKI_CHUNK_SIZE", "1024"))
 
 
 def _chunk_overlap() -> int:
-    return int(os.environ.get("TMKI_CHUNK_OVERLAP", "200"))
+    return int(os.environ.get("TMKI_CHUNK_OVERLAP", "128"))
 
 
 def split_text_windows(text: str, *, chunk_size: int | None = None, overlap: int | None = None) -> list[tuple[int, int, str]]:

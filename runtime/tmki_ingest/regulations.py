@@ -16,23 +16,39 @@ from tmki_rag.index import ChunkIndex
 
 ImportAction = Literal["ingest_candidate", "catalog_only", "skip"]
 
-INGEST_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt", ".md", ".rtf"}
-DEFAULT_MAX_FILE_BYTES = 100 * 1024 * 1024
-CATALOG_ONLY_EXTENSIONS = {
-    ".vsdx",
-    ".vsd",
-    ".xlsx",
-    ".xls",
-    ".dwg",
-    ".dxf",
-    ".zip",
-    ".rar",
-    ".7z",
+INGEST_EXTENSIONS = {
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".txt",
+    ".md",
+    ".rtf",
     ".png",
     ".jpg",
     ".jpeg",
     ".tif",
     ".tiff",
+    ".gif",
+    ".webp",
+    ".bmp",
+    ".xlsx",
+    ".xls",
+    ".xlsm",
+    ".csv",
+    ".ppt",
+    ".pptx",
+    ".dwg",
+    ".zip",
+    ".sdr",
+}
+DEFAULT_MAX_FILE_BYTES = 100 * 1024 * 1024
+CATALOG_ONLY_EXTENSIONS = {
+    ".vsdx",
+    ".vsd",
+    ".dxf",
+    ".cdw",
+    ".rar",
+    ".7z",
 }
 SKIP_EXTENSIONS = {".tmp", ".bak", ".ds_store"}
 
@@ -348,7 +364,18 @@ def import_regulations_full(
             break
 
         rel = str(path.relative_to(root)).replace("\\", "/")
-        fp = _file_fingerprint(path)
+
+        if _is_temp_office_file(path):
+            stats["skip_temp"] += 1
+            processed.add(rel)
+            continue
+
+        try:
+            fp = _file_fingerprint(path)
+        except OSError:
+            stats["skip_temp"] += 1
+            processed.add(rel)
+            continue
 
         if skip_unchanged and rel in processed and _fingerprints_match(fingerprints.get(rel), fp):
             stats["skip_unchanged"] += 1
@@ -356,11 +383,6 @@ def import_regulations_full(
 
         if rel in processed and not _fingerprints_match(fingerprints.get(rel), fp):
             index.remove_by_source_path(rel)
-
-        if _is_temp_office_file(path):
-            stats["skip_temp"] += 1
-            processed.add(rel)
-            continue
 
         size = path.stat().st_size
         if size > max_file_bytes:

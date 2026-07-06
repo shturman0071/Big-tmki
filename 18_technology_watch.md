@@ -51,6 +51,10 @@
 | Local LLM Optimization | сложность эксплуатации, нет пути в MVP | ГИП — Дядин С. | 2026-09-01 |
 | Kokoro TTS | альтернатива Piper, Apache 2.0, выше качество | ГИП — Дядин С. | 2026-09-01 |
 | faster-whisper STT | локальный STT для voice assistant | ГИП — Дядин С. | 2026-09-01 |
+| pdf-oxide (MCP) | fast-path PDF text/tables, PoC | Projektleiter (Design) — Хофманн С. | 2026-08-01 |
+| mcp-pandoc | экспорт шаблонов MD→DOCX/PDF (dev) | Projektleiter (Design) — Хофманн С. | 2026-08-01 |
+
+PoC 2026-07-05 (`scripts/eval_pdf_oxide_poc.py`, n=15): CLI `pdf-oxide` не установлен (skip). На выборке СКРУ-2: **pypdf** быстрее на текстовых PDF; **Docling** лучше на сканах/OCR. Решение: не ставить pdf-oxide до установки CLI; для сканов — Docling/MinerU.
 
 ## Связанные документы
 

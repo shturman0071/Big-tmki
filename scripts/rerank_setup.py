@@ -20,6 +20,12 @@ def load_env():
 
 load_env()
 
+import sys as _sys
+_runtime = os.path.join(os.path.dirname(os.path.dirname(__file__)), "runtime")
+_sys.path.insert(0, _runtime)
+from tmki_runtime.rag_env import load_rag_config
+load_rag_config(override=False)
+
 def check_pytorch():
     """Проверить версию PyTorch"""
     print("=" * 60)

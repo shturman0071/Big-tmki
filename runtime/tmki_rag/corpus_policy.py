@@ -23,6 +23,15 @@ class CorpusProfile:
 
 
 CORPORA: dict[str, CorpusProfile] = {
+    "test_docs": CorpusProfile(
+        corpus_id="test_docs",
+        label="Test docs (demo)",
+        archive_env="TMKI_TEST_DOCS_DIR",
+        default_archive=Path(__file__).resolve().parents[2] / "data" / "test_docs",
+        artifacts_dir="regulations-import",
+        cloud_llm_only=False,
+        local_llm_only=True,
+    ),
     "skru-2": CorpusProfile(
         corpus_id="skru-2",
         label="СКРУ-2",
@@ -41,10 +50,20 @@ CORPORA: dict[str, CorpusProfile] = {
         cloud_llm_only=True,
         local_llm_only=False,
     ),
+    "vks": CorpusProfile(
+        corpus_id="vks",
+        label="ВКС",
+        archive_env="TMKI_VKS_ARCHIVE",
+        default_archive=Path(r"D:\Курсор\ВКС"),
+        artifacts_dir="vks-import",
+        cloud_llm_only=False,
+        local_llm_only=True,
+    ),
 }
 
 _CORPUS_ALIASES: dict[str, str] = {
-    "скру-2": "skru-2",
+    "test_docs": "test_docs",
+    "test-docs": "test_docs",
     "скру2": "skru-2",
     "skru-2": "skru-2",
     "skru2": "skru-2",
@@ -53,11 +72,16 @@ _CORPUS_ALIASES: dict[str, str] = {
     "армировка кс": "arm-ks",
     "армировка-кс": "arm-ks",
     "армировка_кс": "arm-ks",
+    "vks": "vks",
+    "вкс": "vks",
 }
 
 
 def normalize_corpus_id(value: str | None) -> str:
     if not value:
+        env = os.environ.get("TMKI_DEFAULT_CORPUS", "").strip()
+        if env:
+            return normalize_corpus_id(env)
         return "skru-2"
     key = value.strip().lower().replace("\\", "/")
     if key in _CORPUS_ALIASES:
@@ -102,6 +126,8 @@ def detect_corpus_from_path(path: str | Path) -> str | None:
         return "skru-2"
     if "армировка" in lowered and "кс" in lowered:
         return "arm-ks"
+    if "вкс" in lowered:
+        return "vks"
     return None
 
 

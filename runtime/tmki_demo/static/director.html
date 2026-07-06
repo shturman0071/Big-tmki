@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ТМКИ — управленческий дашборд</title>
+  <link rel="stylesheet" href="/static/director.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Главная навигация">
+      <div class="brand-block">
+        <div class="company-logo"><img src="/static/assets/tmki-logo.png" alt="Логотип ТМКИ"></div>
+        <div class="brand-line"></div>
+        <div>
+          <p>ООО «ТМКИ»</p>
+          <strong>Управленческий<br>центр</strong>
+        </div>
+      </div>
+      <div class="user-card">
+        <div class="user-photo user-avatar" id="userAvatar">К</div>
+        <div>
+          <span>Пользователь</span>
+          <strong id="userDisplayName">—</strong>
+          <small id="userDisplayRole">Директор</small>
+        </div>
+      </div>
+
+      <nav class="nav-list">
+        <a class="active" href="#" data-nav="dashboard">▥ Дашборд</a>
+        <a href="#" data-open-page="contracts">▤ Договоры</a>
+        <a href="#" data-open-page="overdue">◷ Просрочки</a>
+        <a href="#" data-open-page="risks">▲ Риски</a>
+        <a href="#" data-open-page="debtors">₽ Дебиторка</a>
+        <a href="#" id="navAssistant">ИИ-агент</a>
+        <a href="/pto">▣ Рабочее место ПТО</a>
+      </nav>
+
+      <section class="object-picker" id="objectsPanel">
+        <button class="object-toggle" id="objectToggle" type="button">Объект <span>▾</span></button>
+        <div class="object-menu" id="objectMenu"></div>
+        <button class="object-add" id="addObjectSideBtn" type="button">+ Добавить объект</button>
+        <select id="objectFilter" class="hidden-control" aria-hidden="true"></select>
+      </section>
+
+      <section class="calendar-widget">
+        <div class="calendar-head">
+          <button id="prevYear" type="button">«</button>
+          <button id="prevMonth" type="button">‹</button>
+          <strong id="calendarTitle">Месяц год</strong>
+          <button id="nextMonth" type="button">›</button>
+          <button id="nextYear" type="button">»</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+    </aside>
+
+    <main class="content">
+      <section id="dashboardView" class="view active-view">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Демо на тестовых данных</p>
+            <h1>Управленческий дашборд</h1>
+          </div>
+          <article class="ai-top-card" id="assistant">
+            <div>
+              <h2>Сводка агента</h2>
+              <p id="aiBrief">ИИ-агент готовит управленческую сводку.</p>
+            </div>
+            <label class="quick-ai">Запрос<input id="quickAiQuery" placeholder="Например: что срочно?" autocomplete="off"></label>
+            <button id="quickAiSend" type="button">Спросить</button>
+          </article>
+        </header>
+
+        <section class="top-cards">
+          <article class="stat-card aqua" id="contractsKpi" role="button" tabindex="0">
+            <span>Договоры</span>
+            <strong id="contractsTotal">0</strong>
+            <div class="contract-lines" id="contractBreakdown"></div>
+          </article>
+          <article class="stat-card green" id="overdueKpi" role="button" tabindex="0">
+            <span>Просрочки</span>
+            <strong id="kpiOverdue">0</strong>
+            <small>перейти к списку</small>
+          </article>
+          <article class="stat-card blue" id="risksKpi" role="button" tabindex="0">
+            <span>Риски</span>
+            <strong id="kpiRisks">0</strong>
+            <small>критичные и высокие</small>
+          </article>
+          <article class="stat-card teal" id="moneyKpi" role="button" tabindex="0">
+            <span>Действующие договоры</span>
+            <strong id="kpiMoney">0 млн ₽</strong>
+            <small>факт / ожидание / расходы</small>
+          </article>
+        </section>
+
+        <section class="work-grid">
+          <article class="panel todo-panel" id="todo">
+            <div class="panel-title compact">
+              <h2>Дела</h2>
+              <p>Клик по списку откроет файл последнего сохранения и архив</p>
+            </div>
+            <div class="todo-grid" id="todoGrid"></div>
+          </article>
+
+          <article class="panel kanban-panel" id="kanban">
+            <div class="panel-title">
+              <div>
+                <h2>Канбан задач</h2>
+                <p>Организован по спискам дел и текущим задачам</p>
+              </div>
+              <label class="kanban-filter">Фильтр <select id="kanbanTodoFilter"></select></label>
+            </div>
+            <div class="kanban" id="kanbanBoard"></div>
+          </article>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="panel finance-panel" id="financePanel">
+            <div class="panel-title">
+              <div>
+                <h2>Финансы</h2>
+                <p>Годы, месяцы, фактические, ожидаемые суммы и расходы</p>
+              </div>
+              <div class="legend-row">
+                <span><i class="actual-dot"></i>Факт</span>
+                <span><i class="expected-dot"></i>Ожидается</span>
+                <span><i class="expense-dot"></i>Расходы</span>
+              </div>
+            </div>
+            <div class="finance-chart" id="financeChart"></div>
+          </article>
+
+          <article class="panel debtor-panel" id="debtorsKpi" role="button" tabindex="0">
+            <div class="panel-title compact">
+              <h2>Дебиторка <b id="debtorsTotal">0 млн ₽</b></h2>
+              <p>Просроченные суммы по контрагентам</p>
+            </div>
+            <div class="donut-card">
+              <div class="donut" id="debtorsDonut"><span id="debtorsPercent">0%</span></div>
+              <div id="debtorsPreview"></div>
+            </div>
+          </article>
+
+          <article class="panel expenses-panel" id="expensesPanel">
+            <div class="panel-title compact">
+              <h2>Расходы</h2>
+              <p>Текущий месяц и заданный период</p>
+            </div>
+            <div class="period-fields">
+              <label>С <input id="expenseFrom" type="month" value="2026-05"></label>
+              <label>По <input id="expenseTo" type="month" value="2026-08"></label>
+            </div>
+            <div class="expense-chart" id="expenseChart"></div>
+            <button class="details-button" id="expensesDetailsBtn" type="button">Подробнее</button>
+          </article>
+
+          <article class="panel news-panel" id="newsPanel">
+            <div class="panel-title compact">
+              <h2>Важные новости</h2>
+              <p>Россия, Евросоюз, Казахстан: право, санкции, налоги, финансы, шахтостроение</p>
+            </div>
+            <div class="news-list" id="newsList"></div>
+          </article>
+        </section>
+      </section>
+
+      <section id="listView" class="view list-view">
+        <header class="page-header">
+          <button class="back-button" id="backToDashboard" type="button">← Назад</button>
+          <div>
+            <p class="eyebrow" id="listEyebrow">Раздел</p>
+            <h1 id="listTitle">Список</h1>
+          </div>
+        </header>
+        <div class="page-filters" id="pageFilters"></div>
+        <div class="panel page-panel">
+          <div class="table-wrap" id="pageTableWrap"></div>
+          <div id="pageExtra"></div>
+        </div>
+      </section>
+
+      <section id="objectView" class="view list-view">
+        <header class="page-header">
+          <button class="back-button" id="backFromObject" type="button">← Назад</button>
+          <div>
+            <p class="eyebrow">Карточка объекта</p>
+            <h1 id="objectPageTitle">Объект</h1>
+          </div>
+        </header>
+        <div class="object-page-grid" id="objectPageContent"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="aiDialog">
+    <form method="dialog" class="dialog-card ai-dialog-card">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">ИИ-агент</p>
+          <h3>Диалог по управленческой сводке</h3>
+        </div>
+        <button value="cancel" class="back-button" type="submit">Закрыть</button>
+      </div>
+      <div class="agent-chat" id="agentChat"></div>
+      <div class="agent-prompts">
+        <button type="button" data-agent-prompt="summary">Сводка</button>
+        <button type="button" data-agent-prompt="risks">Риски</button>
+        <button type="button" data-agent-prompt="money">Финансы</button>
+        <button type="button" data-agent-prompt="news">Новости</button>
+      </div>
+      <label class="agent-input">Вопрос агенту<textarea id="agentQuestion" rows="3" placeholder="Например: что отправить руководству сегодня?"></textarea></label>
+      <div class="dialog-actions"><button type="button" id="sendAgentQuestion">Отправить</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="todoDialog">
+    <form method="dialog" class="dialog-card" id="todoForm">
+      <h3>Новый список дел</h3>
+      <label>Название <input id="todoName" value="Дела · новый объект" required></label>
+      <label>Связать с объектом <select id="todoScope"></select></label>
+      <label>Первая задача <input id="todoFirstTask" value="Уточнить ответственного"></label>
+      <div class="dialog-actions">
+        <button value="cancel" class="back-button" type="submit">Закрыть</button>
+        <button id="saveTodo" value="default" type="button">Добавить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="objectDialog">
+    <form method="dialog" class="dialog-card" id="objectForm">
+      <h3>Новый объект</h3>
+      <label>Название объекта <input id="newObjectName" value="Новый объект" required></label>
+      <label>Страна / регион <input id="newObjectRegion" value="Россия"></label>
+      <label>Тип работ <input id="newObjectType" value="строительство / поставка / база"></label>
+      <div class="dialog-actions">
+        <button value="cancel" class="back-button" type="submit">Закрыть</button>
+        <button id="saveObject" value="default" type="button">Добавить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/static/director.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "_comment": "Опциональные MCP для разработки. Скопируйте нужные серверы в .cursor/mcp.json вручную.",
+  "mcpServers": {
+    "filesystem": {
+      "command": "mcp-server-filesystem",
+      "args": ["D:\\Курсор\\TMKI_Engineering_Handbook_v0_2"]
+    },
+    "tmki-rag": {
+      "command": "python",
+      "args": ["D:\\Курсор\\TMKI_Engineering_Handbook_v0_2\\scripts\\rag_search_mcp.py"],
+      "cwd": "D:\\Курсор\\TMKI_Engineering_Handbook_v0_2"
+    },
+    "pandoc": {
+      "_comment": "Требует: runtime/scripts/setup_pandoc_mcp.ps1 (pandoc + uv/uvx)",
+      "command": "uvx",
+      "args": ["mcp-pandoc"]
+    }
+  }
+}

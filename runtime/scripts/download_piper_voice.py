@@ -4,12 +4,23 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 import urllib.request
 from pathlib import Path
 
-DEFAULT_VOICE = "ru_RU-denis-medium"
-HF_BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/denis/medium"
+DEFAULT_VOICE = "ru_RU-ruslan-medium"
+
+
+def hf_base_for_voice(voice_id: str) -> str:
+    m = re.match(r"^([a-z]{2})_([A-Z]{2})-([^-]+)-([^-]+)$", voice_id)
+    if not m:
+        raise ValueError(f"unsupported voice id: {voice_id}")
+    lang, region, name, quality = m.groups()
+    return (
+        f"https://huggingface.co/rhasspy/piper-voices/resolve/main/"
+        f"{lang}/{lang}_{region}/{name}/{quality}"
+    )
 
 
 def main() -> int:
@@ -22,10 +33,11 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    hf_base = hf_base_for_voice(args.voice)
     args.dir.mkdir(parents=True, exist_ok=True)
     files = [
-        (f"{args.voice}.onnx", f"{HF_BASE}/{args.voice}.onnx"),
-        (f"{args.voice}.onnx.json", f"{HF_BASE}/{args.voice}.onnx.json"),
+        (f"{args.voice}.onnx", f"{hf_base}/{args.voice}.onnx"),
+        (f"{args.voice}.onnx.json", f"{hf_base}/{args.voice}.onnx.json"),
     ]
     for name, url in files:
         dest = args.dir / name

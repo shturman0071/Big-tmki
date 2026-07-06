@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import mimetypes
 import os
 import subprocess
 import sys
@@ -12,11 +13,37 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+from tmki_demo.director_dashboard import build_director_dashboard
+from tmki_demo.pto_dashboard import build_pto_dashboard
+from tmki_demo.doc_voice import (
+    get_session_snapshot,
+    list_documents,
+    open_document,
+    preview_document_text,
+    process_turn,
+)
+from tmki_demo.qa_lab import resolve_archive_file
 from tmki_demo.qa import ask_regulations, resolve_document, resolve_llm_provider
 from tmki_rag.corpus_policy import corpus_policy_snapshot, normalize_corpus_id
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 ARTIFACTS_DIR = Path(__file__).resolve().parents[1] / "artifacts" / "regulations-import"
+DEMO_ARTIFACTS_DIR = Path(__file__).resolve().parents[1] / "artifacts" / "demo"
+LAST_ASK_PATH = DEMO_ARTIFACTS_DIR / "last_ask.json"
+
+
+def _static_file_response(path: Path) -> tuple[bytes, str] | None:
+    try:
+        resolved = path.resolve()
+        if STATIC_DIR.resolve() not in resolved.parents and resolved != STATIC_DIR.resolve():
+            return None
+        if not resolved.is_file():
+            return None
+        data = resolved.read_bytes()
+        mime, _ = mimetypes.guess_type(str(resolved))
+        return data, mime or "application/octet-stream"
+    except OSError:
+        return None
 
 
 class DemoHTTPServer(ThreadingHTTPServer):
@@ -25,6 +52,61 @@ class DemoHTTPServer(ThreadingHTTPServer):
 
 
 _status_cache: tuple[float, dict[str, Any]] | None = None
+
+
+def _save_last_ask(question: str, corpus: str, result: dict[str, Any]) -> None:
+    from datetime import datetime, timezone
+
+    DEMO_ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "occurred_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "question": question,
+        "corpus": corpus,
+        "answer": result.get("answer"),
+        "citations": result.get("citations") or [],
+        "search_debug": result.get("search_debug"),
+        "meta": {
+            "backend": result.get("backend"),
+            "index_rows": result.get("index_rows"),
+            "intent": result.get("intent"),
+            "confidence": result.get("confidence"),
+            "llm_provider": result.get("llm_provider"),
+            "corpus_id": result.get("corpus_id"),
+        },
+    }
+    LAST_ASK_PATH.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _read_last_ask() -> dict[str, Any] | None:
+    if not LAST_ASK_PATH.is_file():
+        return None
+    try:
+        return json.loads(LAST_ASK_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _pgvector_corpus_counts() -> dict[str, int]:
+    dsn = os.environ.get("DATABASE_URL", "").strip()
+    if not dsn:
+        return {}
+    try:
+        import psycopg2
+
+        conn = psycopg2.connect(dsn, connect_timeout=3)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT corpus_id, COUNT(*) FROM chunks GROUP BY corpus_id ORDER BY COUNT(*) DESC"
+        )
+        rows = {str(r[0] or "null"): int(r[1]) for r in cur.fetchall()}
+        cur.close()
+        conn.close()
+        return rows
+    except Exception:
+        return {}
 
 
 def _demo_status_snapshot() -> dict[str, Any]:
@@ -78,12 +160,21 @@ def _demo_status_snapshot() -> dict[str, Any]:
             "docling_installed": docling_ok,
             "pgvector_ready": pgvector_backend_enabled(),
         },
+        "index_chunks": _pgvector_corpus_counts(),
+        "load_skru2_state": (
+            json.loads((DEMO_ARTIFACTS_DIR / "load-skru2-state.json").read_text(encoding="utf-8"))
+            if (DEMO_ARTIFACTS_DIR / "load-skru2-state.json").is_file()
+            else None
+        ),
+        "load_vks_state": (
+            json.loads((DEMO_ARTIFACTS_DIR / "load-vks-state.json").read_text(encoding="utf-8"))
+            if (DEMO_ARTIFACTS_DIR / "load-vks-state.json").is_file()
+            else None
+        ),
     }
     state = ARTIFACTS_DIR / "reindex-state.json"
     if state.is_file():
         try:
-            import json
-
             data = json.loads(state.read_text(encoding="utf-8"))
             total = int(data.get("total_candidates") or 0)
             processed = len(data.get("processed") or [])
@@ -170,11 +261,10 @@ class DemoHandler(BaseHTTPRequestHandler):
                 "text": text,
                 "provider": result.provider,
                 "language": result.language,
+                "raw_text": raw_text,
             }
-            if text != raw_text:
-                payload["raw_text"] = raw_text
-                if "+fix" not in (result.provider or ""):
-                    payload["provider"] = (result.provider or "whisper") + "+fix"
+            if text != raw_text and "+fix" not in (result.provider or ""):
+                payload["provider"] = (result.provider or "whisper") + "+fix"
             self._send_json(HTTPStatus.OK, payload)
         finally:
             if tmp_path:
@@ -193,8 +283,116 @@ class DemoHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(html)
             return
+        if parsed.path in ("/pto", "/pto.html"):
+            html = (STATIC_DIR / "pto.html").read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(html)))
+            self.end_headers()
+            self.wfile.write(html)
+            return
+        if parsed.path in ("/director", "/director.html"):
+            html = (STATIC_DIR / "director.html").read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(html)))
+            self.end_headers()
+            self.wfile.write(html)
+            return
+        if parsed.path in ("/voice-doc", "/voice-doc.html"):
+            html = (STATIC_DIR / "voice-doc.html").read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(html)))
+            self.end_headers()
+            self.wfile.write(html)
+            return
+        if parsed.path in ("/qa-lab", "/qa-lab.html", "/qa-lab/doc", "/qa-lab/question", "/qa-lab/verdict"):
+            self.send_response(HTTPStatus.MOVED_PERMANENTLY)
+            self.send_header("Location", "/voice-doc")
+            self.end_headers()
+            return
+        if parsed.path == "/api/doc/raw":
+            params = parse_qs(parsed.query)
+            corpus = normalize_corpus_id((params.get("corpus") or ["skru-2"])[0])
+            rel = (params.get("rel") or [None])[0]
+            if not rel:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "rel required"})
+                return
+            target = resolve_archive_file(corpus_id=corpus, relative_path=rel)
+            if not target:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "file not found"})
+                return
+            mime, _ = mimetypes.guess_type(str(target))
+            try:
+                data = target.read_bytes()
+            except OSError as exc:
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+                return
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", mime or "application/octet-stream")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if parsed.path == "/api/doc/preview":
+            params = parse_qs(parsed.query)
+            corpus = normalize_corpus_id((params.get("corpus") or ["skru-2"])[0])
+            rel = (params.get("rel") or [None])[0]
+            if not rel:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "rel required"})
+                return
+            try:
+                self._send_json(
+                    HTTPStatus.OK,
+                    preview_document_text(corpus_id=corpus, relative_path=rel),
+                )
+            except FileNotFoundError:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "file not found"})
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if parsed.path == "/api/voice-doc/docs":
+            params = parse_qs(parsed.query)
+            corpus = normalize_corpus_id((params.get("corpus") or ["skru-2"])[0])
+            q = (params.get("q") or [""])[0]
+            limit = int((params.get("limit") or ["40"])[0])
+            self._send_json(HTTPStatus.OK, list_documents(corpus_id=corpus, query=q, limit=limit))
+            return
+        if parsed.path == "/api/voice-doc/state":
+            params = parse_qs(parsed.query)
+            sid = (params.get("session_id") or [""])[0]
+            self._send_json(HTTPStatus.OK, get_session_snapshot(sid))
+            return
+        if parsed.path.startswith("/static/"):
+            rel = parsed.path.removeprefix("/static/").lstrip("/")
+            if rel and ".." not in rel:
+                served = _static_file_response(STATIC_DIR / rel)
+                if served:
+                    data, mime = served
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header("Content-Type", mime)
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+        if parsed.path == "/api/dashboard/director":
+            counts = _pgvector_corpus_counts()
+            self._send_json(HTTPStatus.OK, build_director_dashboard(index_stats=counts))
+            return
+        if parsed.path == "/api/dashboard/pto":
+            counts = _pgvector_corpus_counts()
+            self._send_json(HTTPStatus.OK, build_pto_dashboard(index_stats=counts))
+            return
         if parsed.path == "/api/status":
             self._send_json(HTTPStatus.OK, _demo_status_snapshot())
+            return
+        if parsed.path == "/api/last-ask":
+            data = _read_last_ask()
+            if data is None:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "no last ask yet"})
+            else:
+                self._send_json(HTTPStatus.OK, data)
             return
         if parsed.path == "/api/doc/resolve":
             params = parse_qs(parsed.query)
@@ -232,6 +430,7 @@ class DemoHandler(BaseHTTPRequestHandler):
                 llm = body.get("llm")
                 corpus = normalize_corpus_id(body.get("corpus"))
                 result = ask_regulations(question, llm_provider=llm, corpus_id=corpus)
+                _save_last_ask(question, corpus, result)
                 self._send_json(HTTPStatus.OK, result)
             except Exception as exc:  # noqa: BLE001 — demo boundary
                 self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
@@ -253,6 +452,44 @@ class DemoHandler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.OK, opened)
             except Exception as exc:  # noqa: BLE001 — demo boundary
                 self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if self.path == "/api/voice-doc/open":
+            try:
+                body = self._read_json()
+                snap = open_document(
+                    corpus_id=normalize_corpus_id(body.get("corpus") or "skru-2"),
+                    relative_path=str(body.get("relative_path") or ""),
+                    session_id=(body.get("session_id") or None),
+                    llm=(body.get("llm") or "ollama").lower(),
+                )
+                self._send_json(HTTPStatus.OK, snap)
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if self.path == "/api/voice-doc/turn":
+            try:
+                body = self._read_json()
+                snap = process_turn(
+                    session_id=str(body.get("session_id") or ""),
+                    kind=str(body.get("kind") or "user_question"),
+                    text=str(body.get("text") or ""),
+                    raw_text=(body.get("raw_text") or None),
+                    llm=(body.get("llm") or None),
+                )
+                self._send_json(HTTPStatus.OK, snap)
+            except ValueError as exc:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if self.path.startswith("/api/qa-lab/"):
+            self._send_json(HTTPStatus.GONE, {"error": "removed; use /voice-doc"})
+            return
+        if self.path == "/api/eval/qa/run":
+            self._send_json(HTTPStatus.GONE, {"error": "removed; use /voice-doc"})
+            return
+        if self.path == "/api/eval/qa/reset":
+            self._send_json(HTTPStatus.GONE, {"error": "removed; use /voice-doc"})
             return
         self._send_json(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
@@ -295,13 +532,21 @@ def _startup_llm_status() -> str:
     return f"{configured} (СКРУ-2: {skru}, Армировка КС: {arm})"
 
 
-def serve(host: str = "127.0.0.1", port: int = 8767) -> None:
+def serve(host: str = "127.0.0.1", port: int = 8770) -> None:
     server = DemoHTTPServer((host, port), DemoHandler)
     url = f"http://{host}:{port}/"
     print(f"TMKI Demo UI: {url}", flush=True)  # noqa: T201
     print(f"  LLM: {_startup_llm_status()}", flush=True)  # noqa: T201
     if os.environ.get("TMKI_DEMO_OPEN_BROWSER", "").lower() in ("1", "true", "yes"):
-        threading.Thread(target=_open_browser, args=(url,), name="tmki-demo-browser", daemon=True).start()
+        open_path = os.environ.get("TMKI_DEMO_OPEN_PATH", "/")
+        if not open_path.startswith("/"):
+            open_path = "/" + open_path
+        threading.Thread(
+            target=_open_browser,
+            args=(f"http://{host}:{port}{open_path}",),
+            name="tmki-demo-browser",
+            daemon=True,
+        ).start()
     if os.environ.get("TMKI_STT_PROVIDER", "stub").lower() == "whisper":
         threading.Thread(target=_warmup_whisper, name="tmki-whisper-warmup", daemon=True).start()
     if os.environ.get("TMKI_DEMO_WARMUP", "").lower() in ("1", "true", "yes"):

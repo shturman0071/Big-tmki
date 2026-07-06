@@ -86,7 +86,12 @@ class OllamaEmbeddingProvider:
         base_url: str | None = None,
         model: str | None = None,
     ) -> None:
-        self._base_url = (base_url or os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")).rstrip("/")
+        self._base_url = (
+            base_url
+            or os.environ.get("OLLAMA_BASE_URL")
+            or os.environ.get("OLLAMA_URL")
+            or "http://127.0.0.1:11434"
+        ).rstrip("/")
         self._model = model or os.environ.get("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
 
     def embed(self, text: str) -> EmbeddingResult:
@@ -117,10 +122,11 @@ class OllamaEmbeddingProvider:
 def get_embedding_provider() -> EmbeddingProvider:
     """
     TMKI_EMBEDDING_PROVIDER=local|openai|ollama (default local).
-    TMKI_EMBEDDING_DIMS — для local provider (default 64).
+    TMKI_EMBEDDING_DIMS / TMKI_EMBEDDING_DIM — для local provider.
     """
     name = os.environ.get("TMKI_EMBEDDING_PROVIDER", "local").lower()
-    dims = int(os.environ.get("TMKI_EMBEDDING_DIMS", "64"))
+    dims_raw = os.environ.get("TMKI_EMBEDDING_DIMS") or os.environ.get("TMKI_EMBEDDING_DIM") or "64"
+    dims = int(dims_raw)
     if name == "openai":
         key = os.environ.get("OPENAI_API_KEY")
         if not key:

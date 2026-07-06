@@ -11,9 +11,9 @@ from typing import Protocol
 # Рекомендуемый бесплатный TTS: Piper (OHF-Voice/piper1-gpl)
 # pip install piper-tts
 # Голоса: https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md
-DEFAULT_PIPER_VOICE = "ru_RU-denis-medium"
+DEFAULT_PIPER_VOICE = "ru_RU-ruslan-medium"
 DEFAULT_PIPER_VOICE_URL = (
-    "https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/denis/medium"
+    "https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/ruslan/medium"
 )
 
 

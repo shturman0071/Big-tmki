@@ -64,12 +64,17 @@
     .vt-actions button { font-size: 0.82rem; padding: 0.3rem 0.6rem; cursor: pointer; margin-right: 0.4rem; }
     .vt-num { width: 3.2rem; }
     .citation-score { font-size: 0.78rem; color: #2e7d32; margin-left: 0.35rem; }
+    .debug-panel { margin-top: 0.75rem; padding: 0.6rem 0.75rem; background: #f0f4f8; border-radius: 6px; font-size: 0.82rem; font-family: ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
   </style>
 </head>
 <body>
   <header>
     <h1>TMKI — поиск по регламентам</h1>
     <div class="status" id="status">Загрузка статуса…</div>
+    <div style="margin-top:0.35rem;font-size:0.88rem">
+      <a href="/voice-doc" style="color:#1a5fb4;font-weight:600">Голосовой опрос по документу →</a>
+      <span style="color:#888"> (открыть файл · диалог голосом)</span>
+    </div>
   </header>
 
   <main>
@@ -93,6 +98,7 @@
         <select id="corpus">
           <option value="skru-2" selected>СКРУ-2 (локальная LLM)</option>
           <option value="arm-ks">Армировка КС (облачная LLM)</option>
+          <option value="vks">ВКС (локальная LLM)</option>
         </select>
       </div>
       <div class="actions">
@@ -136,6 +142,7 @@
 
     <section class="card" id="result" hidden>
       <div class="meta" id="meta"></div>
+      <div id="debug" class="debug-panel" hidden></div>
       <div id="corpus-hint" class="corpus-hint" hidden></div>
       <div class="answer" id="answer"></div>
       <h3 style="font-size:1rem;margin:1rem 0 0.5rem">Источники</h3>
@@ -193,8 +200,16 @@
         const pct = s.percent != null ? s.percent.toFixed(1) + '%' : '—';
         const prog = s.progress != null && s.total ? `${s.progress}/${s.total}` : '—';
         const r = s.retrieval || {};
+        const idx = s.index_chunks ? JSON.stringify(s.index_chunks) : '—';
+        const load = s.load_skru2_state && s.load_skru2_state.offset != null
+          ? `skru2-load: ${s.load_skru2_state.offset}` : '';
+        const vksLoad = s.load_vks_state && s.load_vks_state.offset != null
+          ? `vks-load: ${s.load_vks_state.offset}` : '';
         document.getElementById('status').textContent =
           `Фаза: ${s.phase || '—'} | re-index: ${prog} (${pct}) | LLM: ${s.llm || '—'}` +
+          ` | индекс PG: ${idx}` +
+          (load ? ` | ${load}` : '') +
+          (vksLoad ? ` | ${vksLoad}` : '') +
           ` | parser: ${r.ingest_parser_resolved || r.ingest_parser || '—'}` +
           (r.docling_installed ? ' (docling ✓)' : '');
       } catch (e) {
@@ -258,6 +273,14 @@
           (data.index_rows != null ? ` (${data.index_rows} rows)` : '') +
           (data.intent ? ` | режим: ${data.intent}` : '') +
           (data.llm_policy_note ? ` | политика: ${data.llm_policy_note}` : '');
+        const dbg = document.getElementById('debug');
+        if (data.search_debug) {
+          dbg.hidden = false;
+          dbg.textContent = 'DEBUG: ' + JSON.stringify(data.search_debug, null, 0);
+        } else {
+          dbg.hidden = true;
+          dbg.textContent = '';
+        }
         document.getElementById('answer').textContent = answer;
         const hintBox = document.getElementById('corpus-hint');
         hintBox.hidden = true;

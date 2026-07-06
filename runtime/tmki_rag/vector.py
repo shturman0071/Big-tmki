@@ -90,13 +90,21 @@ def hybrid_score_fn(index: VectorChunkIndex, keyword_score):
 def get_chunk_index() -> ChunkIndex:
     """
     TMKI_INDEX_BACKEND=memory|vector|pgvector (default memory).
-    pgvector требует DATABASE_URL и optional psycopg.
+    pgvector: TMKI_PGVECTOR_TABLE=chunks (root reindex) или tmki_chunks (runtime).
     """
     backend = os.environ.get("TMKI_INDEX_BACKEND", "memory").lower()
     if backend == "pgvector":
+        table = os.environ.get("TMKI_PGVECTOR_TABLE", "chunks").lower()
+        if table == "chunks":
+            from tmki_rag.pgvector_simple import SimpleChunksPgIndex
+
+            simple = SimpleChunksPgIndex.from_env()
+            if simple is not None:
+                return simple
         from tmki_rag.pgvector import PgVectorChunkIndex
 
         return PgVectorChunkIndex.from_env()
     if backend == "vector":
-        return VectorChunkIndex()
+        dims = int(os.environ.get("TMKI_EMBEDDING_DIMS", os.environ.get("TMKI_EMBEDDING_DIM", "64")))
+        return VectorChunkIndex(dims=dims)
     return ChunkIndex()

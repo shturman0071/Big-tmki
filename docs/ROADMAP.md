@@ -578,3 +578,47 @@ pgvector + RLS-поля до выдачи в RAG.
 - MUST: audit сетевого вызова (trace_id, провайдер, без PII), gating по env/role
 - MUST: security-review перед production egress (`schemas/security/mvp-security-review.checklist.json`)
 - ⚠️ данные регламентов уходят в облако — допустимо для demo, для production требует решения custodian + Security owner
+
+---
+
+## Phase 4.7 — Интеграция инструментов (cursor-skills, PoC parsers, v0.2)
+
+> Решение от 2026-07-05: принят план интеграции с фильтрацией (без Kit-MCP, gurupdf, fetch-mcp).
+
+### #92 [phase-4] [runtime] Завершить загрузку СКРУ-2 в pgvector
+
+**Статус:** in progress — batch `/api/embed` (48 чанков/запрос), `resume_load_skru2_fast.ps1`
+
+- Мониторинг: `scripts/watch_load_skru2.py`
+- Тюнинг: `TMKI_EMBED_BATCH=48` в `config/rag_config.env`
+- Критерий: `offset` ≈ 100 804, `skru-2` в PG ~ 100k чанков
+
+### #93 [phase-4] [docs] Маршрутизация Cursor skills
+
+**Статус:** done (v0.2)
+
+- `.cursor/rules/skills-routing.mdc`
+- `13_ai_skills_registry.md` §Cursor routing
+- `AGENTS.md` — расширенная таблица skills
+
+### #94 [phase-4] [runtime] PoC pdf-oxide для текстовых PDF
+
+**Статус:** backlog (запуск после ≥50% индекса)
+
+- `scripts/eval_pdf_oxide_poc.py` → `runtime/artifacts/eval/pdf-oxide-poc.json`
+- go/no-go → `18_technology_watch.md` Watchlist
+
+### #95 [phase-4] [runtime] mcp-pandoc (dev) для шаблонов
+
+**Статус:** in progress — `runtime/scripts/setup_pandoc_mcp.ps1`, `config/mcp.dev.example.json` (uvx)
+
+- Шаблоны: `schemas/document/examples/templates/`
+- Установка: `make setup-pandoc-mcp` → блок `pandoc` в `.cursor/mcp.json`
+
+### #96 [phase-4] [runtime] Legal Corpus Curator (whitelist)
+
+**Статус:** MVP — dry-run OK, `make legal-corpus-fetch` для пробной выгрузки
+
+### #97 [phase-6] [runtime] Memory Tree (вместо memory-bank-mcp)
+
+**Статус:** backlog — реализация по `10_ai_runtime.md`, не внешний MCP

@@ -13,7 +13,11 @@ DEFAULT_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 
 def _model_name() -> str:
-    return os.environ.get("TMKI_CROSS_ENCODER_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+    return (
+        os.environ.get("TMKI_CROSS_ENCODER_MODEL")
+        or os.environ.get("TMKI_RERANK_MODEL")
+        or DEFAULT_MODEL
+    ).strip() or DEFAULT_MODEL
 
 
 def _load_model():

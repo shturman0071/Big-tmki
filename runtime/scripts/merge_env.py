@@ -11,6 +11,10 @@ RUNTIME = Path(__file__).resolve().parents[1]
 if str(RUNTIME) not in sys.path:
     sys.path.insert(0, str(RUNTIME))
 
+from tmki_runtime.rag_env import load_rag_config, parse_env_file, repo_root
+
+load_rag_config(override=False)
+
 SECRETS = RUNTIME / "secrets.local"
 EXAMPLE = RUNTIME / "secrets.local.example"
 ENV_TARGET = RUNTIME / ".env"
@@ -27,15 +31,21 @@ DEFAULTS = {
     "WHISPER_PRESET": "fast",
     "WHISPER_DEVICE": "cpu",
     "WHISPER_COMPUTE_TYPE": "int8",
+    "TMKI_TTS_PROVIDER": "piper",
+    "PIPER_VOICE": "ru_RU-ruslan-medium",
     "TMKI_LLM_PROVIDER": "ollama",
+    "TMKI_EMBEDDING_PROVIDER": "ollama",
+    "TMKI_EMBEDDING_DIMS": "768",
     "TMKI_RAG_FUSION": "1",
     "TMKI_CROSS_ENCODER_RERANK": "1",
     "TMKI_QUALITY_RERANK": "1",
     "TMKI_INCREMENTAL_INGEST": "1",
-    "TMKI_INGEST_PARSER": "auto",
+    "TMKI_INGEST_PARSER": "default",
     "TMKI_RAG_FUSION_LLM": "auto",
-    "TMKI_INDEX_BACKEND": "auto",
-    "TMKI_CROSS_ENCODER_RERANK": "auto",
+    "TMKI_INDEX_BACKEND": "pgvector",
+    "TMKI_PGVECTOR_TABLE": "chunks",
+    "TMKI_CHUNK_SIZE": "1024",
+    "TMKI_CHUNK_OVERLAP": "128",
 }
 
 from tmki_runtime.secrets import is_valid_api_secret, is_valid_openai_api_key
@@ -66,6 +76,21 @@ def main() -> int:
     merged = dict(DEFAULTS)
     merged.update({k: v for k, v in existing.items() if v})
     merged.update({k: v for k, v in secrets.items() if v})
+
+    rag_cfg = parse_env_file(repo_root() / "config" / "rag_config.env")
+    for key in (
+        "DATABASE_URL",
+        "TMKI_INDEX_BACKEND",
+        "TMKI_PGVECTOR_TABLE",
+        "TMKI_EMBEDDING_PROVIDER",
+        "TMKI_EMBEDDING_MODEL",
+        "TMKI_EMBEDDING_DIMS",
+        "OLLAMA_URL",
+        "OLLAMA_EMBEDDING_MODEL",
+        "TMKI_SYSTEM_PROMPT_PATH",
+    ):
+        if rag_cfg.get(key):
+            merged[key] = rag_cfg[key]
 
     has_openai = is_valid_openai_api_key(merged.get("OPENAI_API_KEY"))
     has_mistral = is_valid_api_secret(merged.get("MISTRAL_API_KEY"))

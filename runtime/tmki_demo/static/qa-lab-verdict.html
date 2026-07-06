@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Оценка — QA лаб</title>
+  <link rel="stylesheet" href="/static/qa-lab.css" />
+</head>
+<body class="panel verdict-panel">
+  <header class="win-chrome"><span class="win-title">Оценка</span></header>
+  <div class="win-body">
+    <div class="ref-block">
+      <div class="label">Эталон</div>
+      <p id="reference">—</p>
+    </div>
+    <div class="verdict-buttons">
+      <button type="button" class="v-ok" data-v="ok">Верно</button>
+      <button type="button" class="v-fail" data-v="fail">Неверно</button>
+      <button type="button" class="v-err" data-v="err">С ошибкой</button>
+    </div>
+    <input type="text" id="err-note" placeholder="Комментарий (для «с ошибкой» или неверно)" />
+    <div class="stats" id="stats">—</div>
+    <div class="log-wrap">
+      <div class="label">Журнал</div>
+      <pre id="log" class="log"></pre>
+    </div>
+  </div>
+  <script src="/static/qa-lab.js"></script>
+  <script>QaLab.initVerdictPanel();</script>
+</body>
+</html>

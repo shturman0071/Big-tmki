@@ -18,4 +18,7 @@ def test_format_support_matrix():
     exts = {r["extension"] for r in rows}
     assert ".pdf" in exts
     assert ".xlsx" in exts
-    assert ".vsdx" in exts
+    assert ".dwg" in exts
+    assert ".dxf" in exts
+    xlsx_row = next(r for r in rows if r["extension"] == ".xlsx")
+    assert xlsx_row["status"] == "read_ingest"

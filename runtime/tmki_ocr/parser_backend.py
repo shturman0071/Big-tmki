@@ -77,7 +77,7 @@ def _try_kreuzberg(raw_bytes: bytes, *, suffix: str) -> dict[str, Any] | None:
     return None
 
 
-def extract_document(raw_bytes: bytes, *, suffix: str) -> dict[str, Any]:
+def extract_document(raw_bytes: bytes, *, suffix: str, source_name: str | None = None) -> dict[str, Any]:
     """
     TMKI_INGEST_PARSER:
       default — pypdf/tesseract/docx (tmki_ocr.extractors)
@@ -93,4 +93,4 @@ def extract_document(raw_bytes: bytes, *, suffix: str) -> dict[str, Any]:
         parsed = _try_kreuzberg(raw_bytes, suffix=suffix)
         if parsed and parsed.get("text"):
             return parsed
-    return extract_local_text(raw_bytes, suffix=suffix)
+    return extract_local_text(raw_bytes, suffix=suffix, source_name=source_name)

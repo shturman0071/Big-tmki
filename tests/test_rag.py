@@ -5,7 +5,13 @@ import pytest
 from typing import List, Dict, Any
 
 # Добавляем путь к проекту
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+ROOT = os.path.dirname(os.path.dirname(__file__))
+RUNTIME = os.path.join(ROOT, "runtime")
+sys.path.insert(0, ROOT)
+sys.path.insert(0, RUNTIME)
+
+from tmki_runtime.rag_env import load_rag_config
+load_rag_config(override=False)
 
 def load_test_data():
     """Загрузить тестовые вопросы-ответы"""
@@ -13,7 +19,7 @@ def load_test_data():
     if not os.path.exists(qa_path):
         pytest.skip(f"Файл {qa_path} не найден. Создайте тестовые данные.")
     
-    with open(qa_path) as f:
+    with open(qa_path, encoding="utf-8") as f:
         return json.load(f)
 
 def load_expected_citations():
@@ -22,7 +28,7 @@ def load_expected_citations():
     if not os.path.exists(citations_path):
         pytest.skip(f"Файл {citations_path} не найден")
     
-    with open(citations_path) as f:
+    with open(citations_path, encoding="utf-8") as f:
         return json.load(f)
 
 def load_system_prompt():
@@ -31,7 +37,7 @@ def load_system_prompt():
     if not os.path.exists(prompt_path):
         pytest.skip(f"Файл {prompt_path} не найден")
     
-    with open(prompt_path) as f:
+    with open(prompt_path, encoding="utf-8") as f:
         return f.read()
 
 class TestRAGQuality:
@@ -106,35 +112,43 @@ class TestRAGSearch:
     def test_data(self):
         return load_test_data()
     
-    @pytest.mark.skip(reason="Требует запущенного tmki_demo")
+    @pytest.mark.skipif(
+        os.environ.get("TMKI_SKIP_INTEGRATION") == "1",
+        reason="Интеграционные тесты отключены (TMKI_SKIP_INTEGRATION=1)",
+    )
     def test_search_returns_results(self, test_data):
-        """Проверка: поиск возвращает результаты"""
+        """Проверка: /api/ask возвращает ответ (demo должно быть запущено)."""
         import requests
+        port = int(os.environ.get("TMKI_DEMO_PORT", "8770"))
         query = test_data["tests"][0]["question"]
         response = requests.post(
-            "http://localhost:8767/api/search",
-            json={"query": query, "top_k": 5}
+            f"http://127.0.0.1:{port}/api/ask",
+            json={"question": query, "corpus": "skru-2"},
+            timeout=120,
         )
         assert response.status_code == 200
         data = response.json()
-        assert "results" in data
-    
-    @pytest.mark.skip(reason="Требует запущенного tmki_demo")
+        assert "answer" in data
+
+    @pytest.mark.skipif(
+        os.environ.get("TMKI_SKIP_INTEGRATION") == "1",
+        reason="Интеграционные тесты отключены",
+    )
     def test_citations_format(self, test_data):
-        """Проверка: цитаты имеют правильный формат"""
+        """Проверка: цитаты в ответе /api/ask."""
         import requests
+        port = int(os.environ.get("TMKI_DEMO_PORT", "8770"))
         query = test_data["tests"][0]["question"]
         response = requests.post(
-            "http://localhost:8767/api/search",
-            json={"query": query, "top_k": 5}
+            f"http://127.0.0.1:{port}/api/ask",
+            json={"question": query},
+            timeout=120,
         )
         data = response.json()
-        if "results" in data and len(data["results"]) > 0:
-            citation = data["results"][0]
-            assert "doc_id" in citation or "citation" in citation
-            if "citation" in citation:
-                assert "doc_id" in citation["citation"]
-                assert "page" in citation["citation"]
+        citations = data.get("citations") or []
+        if citations:
+            cit = citations[0]
+            assert any(k in cit for k in ("snippet", "file_name", "doc_id", "relative_path"))
 
 class TestConfig:
     """Тесты конфигурации"""
@@ -147,16 +161,19 @@ class TestConfig:
     def test_env_has_required_vars(self):
         """Проверка: конфиг содержит обязательные переменные"""
         env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "rag_config.env")
-        with open(env_path) as f:
+        with open(env_path, encoding="utf-8") as f:
             content = f.read()
         
         required_vars = [
             "OLLAMA_URL",
+            "OLLAMA_BASE_URL",
             "OLLAMA_EMBEDDING_MODEL",
-            "OLLAMA_LLM_MODEL",
-            "TMKI_EMBEDDING_DIM",
+            "OLLAMA_MODEL",
+            "TMKI_EMBEDDING_DIMS",
             "TMKI_CHUNK_SIZE",
-            "TMKI_RERANK_ENABLED"
+            "TMKI_RERANK_ENABLED",
+            "TMKI_INDEX_BACKEND",
+            "TMKI_PGVECTOR_TABLE",
         ]
         for var in required_vars:
             assert var in content, f"Переменная {var} должна быть в конфиге"

@@ -98,6 +98,19 @@
 - **owner**: ГИП (runtime) — Дядин С.; co-sign HR.
 - **example**: планёрка Сатимол → 3 action items по спикерам → вывод на TV в офисе.
 
+## Cursor: маршрутизация skills (v0.2)
+
+> Правило для агента: `.cursor/rules/skills-routing.mdc`.  
+> Паттерн [cursor-skills](https://github.com/chrisboden/cursor-skills) — TMKI-специфичные skills в `.cursor/skills/`, общие процедуры в `runtime/.agents/skills/`.
+
+| Каталог | Назначение | Примеры |
+|---------|------------|---------|
+| `.cursor/skills/` | Домен TMKI (хэндбук, vsdx) | `tmki-handbook-update`, `vsdx-org-import` |
+| `runtime/.agents/skills/` | Инженерные процедуры | `code-review`, `tdd`, `wayfinder`, `domain-modeling` |
+| `scripts/` | CLI / PoC (не skill) | `watch_load_skru2.py`, `legal_corpus_curator.py`, `eval_pdf_oxide_poc.py` |
+
+**MUST NOT:** подключать Kit-MCP, gurupdf-mcp, fetch-mcp для данных Сатимол. RAG — только `tmki-rag` MCP.
+
 ## Связь с runtime
 
 - **Loop Engine** использует “Looper”-подобные процедуры для многошаговых задач.

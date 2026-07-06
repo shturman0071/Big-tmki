@@ -1,0 +1,14 @@
+# TMKI RAG — корневые зависимости (см. также runtime/pyproject.toml)
+psycopg2-binary>=2.9
+requests>=2.31
+tqdm>=4.66
+pytest>=8.0
+python-dotenv>=1.0
+torch>=2.4
+sentence-transformers>=3.0
+docling>=2.0
+pypdfium2
+pypdf>=4.0
+pymupdf>=1.24
+pytesseract>=0.3.10
+mcp>=1.0

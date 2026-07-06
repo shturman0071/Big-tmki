@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ТМКИ — рабочее место ПТО</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #163a42;
+      --bg-deep: #0f2a30;
+      --sidebar: #122f36;
+      --card: rgba(255,255,255,.07);
+      --card-border: rgba(255,255,255,.1);
+      --text: #f4f8fa;
+      --muted: #9eb8c0;
+      --mint: #5eead4;
+      --mint-btn: #6ee7c8;
+      --blue: #3b82f6;
+      --green: #22c55e;
+      --purple: #a78bfa;
+      --orange: #fb923c;
+      --red: #f87171;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Manrope, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--card-border);
+      padding: 1.25rem 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      min-height: 100vh;
+    }
+    .logo-row { display: flex; align-items: center; gap: .55rem; padding: 0 .2rem; }
+    .logo-img {
+      height: 40px; width: auto; display: block; border-radius: 6px;
+      object-fit: contain;
+    }
+    .logo-text { font-weight: 700; font-size: .9rem; line-height: 1.25; }
+    .logo-sub { font-size: .72rem; color: var(--muted); }
+    .user-card {
+      display: flex; align-items: center; gap: .65rem;
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 12px; padding: .65rem .75rem;
+    }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, #334155, #1e293b);
+      display: grid; place-items: center; font-weight: 700; font-size: .9rem;
+    }
+    .user-name { font-weight: 600; font-size: .88rem; }
+    .user-role { font-size: .72rem; color: var(--muted); }
+    .nav { display: flex; flex-direction: column; gap: .2rem; flex: 1; }
+    .nav a {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .55rem .7rem; border-radius: 10px;
+      color: var(--muted); text-decoration: none; font-size: .86rem; font-weight: 500;
+    }
+    .nav a:hover, .nav a.active { background: rgba(94,234,212,.12); color: var(--text); }
+    .nav a.active { color: var(--mint); }
+    .btn-mail {
+      width: 100%; border: 1px solid rgba(94,234,212,.35); border-radius: 10px;
+      padding: .55rem .75rem; background: rgba(94,234,212,.1); color: var(--mint);
+      font: inherit; font-weight: 600; font-size: .86rem; cursor: pointer; text-align: left;
+    }
+    .btn-mail:hover { background: rgba(94,234,212,.18); }
+    .sidebar-apps { display: flex; flex-direction: column; gap: .25rem; }
+    .sidebar-apps button, .sidebar-footer button {
+      width: 100%; border: none; border-radius: 10px; padding: .5rem .7rem;
+      background: transparent; color: var(--muted); font: inherit; font-size: .84rem;
+      font-weight: 500; cursor: pointer; text-align: left;
+    }
+    .sidebar-apps button:hover, .sidebar-footer button:hover {
+      background: rgba(255,255,255,.06); color: var(--text);
+    }
+    .sidebar-spacer { flex: 1; min-height: .5rem; }
+    .sidebar-footer { border-top: 1px solid var(--card-border); padding-top: .65rem; margin-top: .25rem; }
+    .obj-select {
+      width: 100%; padding: .5rem .65rem; border-radius: 10px;
+      border: 1px solid var(--card-border); background: var(--card);
+      color: var(--text); font: inherit; font-size: .82rem;
+    }
+    .btn-mint {
+      width: 100%; border: none; border-radius: 10px; padding: .6rem;
+      background: var(--mint-btn); color: #0f2a30; font-weight: 700;
+      font: inherit; font-size: .82rem; cursor: pointer;
+    }
+    .cal-widget {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: .75rem;
+    }
+    .cal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: .65rem; font-size: .82rem; font-weight: 700;
+    }
+    .cal-head button {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 1rem; padding: .2rem .4rem; border-radius: 6px;
+    }
+    .cal-head button:hover { background: rgba(255,255,255,.08); color: var(--text); }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+      font-size: .68rem; text-align: center;
+    }
+    .cal-grid .dow { color: var(--muted); padding: .25rem 0; font-weight: 600; }
+    .cal-day {
+      aspect-ratio: 1; display: grid; place-items: center;
+      border-radius: 8px; cursor: default; color: var(--muted);
+    }
+    .cal-day.in-month { color: var(--text); }
+    .cal-day.today { background: var(--mint); color: #0f2a30; font-weight: 700; }
+    .cal-day.has-event { box-shadow: inset 0 -2px 0 var(--orange); }
+    .cal-day.selected { outline: 1px solid var(--mint); }
+    .main { padding: 1.25rem 1.5rem 2rem; overflow-x: hidden; }
+    .main-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .main-top h1 { margin: 0; font-size: 1.65rem; font-weight: 800; }
+    .ai-card {
+      min-width: 300px; max-width: 420px; flex: 1;
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: .85rem 1rem;
+    }
+    .ai-card label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .ai-row { display: flex; gap: .5rem; margin-top: .45rem; align-items: stretch; }
+    .ai-row input {
+      flex: 1; border: 1px solid var(--card-border); border-radius: 10px;
+      background: rgba(0,0,0,.2); color: var(--text); padding: .55rem .75rem; font: inherit;
+    }
+    .ai-row button {
+      border: none; border-radius: 10px; padding: 0 .85rem; cursor: pointer; font-weight: 700;
+    }
+    .btn-ask { background: var(--blue); color: #fff; }
+    .btn-mic {
+      background: rgba(255,255,255,.1); color: var(--text); font-size: 1.1rem;
+      min-width: 2.6rem;
+    }
+    .btn-mic.listening { background: rgba(248,113,113,.25); color: var(--red); animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)} 50%{box-shadow:0 0 0 8px rgba(248,113,113,0)} }
+    .think-wrap { margin-top: .65rem; display: none; }
+    .think-wrap.active { display: block; }
+    .think-label { font-size: .75rem; color: var(--mint); margin-bottom: .35rem; }
+    .think-bar {
+      height: 6px; background: rgba(0,0,0,.25); border-radius: 3px; overflow: hidden;
+    }
+    .think-fill {
+      height: 100%; width: 0%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--mint), var(--blue));
+      transition: width .35s ease;
+    }
+    .think-stages { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .4rem; }
+    .think-stages span {
+      font-size: .68rem; color: var(--muted); padding: .15rem .4rem; border-radius: 4px;
+    }
+    .think-stages span.on { color: var(--mint); background: rgba(94,234,212,.12); }
+    .ai-answer {
+      margin-top: .65rem; font-size: .82rem; line-height: 1.45;
+      max-height: 120px; overflow-y: auto; color: #dce8ec;
+    }
+    .kanban-section { margin-bottom: 1rem; }
+    .bottom { display: block; }
+    .kanban-board {
+      display: flex; gap: .75rem; overflow-x: auto; padding-bottom: .5rem;
+    }
+    .k-col {
+      min-width: 200px; max-width: 220px; flex-shrink: 0;
+      border-radius: 12px; overflow: hidden;
+      background: rgba(0,0,0,.12);
+    }
+    .k-col-head {
+      padding: .55rem .65rem; font-size: .72rem; font-weight: 700;
+      color: #fff; text-transform: uppercase; letter-spacing: .04em;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .k-col-head span { opacity: .9; font-weight: 600; }
+    .k-col-body { padding: .5rem; min-height: 140px; }
+    .k-card {
+      background: rgba(255,255,255,.94); color: #1a2e35;
+      border-radius: 10px; padding: .55rem .6rem; margin-bottom: .45rem;
+      font-size: .78rem; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+    .k-card-title { font-weight: 600; line-height: 1.35; margin-bottom: .4rem; }
+    .k-badge {
+      display: inline-block; font-size: .65rem; font-weight: 700;
+      padding: .15rem .4rem; border-radius: 4px; margin-bottom: .35rem;
+    }
+    .k-badge.overdue { background: #fde8e8; color: #c62828; }
+    .k-badge.today { background: #fff8e1; color: #8a6d00; }
+    .k-badge.week { background: #e3f2fd; color: #1565c0; }
+    .k-tags { display: flex; flex-wrap: wrap; gap: .25rem; margin: .35rem 0; }
+    .k-tag { font-size: .62rem; background: #eef2f5; color: #5c6b7f; padding: .1rem .35rem; border-radius: 4px; }
+    .k-foot {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: .4rem; font-size: .65rem; color: #6b7c88;
+    }
+    .k-avatars { display: flex; gap: 2px; }
+    .k-av {
+      width: 20px; height: 20px; border-radius: 50%; background: #3b82f6;
+      color: #fff; font-size: .55rem; font-weight: 700;
+      display: grid; place-items: center;
+    }
+    .k-icons span { margin-left: .35rem; }
+    .panel {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: 1rem;
+    }
+    .panel h3 { margin: 0 0 .75rem; font-size: .95rem; font-weight: 700; }
+    .kanban-toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: .75rem; flex-wrap: wrap; gap: .5rem;
+    }
+    .kanban-tabs { display: flex; gap: .35rem; font-size: .78rem; }
+    .kanban-tabs span {
+      padding: .3rem .55rem; border-radius: 6px; color: var(--muted); cursor: default;
+    }
+    .kanban-tabs span.on { background: rgba(94,234,212,.15); color: var(--mint); font-weight: 600; }
+    .todo-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: .75rem; align-items: start;
+    }
+    .todo-group {
+      background: rgba(0,0,0,.15); border-radius: 12px;
+      padding: .75rem; margin-bottom: 0; height: 100%;
+    }
+    .todo-group h4 { margin: 0 0 .5rem; font-size: .82rem; color: var(--mint); }
+    .todo-group li { font-size: .8rem; margin: .35rem 0; color: #dce8ec; }
+    .docs-compact { margin-top: 1rem; }
+    .docs-compact a {
+      display: block; font-size: .78rem; color: var(--mint); text-decoration: none;
+      padding: .35rem 0; border-bottom: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="logo-row">
+        <img class="logo-img" src="/static/assets/tmki-logo.png" alt="ТМКИ" />
+        <div>
+          <div class="logo-text">ООО «ТМКИ»</div>
+          <div class="logo-sub" id="project-name">Сатимол</div>
+        </div>
+      </div>
+      <div class="user-card">
+        <div class="avatar" id="avatar">И</div>
+        <div>
+          <div class="user-name" id="user-name">—</div>
+          <div class="user-role" id="user-role">Инженер ПТО</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav"></nav>
+      <button type="button" class="btn-mail" id="btn-mail">✉ Почта</button>
+      <div class="sidebar-apps" id="sidebar-apps"></div>
+      <select class="obj-select" id="object-select">
+        <option>Сатимол · шахты 1–4</option>
+        <option>Армировка КС</option>
+      </select>
+      <button type="button" class="btn-mint">+ Добавить объект</button>
+      <div class="cal-widget">
+        <div class="cal-head">
+          <button type="button" id="cal-prev" aria-label="Предыдущий месяц">‹</button>
+          <span id="cal-title">—</span>
+          <button type="button" id="cal-next" aria-label="Следующий месяц">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-footer" id="sidebar-footer"></div>
+    </aside>
+
+    <main class="main">
+      <div class="main-top">
+        <h1>Рабочее место ПТО</h1>
+        <div class="ai-card">
+          <label>Сводка агента</label>
+          <div class="ai-row">
+            <input id="ai-input" type="text" placeholder="Что срочно по ИД и КМД?" />
+            <button type="button" class="btn-mic" id="btn-mic" title="Голосовой ввод">🎤</button>
+            <button type="button" class="btn-ask" id="btn-ask">Спросить</button>
+          </div>
+          <div class="think-wrap" id="think-wrap">
+            <div class="think-label" id="think-label">Агент думает…</div>
+            <div class="think-bar"><div class="think-fill" id="think-fill"></div></div>
+            <div class="think-stages" id="think-stages"></div>
+          </div>
+          <div class="ai-answer" id="ai-answer"></div>
+        </div>
+      </div>
+
+      <section class="panel kanban-section">
+        <div class="kanban-toolbar">
+          <h3 style="margin:0">Сроки</h3>
+          <div class="kanban-tabs">
+            <span>Список</span>
+            <span class="on">Сроки</span>
+            <span>Мой план</span>
+            <span>Календарь</span>
+            <span>Диаграмма Ганта</span>
+          </div>
+        </div>
+        <div class="kanban-board" id="kanban"></div>
+      </section>
+
+      <div class="bottom">
+        <div class="panel">
+          <h3>Дела</h3>
+          <div class="todo-row" id="todo-groups"></div>
+          <div class="docs-compact">
+            <strong style="font-size:.8rem;color:var(--muted)">Недавние документы</strong>
+            <div id="docs"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const MONTHS = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+    const DOW = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+    const NAV = [
+      ["dashboard","Дашборд"],["tasks","Задачи"],["kanban","Канбан"],
+      ["docs","Документы"],["regulations","Нормативка"],["agent","ИИ-агент"],
+    ];
+    let dashboard = null;
+    let calYear, calMonth;
+    let eventDays = new Set();
+    let thinkTimer = null;
+
+    function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+    function renderNav() {
+      document.getElementById("nav").innerHTML = NAV.map(([id, label], i) =>
+        `<a href="#" class="${i===0?"active":""}">${label}</a>`).join("");
+    }
+
+    function renderCalendar(y, m) {
+      calYear = y; calMonth = m;
+      document.getElementById("cal-title").textContent = `${MONTHS[m]} ${y}`;
+      const grid = document.getElementById("cal-grid");
+      const first = new Date(y, m, 1);
+      let start = (first.getDay() + 6) % 7;
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const today = new Date();
+      let html = DOW.map(d => `<div class="dow">${d}</div>`).join("");
+      for (let i = 0; i < start; i++) html += `<div class="cal-day"></div>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const key = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        const cls = ["cal-day","in-month"];
+        if (today.getFullYear()===y && today.getMonth()===m && today.getDate()===d) cls.push("today");
+        if (eventDays.has(key)) cls.push("has-event");
+        html += `<div class="${cls.join(" ")}" data-day="${key}">${d}</div>`;
+      }
+      grid.innerHTML = html;
+    }
+
+    document.getElementById("cal-prev").addEventListener("click", () => {
+      let m = calMonth - 1, y = calYear;
+      if (m < 0) { m = 11; y--; }
+      renderCalendar(y, m);
+    });
+    document.getElementById("cal-next").addEventListener("click", () => {
+      let m = calMonth + 1, y = calYear;
+      if (m > 11) { m = 0; y++; }
+      renderCalendar(y, m);
+    });
+
+    function openApp(app) {
+      if (!app?.url) return;
+      if (app.external) window.open(app.url, "_blank", "noopener");
+      else if (app.url.startsWith("#")) alert(app.label + " — в разработке");
+      else window.location.href = app.url;
+    }
+
+    function renderApps(apps) {
+      if (!apps) return;
+      const mail = apps.mail;
+      if (mail) {
+        document.getElementById("btn-mail").onclick = () => openApp(mail);
+      }
+      const sideOrder = ["disk", "apps_hub", "max"];
+      document.getElementById("sidebar-apps").innerHTML = sideOrder
+        .filter(k => apps[k])
+        .map(k => `<button type="button" data-app="${k}">${esc(apps[k].label)}</button>`)
+        .join("") + `<a href="/director" style="display:block;padding:.5rem .7rem;color:var(--muted);text-decoration:none;font-size:.84rem;border-radius:10px">▣ Дашборд директора</a>`;
+      document.querySelectorAll("#sidebar-apps button").forEach(btn => {
+        btn.addEventListener("click", () => openApp(apps[btn.dataset.app]));
+      });
+      const settings = apps.settings;
+      if (settings) {
+        document.getElementById("sidebar-footer").innerHTML =
+          `<button type="button" id="btn-settings">${esc(settings.label)}</button>`;
+        document.getElementById("btn-settings").onclick = () => openApp(settings);
+      }
+    }
+
+    function renderTodoGroups(groups) {
+      document.getElementById("todo-groups").innerHTML = (groups||[]).map(g =>
+        `<div class="todo-group"><h4>${esc(g.title)}</h4><ul>${(g.items||[]).map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`).join("");
+    }
+
+    function renderDocs(docs) {
+      document.getElementById("docs").innerHTML = (docs||[]).slice(0,4).map(d =>
+        `<a href="#" title="${esc(d.path)}">${esc(d.title)}</a>`).join("");
+    }
+
+    function renderKanban(kanban) {
+      const cols = kanban.columns || [];
+      document.getElementById("kanban").innerHTML = cols.map(col => {
+        const color = col.color || "#a8adb4";
+        const count = (col.items || []).length;
+        const cards = (col.items || []).map(it => {
+          const badge = it.deadline_label
+            ? `<div class="k-badge ${esc(it.deadline_tone || "neutral")}">${esc(it.deadline_label)}</div>`
+            : "";
+          const tags = (it.tags || []).map(t => `<span class="k-tag">${esc(t)}</span>`).join("");
+          const avatars = (it.assignees || []).map(a =>
+            `<span class="k-av" title="${esc(a)}">${esc(a.slice(0,2))}</span>`).join("");
+          const icons = [];
+          if (it.subtasks) icons.push(`☑ ${it.subtasks}`);
+          if (it.comments) icons.push(`💬 ${it.comments}`);
+          return `<div class="k-card">
+            <div class="k-card-title">${esc(it.title)}</div>
+            ${badge}
+            ${tags ? `<div class="k-tags">${tags}</div>` : ""}
+            <div class="k-foot">
+              <div class="k-avatars">${avatars}</div>
+              <div class="k-icons">${icons.map(s => `<span>${s}</span>`).join("")}</div>
+            </div>
+          </div>`;
+        }).join("");
+        return `<div class="k-col">
+          <div class="k-col-head" style="background:${esc(color)}">
+            ${esc(col.title)} <span>${count}</span>
+          </div>
+          <div class="k-col-body">${cards}</div>
+        </div>`;
+      }).join("");
+    }
+
+    const THINK_STAGES = ["Анализ запроса","Поиск в базе","Ранжирование","Формирование ответа"];
+
+    function startThinking() {
+      const wrap = document.getElementById("think-wrap");
+      const fill = document.getElementById("think-fill");
+      const stages = document.getElementById("think-stages");
+      wrap.classList.add("active");
+      stages.innerHTML = THINK_STAGES.map((s,i)=>`<span id="st-${i}">${s}</span>`).join("");
+      let pct = 0, stage = 0;
+      document.querySelectorAll(".think-stages span").forEach((el,i)=>el.classList.toggle("on",i===0));
+      clearInterval(thinkTimer);
+      thinkTimer = setInterval(() => {
+        pct = Math.min(pct + 2 + Math.random()*4, 92);
+        fill.style.width = pct + "%";
+        const ns = Math.min(Math.floor(pct / 25), THINK_STAGES.length - 1);
+        if (ns !== stage) {
+          stage = ns;
+          document.querySelectorAll(".think-stages span").forEach((el,i)=>el.classList.toggle("on",i===stage));
+          document.getElementById("think-label").textContent = THINK_STAGES[stage] + "…";
+        }
+      }, 280);
+    }
+
+    function stopThinking(ok) {
+      clearInterval(thinkTimer);
+      const fill = document.getElementById("think-fill");
+      fill.style.width = ok ? "100%" : "0%";
+      document.getElementById("think-label").textContent = ok ? "Готово" : "Ошибка";
+      document.querySelectorAll(".think-stages span").forEach(el => el.classList.toggle("on", ok));
+      if (!ok) setTimeout(() => document.getElementById("think-wrap").classList.remove("active"), 800);
+    }
+
+    async function askAi() {
+      const q = document.getElementById("ai-input").value.trim();
+      if (!q) return;
+      const out = document.getElementById("ai-answer");
+      out.textContent = "";
+      document.getElementById("btn-ask").disabled = true;
+      startThinking();
+      try {
+        const corpus = dashboard?.agent?.corpus_default || "test_docs";
+        const r = await fetch("/api/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: q, llm: "stub", corpus }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || r.statusText);
+        stopThinking(true);
+        const cite = (data.citations||[])[0];
+        out.textContent = (data.answer||"").slice(0, 500) + (cite ? `\n\n📎 ${cite.file_name||""}` : "");
+      } catch (e) {
+        stopThinking(false);
+        out.textContent = "Ошибка: " + e.message;
+      } finally {
+        document.getElementById("btn-ask").disabled = false;
+      }
+    }
+
+    let mediaRecorder, chunks = [], recording = false;
+    const micBtn = document.getElementById("btn-mic");
+
+    async function toggleVoice() {
+      if (recording) {
+        mediaRecorder?.stop();
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        alert("Микрофон недоступен");
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        recording = false;
+        micBtn.classList.remove("listening");
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: mediaRecorder.mimeType || "audio/webm" });
+        const fd = new FormData();
+        fd.append("audio", blob, "voice.webm");
+        document.getElementById("think-label").textContent = "Распознавание речи…";
+        document.getElementById("think-wrap").classList.add("active");
+        startThinking();
+        try {
+          const r = await fetch("/api/transcribe", { method: "POST", body: fd });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || r.statusText);
+          document.getElementById("ai-input").value = data.text || "";
+          stopThinking(true);
+        } catch (e) {
+          stopThinking(false);
+          document.getElementById("ai-answer").textContent = "Голос: " + e.message;
+        }
+      };
+      mediaRecorder.start();
+      recording = true;
+      micBtn.classList.add("listening");
+    }
+
+    document.getElementById("btn-ask").addEventListener("click", askAi);
+    document.getElementById("ai-input").addEventListener("keydown", e => { if (e.key === "Enter") askAi(); });
+    micBtn.addEventListener("click", toggleVoice);
+
+    async function load() {
+      const r = await fetch("/api/dashboard/pto");
+      dashboard = await r.json();
+      const u = dashboard.user || {};
+      document.getElementById("user-name").textContent = u.display_name || "Сотрудник";
+      document.getElementById("user-role").textContent = dashboard.role_label || "ПТО";
+      document.getElementById("project-name").textContent = dashboard.project || "Сатимол";
+      document.getElementById("avatar").textContent = (u.display_name || "И")[0];
+      (dashboard.calendar?.events || []).forEach(ev => {
+        try { eventDays.add(ev.start.slice(0, 10)); } catch {}
+      });
+      const now = new Date();
+      renderCalendar(now.getFullYear(), now.getMonth());
+      renderApps(dashboard.apps);
+      renderTodoGroups(dashboard.todo_groups || []);
+      renderDocs(dashboard.recent_documents || []);
+      renderKanban(dashboard.kanban || { columns: [] });
+    }
+
+    renderNav();
+    load().catch(e => { document.getElementById("ai-answer").textContent = e.message; });
+  </script>
+</body>
+</html>

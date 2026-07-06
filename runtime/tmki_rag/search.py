@@ -300,7 +300,7 @@ def _full_scan_index_chunks(
     scored.sort(key=lambda x: x[0], reverse=True)
     keyword_ranked = [chunk for _, chunk in scored[:pool]]
 
-    if _bm25_disabled():
+    if _bm25_disabled() or not allowed:
         return keyword_ranked
 
     bm25 = _get_bm25_index(index, allowed)
@@ -330,8 +330,12 @@ def _use_full_text_scan(index: "VectorChunkIndex") -> bool:
         return True
     try:
         from tmki_rag.pgvector import PgVectorChunkIndex
+        from tmki_rag.pgvector_simple import SimpleChunksPgIndex
     except ImportError:
         PgVectorChunkIndex = type(None)  # type: ignore[misc, assignment]
+        SimpleChunksPgIndex = type(None)  # type: ignore[misc, assignment]
+    if isinstance(index, SimpleChunksPgIndex):
+        return mode in ("keyword", "fulltext", "full")
     if isinstance(index, PgVectorChunkIndex):
         return mode == "auto" and len(index.list()) <= 5000
     return True
@@ -392,5 +396,6 @@ def _retrieve_chunks(
         company_id=policy_context["company_id"],
         project_id=policy_context["project_id"],
         top_k=pool,
+        corpus_id=request.get("corpus_id"),
     )
     return [chunk for _, chunk in similar]

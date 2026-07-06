@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Вопрос — QA лаб</title>
+  <link rel="stylesheet" href="/static/qa-lab.css" />
+</head>
+<body class="panel question-panel">
+  <header class="win-chrome"><span class="win-title">Вопрос</span><span id="progress" class="badge"></span></header>
+  <div class="win-body">
+    <label for="question">Запрос к RAG</label>
+    <textarea id="question" rows="4" placeholder="Вопрос по открытому документу…"></textarea>
+    <div class="panel-actions">
+      <button type="button" class="primary" id="ask">Спросить</button>
+      <select id="llm"><option value="stub">stub</option><option value="ollama" selected>ollama</option></select>
+    </div>
+    <div id="answer" class="answer-block" hidden>
+      <div class="label">Ответ системы</div>
+      <pre id="answer-text"></pre>
+      <div id="citations" class="citations"></div>
+    </div>
+  </div>
+  <script src="/static/qa-lab.js"></script>
+  <script>QaLab.initQuestionPanel();</script>
+</body>
+</html>

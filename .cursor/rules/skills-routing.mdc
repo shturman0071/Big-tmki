@@ -1,0 +1,44 @@
+---
+description: Маршрутизация Cursor skills и MCP для TMKI (не дублировать RAG, не подключать лишние MCP)
+alwaysApply: true
+---
+
+# Skills и MCP — маршрутизация
+
+## MCP (максимум 3–4 активных)
+
+| Задача | Использовать | Не использовать |
+|--------|--------------|-----------------|
+| Файлы репозитория | `filesystem` | — |
+| Поиск по регламентам / СКРУ-2 | `tmki-rag` (`rag_search`) | второй vector MCP, Kit-MCP RAG |
+| Конвертация шаблонов (dev) | `mcp-pandoc` из `config/mcp.dev.example.json` | — |
+| Нормативы РФ из интернета | `scripts/legal_corpus_curator.py` + Firecrawl (approved) | `fetch-mcp` без whitelist |
+
+**MUST NOT:** подключать Kit-MCP целиком, gurupdf-mcp, fetch-mcp для production-данных Сатимол.
+
+## Skills — приоритет
+
+| Триггер / задача | Skill | Путь |
+|------------------|-------|------|
+| Правка глав хэндбука | `tmki-handbook-update` | `.cursor/skills/tmki-handbook-update/` |
+| Импорт `.vsdx` → ORG_MODEL | `vsdx-org-import` | `.cursor/skills/vsdx-org-import/` |
+| Security / RLS / tool gating | Security Review | Cursor plugin / `review-security` |
+| Ревью PR / diff | `code-review` | `runtime/.agents/skills/code-review/` |
+| Баг / регрессия | `diagnosing-bugs` | `runtime/.agents/skills/diagnosing-bugs/` |
+| Крупный план / roadmap | `wayfinder` | `runtime/.agents/skills/wayfinder/` |
+| Доменные термины / ADR | `domain-modeling` | `runtime/.agents/skills/domain-modeling/` |
+| Нормативная база РФ | Legal Corpus Curator | `13_ai_skills_registry.md` + `scripts/legal_corpus_curator.py` |
+| Документ по шаблону | Document Author | `schemas/document/examples/templates/` |
+| Мониторинг загрузки СКРУ-2 | — | `python -u scripts/watch_load_skru2.py` |
+
+## Порядок при RAG-вопросе
+
+1. Проверить `load-skru2-state.json` (полнота индекса).
+2. `tmki-rag` или `ask_regulations` — не выдумывать цитаты.
+3. При `path_only` / мало чанков — честно сообщить пользователю.
+
+## Технологии (см. `18_technology_watch.md`)
+
+- **Approved:** MinerU, Mistral OCR, pgvector, Firecrawl, Docling (парсер), Piper.
+- **Watchlist / PoC:** pdf-oxide (`scripts/eval_pdf_oxide_poc.py`), mcp-pandoc (dev).
+- **Отклонено для prod:** gurupdf (облако), Kit-MCP (bulk), memory-bank-mcp (вместо Memory Tree).

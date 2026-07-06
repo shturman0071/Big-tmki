@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 _TOKEN_RE = re.compile(r"[а-яёa-z0-9]{2,}", re.IGNORECASE)
 
@@ -182,3 +183,38 @@ def text_match_score(query: str, text: str, *, lemma_set_fn=None) -> float:
     if literal_score >= lemma_score:
         return min(0.79, literal_score)
     return min(0.72, lemma_score)
+
+
+_DOC_NUM_RE_CACHE: dict[str, re.Pattern[str]] = {}
+
+
+def filename_contains_doc_number(filename: str, number: str) -> bool:
+    """Номер документа в имени файла (№452, _452), не подстрока внутри другого числа."""
+    if not filename or not number:
+        return False
+    if number not in _DOC_NUM_RE_CACHE:
+        _DOC_NUM_RE_CACHE[number] = re.compile(
+            rf"(?:№|#|\b){re.escape(number)}(?:\b|\.|_|-)",
+            re.IGNORECASE,
+        )
+    return bool(_DOC_NUM_RE_CACHE[number].search(filename))
+
+
+def citation_doc_number_score(citation: dict[str, Any], query_numbers: list[str]) -> int:
+    """Бонус/штраф для переранжирования цитат по номеру в имени файла."""
+    import re
+
+    name = " ".join(
+        str(citation.get(k) or "")
+        for k in ("file_name", "relative_path", "doc_id")
+    )
+    if not name or not query_numbers:
+        return 0
+    score = 0
+    for num in query_numbers:
+        if filename_contains_doc_number(name, num):
+            score += 100
+    for found in re.findall(r"\d{2,}", name):
+        if found not in query_numbers:
+            score -= 40
+    return score

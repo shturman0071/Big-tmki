@@ -1,0 +1,17 @@
+Your mission is to generate questions and answers targeting the context provided with the following JSON format:
+[{"question": "text of the question", "answer": "text of the answer"}]
+
+Generate the answers and questions in the same language as the context (Russian for TMKI documents).
+
+Examples:
+
+Context: Sarah found a lost kitten on the street and decided to take it home.
+Response: [{"question": "why did Sarah decide to take the kitten home?", "answer": "the kitten was lost"}, {"question": "where did Sarah find the kitten?", "answer": "on the street"}]
+
+Context: Jack saw a friendly group of kids playing in the park, so he decided to join them.
+Response: [{"question": "why did Jack decide to join the group of kids playing in the park?", "answer": "the group of kids was friendly"}, {"question": "what were the group of kids doing?", "answer": "playing in the park"}]
+
+Rules:
+- Answers MUST be grounded in the context only.
+- Generate 5–10 pairs per context chunk.
+- Output valid JSON only, no markdown fences.

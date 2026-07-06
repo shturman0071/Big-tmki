@@ -1,4 +1,4 @@
-from tmki_rag.match_score import text_match_score
+from tmki_rag.match_score import filename_contains_doc_number, text_match_score
 
 
 def test_exact_phrase_beats_case_insensitive():
@@ -30,3 +30,10 @@ def test_multi_word_requires_all_tokens():
     only_one = "договор с Проминвест на поставку"
     assert text_match_score("проминвест балыко", both) >= 0.80
     assert text_match_score("проминвест балыко", only_one) <= 0.52
+
+
+def test_filename_doc_number_boundary():
+    assert filename_contains_doc_number("Документ о качестве №452.pdf", "452")
+    assert filename_contains_doc_number("Письмо № 274 от 14.06.2022.pdf", "274")
+    assert not filename_contains_doc_number("Документ о качестве № 43.PDF", "452")
+    assert not filename_contains_doc_number("Письмо №6 (№14).pdf", "274")

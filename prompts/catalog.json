@@ -1,0 +1,100 @@
+{
+  "version": "1.0",
+  "system": {
+    "base": {
+      "path": "prompts/system_prompt.txt",
+      "description": "Базовый системный промпт RAG (личность TMKI)"
+    },
+    "extended": {
+      "path": "prompts/system_prompt_extended.txt",
+      "description": "Расширенный промпт с акцентом на структуру документа"
+    }
+  },
+  "tasks": {
+    "analyze_structure": {
+      "path": "prompts/tasks/analyze_structure.txt",
+      "placeholders": ["context"],
+      "description": "Анализ структуры документа (раздел 2.1)"
+    },
+    "extract_logic": {
+      "path": "prompts/tasks/extract_logic.txt",
+      "placeholders": ["context"],
+      "description": "Извлечение логики документа (раздел 2.2)"
+    },
+    "qa_generate_basic_system": {
+      "path": "prompts/tasks/qa_generate_basic_system.txt",
+      "placeholders": [],
+      "description": "System prompt для генерации Q&A (раздел 3.1)"
+    },
+    "qa_generate_basic_user": {
+      "path": "prompts/tasks/qa_generate_basic_user.txt",
+      "placeholders": ["context"],
+      "description": "User prompt для генерации Q&A (раздел 3.1)"
+    },
+    "qa_generate_typed": {
+      "path": "prompts/tasks/qa_generate_typed.txt",
+      "placeholders": ["context"],
+      "description": "Генерация Q&A по типам вопросов (раздел 3.2)"
+    },
+    "qa_generate_multihop": {
+      "path": "prompts/tasks/qa_generate_multihop.txt",
+      "placeholders": ["context"],
+      "description": "Multi-hop Q&A (раздел 3.3)"
+    },
+    "format_pdf_analyze": {
+      "path": "prompts/tasks/format_pdf_analyze.txt",
+      "placeholders": ["context"],
+      "description": "Анализ PDF (раздел 4.1)"
+    },
+    "format_xlsx_analyze": {
+      "path": "prompts/tasks/format_xlsx_analyze.txt",
+      "placeholders": ["context"],
+      "description": "Анализ XLSX (раздел 4.2)"
+    },
+    "format_docx_analyze": {
+      "path": "prompts/tasks/format_docx_analyze.txt",
+      "placeholders": ["context"],
+      "description": "Анализ DOCX (раздел 4.3)"
+    },
+    "format_dwg_analyze": {
+      "path": "prompts/tasks/format_dwg_analyze.txt",
+      "placeholders": ["context"],
+      "description": "Анализ DWG/DXF (раздел 4.4)"
+    },
+    "eval_completeness": {
+      "path": "prompts/tasks/eval_completeness.txt",
+      "placeholders": ["context", "question", "answer"],
+      "description": "Оценка полноты ответа (раздел 5.1)"
+    },
+    "eval_structure": {
+      "path": "prompts/tasks/eval_structure.txt",
+      "placeholders": ["context", "answer"],
+      "description": "Оценка понимания структуры (раздел 5.2)"
+    },
+    "test_set_create": {
+      "path": "prompts/tasks/test_set_create.txt",
+      "placeholders": ["context"],
+      "description": "Создание тестового набора (раздел 6)"
+    },
+    "rlm_system": {
+      "path": "prompts/tasks/rlm_system.txt",
+      "placeholders": [],
+      "description": "Recursive Language Model — выбор фрагментов CTX"
+    },
+    "azure_qa_short_answer_ru": {
+      "path": "prompts/tasks/azure_qa_short_answer_ru.txt",
+      "placeholders": ["context", "num_questions"],
+      "description": "Azure-style короткие Q&A (RU)"
+    },
+    "azure_qa_long_answer_ru": {
+      "path": "prompts/tasks/azure_qa_long_answer_ru.txt",
+      "placeholders": ["context", "num_questions"],
+      "description": "Azure-style развёрнутые Q&A (RU)"
+    },
+    "lora_dataset_prepare": {
+      "path": "prompts/tasks/lora_dataset_prepare.txt",
+      "placeholders": ["context"],
+      "description": "Подготовка датасета LoRA (раздел 7)"
+    }
+  }
+}

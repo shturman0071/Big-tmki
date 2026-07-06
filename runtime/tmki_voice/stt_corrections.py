@@ -69,6 +69,13 @@ def apply_stt_corrections(text: str) -> str:
     # «ДТН, армировка» / «ПТН, армировка»
     out = re.sub(r"\b(дтн|птн)\s*[,;]\s*армировк", "ТТН, армировк", out, flags=re.I)
 
+    try:
+        from tmki_voice.stt_learn import apply_learned_corrections
+
+        out = apply_learned_corrections(out)
+    except ImportError:
+        pass
+
     return re.sub(r"\s+", " ", out).strip()
 
 

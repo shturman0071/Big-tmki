@@ -1,0 +1,167 @@
+{
+  "schema_version": "0.3",
+  "corpus_id": "skru-2",
+  "description": "Лаборатория: 20 файлов разных типов из архива СКРУ-2",
+  "tests": [
+    {
+      "id": "skru_lab_01_1",
+      "format": "pdf",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Исполнительные/Поверхность/Замораживающая станция/Разморозка/1.pdf",
+      "file_name": "1.pdf",
+      "question": "маркшейдерский акт pdf 1",
+      "reference_answer": "Файл PDF: 1.pdf"
+    },
+    {
+      "id": "skru_lab_02_тк",
+      "format": "docx",
+      "document_relative_path": "ПТО/Архив ППР/Архив ППР/Скиповой ствол/Монтаж мк здания полковых лебедок и подъемной машины №1/ТК.docx",
+      "file_name": "ТК.docx",
+      "question": "акт маркшейдерия docx ТК",
+      "reference_answer": "Файл DOCX: ТК.docx"
+    },
+    {
+      "id": "skru_lab_03_04",
+      "format": "doc",
+      "document_relative_path": "Маркшейдер/Маркшейдер/НЕОБХОДИМОЕ/ОПЗ/ПЗ_на основной период/Старое оформление/04.doc",
+      "file_name": "04.doc",
+      "question": "документ word doc 04",
+      "reference_answer": "Файл DOC: 04.doc"
+    },
+    {
+      "id": "skru_lab_04_1",
+      "format": "dwg",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Исполнительные/Поверхность/Скиповой ствол/Повысительная/1.dwg",
+      "file_name": "1.dwg",
+      "question": "чертеж dwg 1",
+      "reference_answer": "Файл DWG: 1.dwg"
+    },
+    {
+      "id": "skru_lab_05_1",
+      "format": "tif",
+      "document_relative_path": "ПТО/Архив ППР/Архив ППР/Общее/Вентилятор проходки скиповой и клетевой ствол/ППР вентиляторная/1.tif",
+      "file_name": "1.tif",
+      "question": "скан tif маркшейдерия 1",
+      "reference_answer": "Файл TIF: 1.tif"
+    },
+    {
+      "id": "skru_lab_06_принципиальная_схема_рамера_яруса_16_07_",
+      "format": "tiff",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Проекты/Армировка Пермь/Расстрелы и ярус 21.07.2021/Принципиальная схема рамера яруса 16.07.2021г.tiff",
+      "file_name": "Принципиальная схема рамера яруса 16.07.2021г.tiff",
+      "question": "скан tiff Принципиальная схема рамера яруса 16.07.2021г",
+      "reference_answer": "Файл TIFF: Принципиальная схема рамера яруса 16.07.2021г.tiff"
+    },
+    {
+      "id": "skru_lab_07_кс",
+      "format": "xlsx",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Исполнительные/Проходка/КС/Исполнительные/кс.xlsx",
+      "file_name": "кс.xlsx",
+      "question": "таблица xlsx кс",
+      "reference_answer": "Файл XLSX: кс.xlsx"
+    },
+    {
+      "id": "skru_lab_08_file_08",
+      "format": "xls",
+      "document_relative_path": "ПТО/АКТЫ/Армировка СС/ИД армировка/Актуальные  реестры  СС/реестры армировка (старое)/..xls",
+      "file_name": "..xls",
+      "question": "ведомость xls .",
+      "reference_answer": "Файл XLS: ..xls"
+    },
+    {
+      "id": "skru_lab_09_1",
+      "format": "dxf",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Контрольные съемки/Съемки GPS/Съемочные файлы/1.dxf",
+      "file_name": "1.dxf",
+      "question": "координаты dxf 1",
+      "reference_answer": "Файл DXF: 1.dxf"
+    },
+    {
+      "id": "skru_lab_10_33",
+      "format": "txt",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Исполнительные/Поверхность/Замораживающая станция/Скважины/Клетьевой ствол/Гор/33.txt",
+      "file_name": "33.txt",
+      "question": "текстовый файл координаты 33",
+      "reference_answer": "Файл TXT: 33.txt"
+    },
+    {
+      "id": "skru_lab_11_ппр_шахтбау",
+      "format": "rtf",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Проекты/Подъезная дорога_ Северная/ППР/ППР Шахтбау.rtf",
+      "file_name": "ППР Шахтбау.rtf",
+      "question": "документ rtf ППР Шахтбау",
+      "reference_answer": "Файл RTF: ППР Шахтбау.rtf"
+    },
+    {
+      "id": "skru_lab_12_1",
+      "format": "jpg",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Исполнительные/Поверхность/АБК/Наруж кан АБК нового/Фото/1.jpg",
+      "file_name": "1.jpg",
+      "question": "схема jpg 1",
+      "reference_answer": "Файл JPG: 1.jpg"
+    },
+    {
+      "id": "skru_lab_13_укладка_трубы_от_сан_узла_до_колодца",
+      "format": "jpeg",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Исполнительные/Поверхность/Клетевой ствол/Канализация/Укладка трубы от сан. узла до колодца.jpeg",
+      "file_name": "Укладка трубы от сан. узла до колодца.jpeg",
+      "question": "изображение jpeg Укладка трубы от сан. узла до колодца",
+      "reference_answer": "Файл JPEG: Укладка трубы от сан. узла до колодца.jpeg"
+    },
+    {
+      "id": "skru_lab_14_рис1",
+      "format": "png",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Исполнительные/Проходка/КС/Армировка КС/Разбивка по отвесам КС/Рис1.png",
+      "file_name": "Рис1.png",
+      "question": "схема png Рис1",
+      "reference_answer": "Файл PNG: Рис1.png"
+    },
+    {
+      "id": "skru_lab_15_210210",
+      "format": "csv",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Контрольные съемки/Съемки/2018/09 Сентябрь/от Михаила/210210.csv",
+      "file_name": "210210.csv",
+      "question": "таблица csv 210210",
+      "reference_answer": "Файл CSV: 210210.csv"
+    },
+    {
+      "id": "skru_lab_16_j5",
+      "format": "sdr",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Контрольные съемки/Съемки/2020/Июль/файлы с флешки соккия/J5.SDR",
+      "file_name": "J5.SDR",
+      "question": "файл sdr J5",
+      "reference_answer": "Файл SDR: J5.SDR"
+    },
+    {
+      "id": "skru_lab_17_вгк_документы",
+      "format": "ppt",
+      "document_relative_path": "ПТО/СТЕНДЫ ПО ОТ/ОХРАНА ТРУДА/Презентации/ВГК Документы.ppt",
+      "file_name": "ВГК Документы.ppt",
+      "question": "презентация ppt ВГК Документы",
+      "reference_answer": "Файл PPT: ВГК Документы.ppt"
+    },
+    {
+      "id": "skru_lab_18_obuchenie_po_eb_1_gruppa",
+      "format": "pptx",
+      "document_relative_path": "ПТО/НОРМЫ/Нормативная документация/Obuchenie_po_EB_1_gruppa.pptx",
+      "file_name": "Obuchenie_po_EB_1_gruppa.pptx",
+      "question": "презентация pptx Obuchenie_po_EB_1_gruppa",
+      "reference_answer": "Файл PPTX: Obuchenie_po_EB_1_gruppa.pptx"
+    },
+    {
+      "id": "skru_lab_19_menugeo",
+      "format": "zip",
+      "document_relative_path": "Маркшейдер/Маркшейдер/Контрольные съемки/Съемки/2020/menuGEO.zip",
+      "file_name": "menuGEO.zip",
+      "question": "архив zip menuGEO",
+      "reference_answer": "Файл ZIP: menuGEO.zip"
+    },
+    {
+      "id": "skru_lab_20_пмллпа",
+      "format": "cdw",
+      "document_relative_path": "ПТО/Архив ППР/Архив ППР/Клетевой ствол/Возведение комбинированной чугунно-бетонной крепи в инрервале отн. отм -192.750 ... -344.452 м. Изм.1/ПМЛЛПА.CDW",
+      "file_name": "ПМЛЛПА.CDW",
+      "question": "чертеж cdw ПМЛЛПА",
+      "reference_answer": "Файл CDW: ПМЛЛПА.CDW"
+    }
+  ]
+}

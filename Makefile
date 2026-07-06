@@ -2,60 +2,99 @@
 # TMKI Engineering Handbook - Makefile
 # ============================================================
 
-.PHONY: help setup test reindex embed rerank clean install
+.PHONY: help setup test check-demo reindex embed rerank clean install demo all legacy-test legacy-reindex watch-skru2
 
 help:
 	@echo "Доступные команды:"
-	@echo "  make setup      - Установить все зависимости и подготовить окружение"
-	@echo "  make test       - Запустить тесты RAG"
-	@echo "  make reindex    - Переиндексировать все документы"
+	@echo "  make setup      - Установить зависимости и подготовить окружение"
+	@echo "  make test       - Тесты RAG (корень)"
+	@echo "  make load-skru2      - Загрузить 5000 чанков СКРУ-2 в PG (Ollama 768)"
+	@echo "  make load-skru2-resume - Продолжить загрузку СКРУ-2"
+	@echo "  make watch-skru2  - Мониторинг загрузки СКРУ-2 в реальном времени"
+	@echo "  make reindex    - Переиндексация data/test_docs -> PostgreSQL chunks"
 	@echo "  make embed      - Обновить эмбеддинги в БД"
 	@echo "  make rerank     - Настроить cross-encoder rerank"
-	@echo "  make clean      - Очистить временные файлы"
-	@echo "  make install    - Установить Python зависимости"
+	@echo "  make demo       - Запуск demo UI (start-demo.ps1 / :8770)"
+	@echo "  make legacy-test    - pytest runtime/"
+	@echo "  make legacy-reindex - runtime reindex СКРУ-2"
 
 setup: install
-	@echo "🚀 Настройка окружения..."
-	@echo "1. Проверка Ollama..."
-	@ollama pull nomic-embed-text || echo "⚠️ Установите Ollama: https://ollama.ai"
-	@ollama pull qwen2.5:7b || echo "⚠️ Установите Ollama: https://ollama.ai"
-	@echo "2. Проверка конфига..."
+	@echo "Настройка окружения..."
+	@ollama pull nomic-embed-text || echo "Установите Ollama: https://ollama.ai"
+	@ollama pull qwen2.5:7b || echo "Установите Ollama: https://ollama.ai"
 	@test -f config/rag_config.env || cp config/rag_config.env.example config/rag_config.env
-	@echo "3. Создание папок..."
 	@mkdir -p data/test_docs data/ground_truth logs
-	@echo "✅ Настройка завершена!"
+	@echo "Готово."
 
 install:
-	@echo "📦 Установка Python зависимостей..."
-	pip install -r requirements.txt || pip install torch sentence-transformers psycopg2-binary docling pypdfium2 tqdm requests pytest python-dotenv pyyaml
+	pip install -r requirements.txt || pip install -e runtime/.[ocr,search,rerank,ingest-docling,stt]
 
 test:
-	@echo "🧪 Запуск тестов..."
-	python -m pytest tests/test_rag.py -v --tb=short || echo "⚠️ Установите pytest: pip install pytest"
+	python -m pytest tests/test_rag.py -v --tb=short
+
+check-demo:
+	python scripts/check_demo.py --auto
+
+load-skru2:
+	python scripts/load_skru2_to_chunks.py --limit 5000 --replace-corpus
+
+load-skru2-resume:
+	python scripts/load_skru2_to_chunks.py --resume --embed-batch 48 --batch 400
+
+load-skru2-fast:
+	python scripts/load_skru2_to_chunks.py --resume --embed-batch 64 --batch 400
+
+watch-skru2:
+	python scripts/watch_load_skru2.py --interval 5
+
+watch-ops:
+	python scripts/watch_tmki_ops.py --interval 3
+
+ops-run:
+	python scripts/ops_runner.py
+
+stop-demo:
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stop_demo.ps1
+
+pto-ui:
+	powershell -NoProfile -ExecutionPolicy Bypass -File start-pto-ui.ps1
+
+director-ui:
+	powershell -NoProfile -ExecutionPolicy Bypass -File start-director-ui.ps1
+
+eval-pdf-oxide:
+	python scripts/eval_pdf_oxide_poc.py --limit 20 --save runtime/artifacts/eval/pdf-oxide-poc.json
+
+legal-corpus-dry-run:
+	python scripts/legal_corpus_curator.py --dry-run
+
+legal-corpus-fetch:
+	python scripts/legal_corpus_curator.py --fetch --limit 3
+
+setup-pandoc-mcp:
+	powershell -NoProfile -ExecutionPolicy Bypass -File runtime/scripts/setup_pandoc_mcp.ps1
+
+legacy-test:
+	cd runtime && python -m pytest -q
+
+legacy-reindex:
+	cd runtime && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/rebuild_regulations_index.ps1 -Resume
 
 reindex:
-	@echo "🔄 Переиндексация документов..."
 	python scripts/reindex_all.py
 
 embed:
-	@echo "📊 Обновление эмбеддингов..."
 	python scripts/embedding_update.py
 
 rerank:
-	@echo "⚡ Настройка cross-encoder rerank..."
 	python scripts/rerank_setup.py
 
 clean:
-	@echo "🧹 Очистка..."
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	find . -type f -name "*.log" -delete 2>/dev/null || true
-	rm -rf .pytest_cache 2>/dev/null || true
-	@echo "✅ Очистка завершена"
+	rm -rf .pytest_cache runtime/.pytest_cache 2>/dev/null || true
 
 demo:
-	@echo "🚀 Запуск демо-сервера..."
-	python -m runtime.tmki_demo --host 0.0.0.0 --port 8767 || echo "⚠️ Убедитесь, что runtime/tmki_demo существует"
+	powershell -NoProfile -ExecutionPolicy Bypass -File start-demo.ps1
 
 all: setup test
-	@echo "✅ Все готово!"

@@ -27,6 +27,9 @@ class Bm25Index:
         if self._built:
             return
         self._built = True
+        if not self._chunks:
+            self._bm25 = None
+            return
         try:
             from rank_bm25 import BM25Okapi
         except ImportError:

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>TMKI — лаборатория форматов СКРУ-2</title>
+  <link rel="stylesheet" href="/static/qa-lab.css" />
+</head>
+<body class="lab-page">
+  <header class="lab-header">
+    <div>
+      <h1>Лаборатория форматов СКРУ-2</h1>
+      <p class="muted">pdf · docx · doc · dwg · tif · xlsx · xls · dxf · txt · rtf · jpg</p>
+    </div>
+    <div class="header-actions">
+      <span id="header-status" class="status-line">—</span>
+      <button type="button" id="reset-lab">Сброс</button>
+      <a href="/">← Demo</a>
+    </div>
+  </header>
+
+  <div class="lab-grid">
+    <!-- 0: Список форматов -->
+    <section class="panel col-list">
+      <header class="win-chrome">
+        <span class="win-title">Форматы</span>
+        <span id="list-count" class="badge">0</span>
+      </header>
+      <div class="win-body list-body">
+        <p class="list-hint">Клик по файлу — открыть в колонке «Документ»</p>
+        <ul id="doc-list" class="doc-list"></ul>
+      </div>
+    </section>
+
+    <!-- 1: Документ -->
+    <section class="panel col-doc">
+      <header class="win-chrome">
+        <span class="win-title">Документ</span>
+        <span id="fmt" class="badge"></span>
+      </header>
+      <div class="win-body">
+        <div id="file-name" class="file-name"></div>
+        <div id="full-path" class="full-path" title="Полный путь на диске"></div>
+        <div id="viewer" class="viewer"></div>
+        <div class="panel-actions">
+          <button type="button" id="open-os" hidden>Открыть в приложении</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2: Вопрос -->
+    <section class="panel col-question">
+      <header class="win-chrome">
+        <span class="win-title">Вопрос</span>
+        <span id="progress" class="badge"></span>
+      </header>
+      <div class="win-body">
+        <div id="question-doc" class="question-doc">Выберите файл в колонке «Форматы»</div>
+        <label for="question">Запрос к RAG (по открытому документу)</label>
+        <textarea id="question" rows="5" placeholder="Вопрос по открытому документу…"></textarea>
+        <div class="panel-actions">
+          <button type="button" class="primary" id="ask">Спросить</button>
+          <button type="button" class="voice-btn" id="voice" title="Голосовой ввод">🎤</button>
+          <select id="llm">
+            <option value="stub">stub</option>
+            <option value="ollama" selected>ollama</option>
+          </select>
+        </div>
+        <div class="voice-hint" id="voice-hint" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- 3: Оценка + результат -->
+    <section class="panel col-verdict">
+      <header class="win-chrome"><span class="win-title">Оценка</span></header>
+      <div class="win-body">
+        <div class="verdict-buttons">
+          <button type="button" class="v-ok" data-v="ok">Верно</button>
+          <button type="button" class="v-fail" data-v="fail">Неверно</button>
+          <button type="button" class="v-err" data-v="err">С ошибкой</button>
+        </div>
+        <input type="text" id="err-note" placeholder="Комментарий к оценке" />
+        <div class="stats" id="stats">—</div>
+
+        <div class="qa-result-block" id="qa-result-block" hidden>
+          <div class="qa-q" id="qa-result-q"></div>
+          <div class="qa-compare" id="qa-compare">
+            <div class="qa-col qa-col-model">
+              <div class="label">Ответ модели</div>
+              <pre class="qa-a" id="qa-result-a">—</pre>
+            </div>
+            <div class="qa-col qa-col-ref">
+              <div class="label">Правильный ответ</div>
+              <textarea id="qa-result-ref" rows="7" placeholder="Эталон — можно править перед оценкой"></textarea>
+            </div>
+          </div>
+          <div class="citations" id="qa-result-citations"></div>
+        </div>
+
+        <div class="log-wrap">
+          <div class="label">Журнал</div>
+          <pre id="log" class="log"></pre>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/static/qa-lab.js"></script>
+  <script>QaLab.init();</script>
+</body>
+</html>

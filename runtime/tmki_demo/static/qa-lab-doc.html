@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Документ — QA лаб</title>
+  <link rel="stylesheet" href="/static/qa-lab.css" />
+</head>
+<body class="panel doc-panel">
+  <header class="win-chrome"><span class="win-title">Документ</span><span id="fmt" class="badge"></span></header>
+  <div class="win-body">
+    <div id="meta" class="file-meta"></div>
+    <div id="viewer" class="viewer"></div>
+    <div class="panel-actions">
+      <button type="button" id="open-os" hidden>Открыть в приложении</button>
+    </div>
+  </div>
+  <script src="/static/qa-lab.js"></script>
+  <script>QaLab.initDocPanel();</script>
+</body>
+</html>

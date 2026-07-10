@@ -4,3 +4,7 @@ runtime/secrets.local
 runtime/models/
 .env
 *.log
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/

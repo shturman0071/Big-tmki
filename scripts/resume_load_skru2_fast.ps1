@@ -13,6 +13,7 @@ Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
     }
 Start-Sleep -Seconds 2
 
-$env:TMKI_EMBED_BATCH = if ($env:TMKI_EMBED_BATCH) { $env:TMKI_EMBED_BATCH } else { "48" }
-Write-Host "Starting load_skru2 (embed-batch=$env:TMKI_EMBED_BATCH)..." -ForegroundColor Cyan
-python -u scripts/load_skru2_to_chunks.py --resume --embed-batch $env:TMKI_EMBED_BATCH --batch 400
+$env:TMKI_EMBED_BATCH = if ($env:TMKI_EMBED_BATCH) { $env:TMKI_EMBED_BATCH } else { "96" }
+$env:TMKI_LOAD_WORKERS = if ($env:TMKI_LOAD_WORKERS) { $env:TMKI_LOAD_WORKERS } else { "2" }
+Write-Host "Starting load_skru2 (embed-batch=$env:TMKI_EMBED_BATCH workers=$env:TMKI_LOAD_WORKERS)..." -ForegroundColor Cyan
+python -u scripts/load_skru2_to_chunks.py --resume --embed-batch $env:TMKI_EMBED_BATCH --workers $env:TMKI_LOAD_WORKERS --batch 800

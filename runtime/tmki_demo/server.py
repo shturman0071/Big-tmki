@@ -23,6 +23,7 @@ from tmki_demo.doc_voice import (
     process_turn,
 )
 from tmki_demo.qa_lab import resolve_archive_file
+from tmki_demo.director_agent import director_agent_chat
 from tmki_demo.qa import ask_regulations, resolve_document, resolve_llm_provider
 from tmki_rag.corpus_policy import corpus_policy_snapshot, normalize_corpus_id
 
@@ -181,11 +182,24 @@ def _demo_status_snapshot() -> dict[str, Any]:
             data = json.loads(state.read_text(encoding="utf-8"))
             total = int(data.get("total_candidates") or 0)
             processed = len(data.get("processed") or [])
+            live_progress = processed
+            hb_path = ARTIFACTS_DIR / "reindex-heartbeat.json"
+            if hb_path.is_file():
+                hb = json.loads(hb_path.read_text(encoding="utf-8"))
+                hb_index = int(hb.get("file_index") or 0)
+                live_progress = max(processed, hb_index)
+                current_file = hb.get("current_file")
+                if current_file:
+                    payload["current_file"] = str(current_file)
             if total:
-                payload["progress"] = processed
+                payload["progress"] = live_progress
                 payload["total"] = total
-                payload["percent"] = round(100.0 * processed / total, 1)
+                payload["percent"] = round(100.0 * live_progress / total, 1)
                 payload["phase"] = "post_finalize" if payload["finalize_done"] else "reindexing"
+            stats = data.get("stats") or {}
+            if isinstance(stats, dict):
+                payload["imported"] = int(stats.get("imported") or 0)
+                payload["ocr_failed"] = int(stats.get("ocr_failed") or 0)
         except (OSError, json.JSONDecodeError, TypeError, ValueError):
             pass
 
@@ -276,8 +290,44 @@ class DemoHandler(BaseHTTPRequestHandler):
                 except OSError:
                     pass
 
+    def _maybe_proxy_kanboard(self) -> bool:
+        path = urlparse(self.path).path
+        if path == "/kanboard" or path.startswith("/kanboard/"):
+            self._proxy_kanboard()
+            return True
+        # Kanboard AJAX may hit root paths when cached HTML was not rewritten.
+        if path == "/login":
+            self._proxy_kanboard(upstream_path="/login")
+            return True
+        if path == "/" and "controller=" in (urlparse(self.path).query or ""):
+            self._proxy_kanboard(upstream_path="/")
+            return True
+        return False
+
+    def do_PUT(self) -> None:  # noqa: N802
+        if self._maybe_proxy_kanboard():
+            return
+        self._send_json(HTTPStatus.METHOD_NOT_ALLOWED, {"error": "method not allowed"})
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        if self._maybe_proxy_kanboard():
+            return
+        self._send_json(HTTPStatus.METHOD_NOT_ALLOWED, {"error": "method not allowed"})
+
+    def do_PATCH(self) -> None:  # noqa: N802
+        if self._maybe_proxy_kanboard():
+            return
+        self._send_json(HTTPStatus.METHOD_NOT_ALLOWED, {"error": "method not allowed"})
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        if self._maybe_proxy_kanboard():
+            return
+        self._send_json(HTTPStatus.METHOD_NOT_ALLOWED, {"error": "method not allowed"})
+
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
+        if self._maybe_proxy_kanboard():
+            return
         if parsed.path in ("/", "/index.html"):
             html = (STATIC_DIR / "index.html").read_bytes()
             self.send_response(HTTPStatus.OK)
@@ -404,6 +454,44 @@ class DemoHandler(BaseHTTPRequestHandler):
             corpus = normalize_corpus_id((params.get("corpus") or [None])[0])
             self._send_json(HTTPStatus.OK, resolve_document(doc_id=doc_id, query=query, corpus_id=corpus))
             return
+        if parsed.path == "/api/synth/search":
+            params = parse_qs(parsed.query)
+            query = (params.get("q") or [""])[0]
+            try:
+                from tmki_demo.synthetic_docs import search as synth_search, tree_summary
+
+                if not (query or "").strip():
+                    self._send_json(HTTPStatus.OK, {"status": "ok", "tree": tree_summary(), "matches": []})
+                else:
+                    self._send_json(HTTPStatus.OK, {"status": "ok", "matches": synth_search(query, limit=20)})
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if parsed.path == "/api/todo/kanboard-status":
+            try:
+                from tmki_demo.todo_kanboard_sync import STATE_FILE, file_mtime, list_todo_xlsx
+
+                files = list_todo_xlsx()
+                mtime = file_mtime()
+                state = {}
+                if STATE_FILE.is_file():
+                    state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+                self._send_json(
+                    HTTPStatus.OK,
+                    {
+                        "ok": True,
+                        "source": str(files[0]) if files else "",
+                        "sources": [str(p) for p in files],
+                        "mtime": mtime,
+                        "synced_mtime": state.get("mtime"),
+                        "changed": state.get("mtime") != mtime,
+                        "tasks": state.get("tasks") or [],
+                        "last_sync": state.get("updated_at"),
+                    },
+                )
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"ok": False, "error": str(exc)})
+            return
         if parsed.path == "/api/doc/profile":
             params = parse_qs(parsed.query)
             doc_id = (params.get("doc_id") or [None])[0]
@@ -423,6 +511,29 @@ class DemoHandler(BaseHTTPRequestHandler):
         self._send_json(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
+        if self._maybe_proxy_kanboard():
+            return
+        if self.path == "/api/kanboard/bootstrap":
+            self._send_kanboard_bootstrap()
+            return
+        if self.path == "/api/todo/sync-kanboard":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                body = self._read_json() if length > 0 else {}
+                from tmki_demo.todo_kanboard_sync import sync_from_xlsx
+
+                result = sync_from_xlsx(reindex=bool(body.get("reindex")))
+                self._send_json(HTTPStatus.OK, result)
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"ok": False, "error": str(exc)})
+            return
+        if self.path == "/api/agent/chat":
+            try:
+                body = self._read_json()
+                self._send_json(HTTPStatus.OK, director_agent_chat(body))
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
         if self.path == "/api/ask":
             try:
                 body = self._read_json()
@@ -436,6 +547,20 @@ class DemoHandler(BaseHTTPRequestHandler):
                 _save_last_ask(question, corpus, result)
                 self._send_json(HTTPStatus.OK, result)
             except Exception as exc:  # noqa: BLE001 — demo boundary
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if self.path == "/api/app/outlook":
+            try:
+                if sys.platform == "win32":
+                    subprocess.Popen(
+                        ["cmd", "/c", "start", "", "outlook.exe"],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )  # noqa: S603
+                    self._send_json(HTTPStatus.OK, {"status": "started", "app": "outlook"})
+                else:
+                    self._send_json(HTTPStatus.BAD_REQUEST, {"error": "outlook supported only on win32"})
+            except Exception as exc:  # noqa: BLE001
                 self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
             return
         if self.path == "/api/transcribe":
@@ -452,8 +577,45 @@ class DemoHandler(BaseHTTPRequestHandler):
                     self._send_json(HTTPStatus.BAD_REQUEST, {"error": "path required"})
                     return
                 opened = _open_local_file(path)
+                if opened.get("status") != "opened":
+                    self._send_json(HTTPStatus.NOT_FOUND, opened)
+                    return
                 self._send_json(HTTPStatus.OK, opened)
             except Exception as exc:  # noqa: BLE001 — demo boundary
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+            return
+        if self.path == "/api/synth/open":
+            try:
+                from tmki_demo.synthetic_docs import (
+                    contract_path,
+                    ensure_synthetic_tree,
+                    latest_todo_path,
+                    todo_file_path,
+                )
+
+                ensure_synthetic_tree()
+                body = self._read_json()
+                group_id = str(body.get("group_id") or "").strip()
+                file_name = str(body.get("file") or body.get("file_name") or "").strip()
+                contract_name = str(body.get("contract") or body.get("name") or "").strip()
+                target = None
+                if group_id:
+                    target = todo_file_path(group_id, file_name) if file_name else None
+                    if target is None:
+                        target = latest_todo_path(group_id)
+                elif contract_name:
+                    target = contract_path(contract_name)
+                elif body.get("absolute_path") or body.get("path"):
+                    target = Path(str(body.get("absolute_path") or body.get("path")))
+                if target is None or not Path(target).is_file():
+                    self._send_json(HTTPStatus.NOT_FOUND, {"error": "synthetic file not found", "status": "not_found"})
+                    return
+                opened = _open_local_file(str(target))
+                if opened.get("status") != "opened":
+                    self._send_json(HTTPStatus.NOT_FOUND, opened)
+                    return
+                self._send_json(HTTPStatus.OK, opened)
+            except Exception as exc:  # noqa: BLE001
                 self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
             return
         if self.path == "/api/tts/preview":
@@ -509,6 +671,203 @@ class DemoHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.GONE, {"error": "removed; use /voice-doc"})
             return
         self._send_json(HTTPStatus.NOT_FOUND, {"error": "not found"})
+
+    def _forward_proxy_headers(self, headers: Any, *, upstream: str) -> None:
+        skip = {
+            "transfer-encoding",
+            "connection",
+            "keep-alive",
+            "proxy-authenticate",
+            "proxy-authorization",
+            "te",
+            "trailers",
+            "upgrade",
+            "content-length",
+            "content-encoding",
+            "x-frame-options",
+            "content-security-policy",
+        }
+        sent_cookie = False
+        for k, v in headers.items():
+            lk = k.lower()
+            if lk in skip or lk == "set-cookie":
+                continue
+            if lk == "location":
+                v = self._rewrite_kanboard_location(v, upstream)
+            self.send_header(k, v)
+        if hasattr(headers, "get_all"):
+            for cookie in headers.get_all("Set-Cookie") or []:
+                self.send_header("Set-Cookie", self._rewrite_kanboard_cookie(cookie))
+                sent_cookie = True
+        if not sent_cookie:
+            raw = headers.get("Set-Cookie")
+            if raw:
+                self.send_header("Set-Cookie", self._rewrite_kanboard_cookie(raw))
+
+    def _rewrite_kanboard_text(self, text: str) -> str:
+        import re
+
+        def _prefix_root_paths(match: re.Match[str]) -> str:
+            attr, quote, path = match.group(1), match.group(2), match.group(3)
+            if path.startswith("/kanboard") or path.startswith("//"):
+                return match.group(0)
+            return f"{attr}={quote}/kanboard{path}{quote}"
+
+        text = re.sub(r'(href|src|action|formaction)=(["\'])(/[^"\']*)\2', _prefix_root_paths, text)
+        text = re.sub(r'(data-[a-z-]+)=(["\'])(/[^"\']*)\2', _prefix_root_paths, text)
+        text = re.sub(r"url\(\s*/(?!/)", "url(/kanboard/", text)
+        if "<head>" in text and "<base " not in text[:1200].lower():
+            text = text.replace("<head>", '<head><base href="/kanboard/">', 1)
+        return text
+
+    def _rewrite_kanboard_location(self, location: str, upstream: str) -> str:
+        if location.startswith(upstream):
+            location = location[len(upstream) :] or "/"
+        if location.startswith("/") and not location.startswith("/kanboard"):
+            location = "/kanboard" + location
+        return location
+
+    def _rewrite_kanboard_cookie(self, cookie: str) -> str:
+        import re
+
+        if re.search(r"\bpath=/", cookie, flags=re.IGNORECASE):
+            cookie = re.sub(r"\bPath=/", "Path=/kanboard", cookie, flags=re.IGNORECASE)
+        return cookie
+
+    def _kanboard_upstream_login(self) -> list[tuple[str, str]]:
+        """Server-side demo login to Kanboard; returns (name, value) cookie pairs."""
+        import http.cookiejar
+        import re
+        import urllib.error
+        import urllib.parse
+        import urllib.request
+
+        class _NoUpstreamRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+                return None
+
+        upstream = "http://127.0.0.1:8790"
+        cj = http.cookiejar.CookieJar()
+        opener = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(cj),
+            _NoUpstreamRedirect(),
+        )
+        login_html = opener.open(
+            f"{upstream}/?controller=AuthController&action=login",
+            timeout=15,
+        ).read().decode("utf-8", "ignore")
+        csrf = re.search(r'name="csrf_token" value="([^"]+)"', login_html)
+        body = urllib.parse.urlencode(
+            {
+                "username": "admin",
+                "password": "admin",
+                "remember_me": "1",
+                "csrf_token": csrf.group(1) if csrf else "",
+            }
+        ).encode()
+        req = urllib.request.Request(
+            f"{upstream}/?controller=AuthController&action=check",
+            data=body,
+            method="POST",
+        )
+        req.add_header("Content-Type", "application/x-www-form-urlencoded")
+        try:
+            opener.open(req, timeout=15)
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (302, 303, 307):
+                raise
+        pairs: list[tuple[str, str]] = []
+        for cookie in cj:
+            pairs.append((cookie.name, cookie.value))
+        if not any(name == "KB_SID" for name, _ in pairs):
+            raise RuntimeError("kanboard login did not return session cookie")
+        return pairs
+
+    def _send_kanboard_bootstrap(self) -> None:
+        try:
+            cookies = self._kanboard_upstream_login()
+        except Exception as exc:  # noqa: BLE001
+            self._send_json(HTTPStatus.BAD_GATEWAY, {"ok": False, "error": str(exc)})
+            return
+        body = json.dumps({"ok": True, "cookies": len(cookies)}, ensure_ascii=False).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        for name, value in cookies:
+            self.send_header(
+                "Set-Cookie",
+                f"{name}={value}; Path=/kanboard; HttpOnly; SameSite=Lax",
+            )
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _proxy_kanboard(self, upstream_path: str | None = None) -> None:
+        """Reverse proxy to local Kanboard so it can be framed on same origin."""
+        import urllib.error
+        import urllib.request
+
+        class _NoUpstreamRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+                return None
+
+        upstream = "http://127.0.0.1:8790"
+        path = upstream_path if upstream_path is not None else (urlparse(self.path).path or "/")
+        if upstream_path is None and path.startswith("/kanboard"):
+            path = path[len("/kanboard") :] or "/"
+        query = urlparse(self.path).query
+        url = upstream + path + (f"?{query}" if query else "")
+        body = None
+        if self.command in ("POST", "PUT", "PATCH"):
+            body = self._read_body()
+        req = urllib.request.Request(url, data=body, method=self.command)
+        if self.headers.get("Content-Type"):
+            req.add_header("Content-Type", self.headers.get("Content-Type"))
+        if self.headers.get("Cookie"):
+            req.add_header("Cookie", self.headers.get("Cookie"))
+        if self.headers.get("Referer"):
+            import re
+
+            referer = self.headers.get("Referer", "")
+            referer = re.sub(r"^https?://[^/]+/kanboard", upstream, referer)
+            req.add_header("Referer", referer)
+        opener = urllib.request.build_opener(_NoUpstreamRedirect())
+        try:
+            with opener.open(req, timeout=30) as resp:  # noqa: S310
+                data = resp.read()
+                content_type = (resp.headers.get("Content-Type") or "").lower()
+                content_encoding = (resp.headers.get("Content-Encoding") or "").lower()
+
+                if not content_encoding and (
+                    content_type.startswith("text/html")
+                    or content_type.startswith("text/css")
+                    or content_type.startswith("application/javascript")
+                ):
+                    try:
+                        text = data.decode("utf-8", errors="ignore")
+                        data = self._rewrite_kanboard_text(text).encode("utf-8")
+                    except Exception:
+                        pass
+
+                self.send_response(resp.status)
+                self._forward_proxy_headers(resp.headers, upstream=upstream)
+                if self.command != "HEAD":
+                    self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                if self.command != "HEAD":
+                    self.wfile.write(data)
+        except urllib.error.HTTPError as e:
+            data = e.read() or b""
+            self.send_response(e.code)
+            self._forward_proxy_headers(e.headers, upstream=upstream)
+            if not e.headers.get("Content-Type"):
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+            if data:
+                self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            if data and self.command != "HEAD":
+                self.wfile.write(data)
+        except Exception as exc:  # noqa: BLE001
+            self._send_json(HTTPStatus.BAD_GATEWAY, {"error": f"kanboard proxy failed: {exc}"})
 
 
 def _open_local_file(path: str) -> dict[str, Any]:
@@ -567,6 +926,17 @@ def _startup_llm_status() -> str:
 
 
 def serve(host: str = "127.0.0.1", port: int = 8770) -> None:
+    try:
+        from tmki_demo.synthetic_docs import ensure_synthetic_tree, tree_summary
+
+        summary = tree_summary()
+        ensure_synthetic_tree()
+        print(
+            f"  Synthetic docs: {summary.get('files', 0)} files @ {summary.get('root')}",
+            flush=True,
+        )  # noqa: T201
+    except Exception as exc:  # noqa: BLE001
+        print(f"  Synthetic docs skipped: {exc}", flush=True)  # noqa: T201
     server = DemoHTTPServer((host, port), DemoHandler)
     url = f"http://{host}:{port}/"
     print(f"TMKI Demo UI: {url}", flush=True)  # noqa: T201

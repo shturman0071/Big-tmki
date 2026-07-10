@@ -4,9 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ТМКИ — управленческий дашборд</title>
+  <link rel="stylesheet" href="/static/vendor/vanilla-calendar-pro/styles/index.css">
+  <link rel="stylesheet" href="/static/vendor/vanilla-calendar-pro/styles/dark.css">
+  <link rel="stylesheet" href="/static/vendor/vanilla-calendar-pro/styles/light.css">
   <link rel="stylesheet" href="/static/director.css">
 </head>
 <body>
+  <script>
+    (function () {
+      var theme = localStorage.getItem("tmki_director_theme");
+      if (theme && theme !== "tmki") document.body.dataset.theme = theme;
+    })();
+  </script>
   <div class="app-shell">
     <aside class="sidebar" aria-label="Главная навигация">
       <div class="brand-block">
@@ -22,7 +31,7 @@
         <div>
           <span>Пользователь</span>
           <strong id="userDisplayName">—</strong>
-          <small id="userDisplayRole">Директор</small>
+          <small id="userDisplayRole">Главный инженер проекта</small>
         </div>
       </div>
 
@@ -32,8 +41,9 @@
         <a href="#" data-open-page="overdue">◷ Просрочки</a>
         <a href="#" data-open-page="risks">▲ Риски</a>
         <a href="#" data-open-page="debtors">₽ Дебиторка</a>
-        <a href="#" id="navAssistant">ИИ-агент</a>
-        <a href="/pto">▣ Рабочее место ПТО</a>
+        <a href="#" id="navAssistant">Даша</a>
+        <a href="#" id="navMail">✉ Почта</a>
+        <a href="#" id="navSettings">⚙ Настройки</a>
       </nav>
 
       <section class="object-picker" id="objectsPanel">
@@ -43,32 +53,83 @@
         <select id="objectFilter" class="hidden-control" aria-hidden="true"></select>
       </section>
 
-      <section class="calendar-widget">
+      <div class="sidebar-tools">
+      <section class="calc-widget" id="calcWidget" aria-label="Калькулятор">
         <div class="calendar-head">
-          <button id="prevYear" type="button">«</button>
-          <button id="prevMonth" type="button">‹</button>
-          <strong id="calendarTitle">Месяц год</strong>
-          <button id="nextMonth" type="button">›</button>
-          <button id="nextYear" type="button">»</button>
+          <strong>Калькулятор</strong>
+          <button id="calcBack" type="button" title="Назад">⌫</button>
+          <button id="calcClear" type="button" title="Сброс">C</button>
         </div>
-        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="calc">
+          <input id="calcDisplay" class="calc-display" value="0" readonly>
+          <div class="calc-grid">
+            <button type="button" class="fn" data-calc="sin(">sin</button>
+            <button type="button" class="fn" data-calc="cos(">cos</button>
+            <button type="button" class="fn" data-calc="tan(">tan</button>
+            <button type="button" class="fn" data-calc="ln(">ln</button>
+            <button type="button" class="fn" data-calc="log(">log</button>
+
+            <button type="button" class="fn" data-calc="sqrt(">√</button>
+            <button type="button" class="fn" data-calc="pow(">xʸ</button>
+            <button type="button" class="fn" data-calc="pi">π</button>
+            <button type="button" class="fn" data-calc="e">e</button>
+            <button type="button" data-calc="/">÷</button>
+
+            <button type="button" data-calc="7">7</button>
+            <button type="button" data-calc="8">8</button>
+            <button type="button" data-calc="9">9</button>
+            <button type="button" data-calc="(">(</button>
+            <button type="button" data-calc=")">)</button>
+
+            <button type="button" data-calc="4">4</button>
+            <button type="button" data-calc="5">5</button>
+            <button type="button" data-calc="6">6</button>
+            <button type="button" data-calc="*">×</button>
+            <button type="button" data-calc="-">−</button>
+
+            <button type="button" data-calc="1">1</button>
+            <button type="button" data-calc="2">2</button>
+            <button type="button" data-calc="3">3</button>
+            <button type="button" data-calc="+">+</button>
+            <button type="button" data-calc="=" class="eq">=</button>
+
+            <button type="button" data-calc="0" style="grid-column: span 2">0</button>
+            <button type="button" data-calc=".">.</button>
+            <button type="button" data-calc=",">,</button>
+          </div>
+        </div>
       </section>
+
+      <section class="calendar-widget" id="calendarWidget" aria-label="Календарь">
+        <div id="sidebarCalendar" class="sidebar-calendar"></div>
+      </section>
+      </div>
     </aside>
 
     <main class="content">
       <section id="dashboardView" class="view active-view">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Демо на тестовых данных</p>
             <h1>Управленческий дашборд</h1>
           </div>
           <article class="ai-top-card" id="assistant">
-            <div>
-              <h2>Сводка агента</h2>
-              <p id="aiBrief">ИИ-агент готовит управленческую сводку.</p>
+            <div class="ai-top-main">
+              <div>
+                <h2>Даша</h2>
+                <p class="muted">ИИ-помощник: текст или голос</p>
+              </div>
+              <label class="quick-ai">
+                Запрос
+                <input id="quickAiQuery" placeholder="Например: что срочно?" autocomplete="off">
+              </label>
+              <div class="ai-top-actions">
+                <button id="quickAiMic" type="button" title="Голосовой ввод">🎤</button>
+                <button id="quickAiSend" type="button">Спросить</button>
+              </div>
             </div>
-            <label class="quick-ai">Запрос<input id="quickAiQuery" placeholder="Например: что срочно?" autocomplete="off"></label>
-            <button id="quickAiSend" type="button">Спросить</button>
+            <div class="tz-clocks-row">
+              <div class="tz-clocks" id="tzClocks" aria-label="Часы по городам"></div>
+            </div>
           </article>
         </header>
 
@@ -96,23 +157,29 @@
         </section>
 
         <section class="work-grid">
-          <article class="panel todo-panel" id="todo">
-            <div class="panel-title compact">
-              <h2>Дела</h2>
-              <p>Клик по списку откроет файл последнего сохранения и архив</p>
-            </div>
-            <div class="todo-grid" id="todoGrid"></div>
-          </article>
-
           <article class="panel kanban-panel" id="kanban">
             <div class="panel-title">
               <div>
                 <h2>Канбан задач</h2>
-                <p>Организован по спискам дел и текущим задачам</p>
+                <p>Kanboard — локально на рабочей станции</p>
               </div>
               <label class="kanban-filter">Фильтр <select id="kanbanTodoFilter"></select></label>
             </div>
-            <div class="kanban" id="kanbanBoard"></div>
+            <div class="kanban" id="kanbanBoard">
+              <iframe id="kanboardFrame" title="Kanboard" class="kanboard-frame" src="about:blank"></iframe>
+              <p class="muted kanban-hint">
+                Kanboard на русском.
+                <a href="/kanboard/?controller=BoardViewController&amp;action=show&amp;project_id=1" target="_blank" rel="noopener">Открыть в отдельном окне</a>
+              </p>
+            </div>
+          </article>
+
+          <article class="panel todo-panel" id="todo">
+            <div class="panel-title compact">
+              <h2>To-do</h2>
+              <p>Клик по списку откроет файл последнего сохранения и архив</p>
+            </div>
+            <div class="todo-grid" id="todoGrid"></div>
           </article>
         </section>
 
@@ -198,20 +265,38 @@
     <form method="dialog" class="dialog-card ai-dialog-card">
       <div class="dialog-head">
         <div>
-          <p class="eyebrow">ИИ-агент</p>
-          <h3>Диалог по управленческой сводке</h3>
+          <p class="eyebrow">ИИ-помощник</p>
+          <h3>Даша</h3>
         </div>
         <button value="cancel" class="back-button" type="submit">Закрыть</button>
       </div>
       <div class="agent-chat" id="agentChat"></div>
-      <div class="agent-prompts">
-        <button type="button" data-agent-prompt="summary">Сводка</button>
-        <button type="button" data-agent-prompt="risks">Риски</button>
-        <button type="button" data-agent-prompt="money">Финансы</button>
-        <button type="button" data-agent-prompt="news">Новости</button>
+      <p class="muted agent-doc-hint" id="agentDocHint" hidden></p>
+      <p class="muted agent-corpus-hint" id="agentCorpusHint"></p>
+      <label class="agent-input">Вопрос Даше
+        <div class="agent-input-row">
+          <textarea id="agentQuestion" rows="3" placeholder="Например: что срочно по просрочкам?"></textarea>
+          <button type="button" id="agentMic" class="agent-mic" title="Голосовой ввод">🎤</button>
+        </div>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="agentReset" class="back-button">Сброс запроса</button>
+        <button type="button" id="sendAgentQuestion">Отправить</button>
       </div>
-      <label class="agent-input">Вопрос агенту<textarea id="agentQuestion" rows="3" placeholder="Например: что отправить руководству сегодня?"></textarea></label>
-      <div class="dialog-actions"><button type="button" id="sendAgentQuestion">Отправить</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="docSearchDialog">
+    <form method="dialog" class="dialog-card doc-search-card">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">Поиск документов</p>
+          <h3 id="docSearchTitle">Найденные файлы</h3>
+        </div>
+        <button value="cancel" class="back-button" type="submit">Закрыть</button>
+      </div>
+      <p class="muted" id="docSearchHint"></p>
+      <div class="doc-search-list" id="docSearchList"></div>
     </form>
   </dialog>
 
@@ -241,6 +326,21 @@
     </form>
   </dialog>
 
+  <dialog id="settingsDialog">
+    <form method="dialog" class="dialog-card settings-card">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">Интерфейс</p>
+          <h3>Настройки</h3>
+        </div>
+        <button value="cancel" class="back-button" type="submit">Закрыть</button>
+      </div>
+      <p class="muted">Тема оформления сохраняется в этом браузере.</p>
+      <div class="theme-grid" id="themeGrid" role="listbox" aria-label="Выбор темы"></div>
+    </form>
+  </dialog>
+
+  <script src="/static/vendor/vanilla-calendar-pro/index.js"></script>
   <script src="/static/director.js"></script>
 </body>
 </html>

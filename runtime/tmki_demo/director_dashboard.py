@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +23,7 @@ def _builtin_seed() -> dict[str, Any]:
     return {
         "project": "Сатимол",
         "user": {
-            "display_name": "Каледин О.С.",
+            "display_name": "Аксенов Е.В.",
             "employee_id": "emp_direktor_001",
             "department_id": "dept_leadership",
         },
@@ -537,16 +538,28 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
 
 
 def build_director_dashboard(*, index_stats: dict[str, int] | None = None) -> dict[str, Any]:
+    from tmki_demo.synthetic_docs import enrich_contracts, enrich_todo_files, ensure_synthetic_tree, root_path
+    from tmki_demo.todo_kanboard_sync import bind_todo_panels
+
     ensure_seed_file()
+    ensure_synthetic_tree()
     seed = _load_seed()
     data = _deep_merge(_builtin_seed(), seed)
     skru2 = (index_stats or {}).get("skru-2", 0)
     index_pct = round(100.0 * skru2 / 100_804, 1) if skru2 else None
+    contracts = enrich_contracts(list(data.get("contracts") or []))
+    todo_groups = list(data.get("todo_groups") or [])
+    todo_files = enrich_todo_files(dict(data.get("todo_files") or {}))
+    try:
+        todo_groups, todo_files = bind_todo_panels(todo_groups, todo_files)
+    except Exception:
+        # если папка Ту-ду недоступна — оставляем синтетические файлы
+        pass
 
     return {
         "schema_version": "0.1",
         "role_key": "Direktor",
-        "role_label": "Директор",
+        "role_label": "Главный инженер проекта",
         "project": data.get("project") or "Сатимол",
         "user": data.get("user")
         or {
@@ -557,7 +570,7 @@ def build_director_dashboard(*, index_stats: dict[str, int] | None = None) -> di
         "greeting": "Управленческий дашборд TMKI Control Center",
         "objects": data.get("objects") or [],
         "briefs": data.get("briefs") or {},
-        "contracts": data.get("contracts") or [],
+        "contracts": contracts,
         "finance_series": data.get("finance_series") or [],
         "expenses": data.get("expenses") or [],
         "expense_details": data.get("expense_details") or [],
@@ -566,13 +579,17 @@ def build_director_dashboard(*, index_stats: dict[str, int] | None = None) -> di
         "overdue_items": data.get("overdue_items") or [],
         "risks": data.get("risks") or [],
         "news": data.get("news") or [],
-        "todo_groups": data.get("todo_groups") or [],
-        "todo_files": data.get("todo_files") or {},
+        "todo_groups": todo_groups,
+        "todo_files": todo_files,
         "agent": {
-            "label": "ИИ-агент ТМКИ",
-            "hint": "Управленческая сводка по договорам, финансам и рискам",
+            "name": "Даша",
+            "label": "Даша — ИИ-помощник",
+            "hint": "Голосовой помощник по дашборду и документам",
             "corpus_default": "skru-2",
-            "chat_url": "/",
+            "corpus_label": "СКРУ-2",
+            "archive_path": os.environ.get("TMKI_REGULATIONS_ARCHIVE", r"D:\Курсор\СКРУ-2"),
+            "synthetic_docs_root": str(root_path()),
+            "chat_url": "/api/agent/chat",
         },
         "system": {
             "index_skru2_chunks": skru2,

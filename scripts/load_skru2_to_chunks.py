@@ -115,6 +115,46 @@ def get_embeddings_batch(
         return [get_embedding(t, url=url, model=model) for t in texts]
 
 
+def get_embeddings_batch_parallel(
+    texts: list[str],
+    *,
+    url: str,
+    model: str,
+    embed_batch: int,
+    workers: int,
+) -> list[list[float] | None]:
+    """Несколько параллельных /api/embed (нужен OLLAMA_NUM_PARALLEL >= workers)."""
+    if not texts:
+        return []
+    workers = max(1, workers)
+    embed_batch = max(1, embed_batch)
+    if workers <= 1 or len(texts) <= embed_batch:
+        return get_embeddings_batch(texts, url=url, model=model)
+
+    chunks = [texts[i : i + embed_batch] for i in range(0, len(texts), embed_batch)]
+    starts: list[int] = []
+    pos = 0
+    for chunk in chunks:
+        starts.append(pos)
+        pos += len(chunk)
+    out: list[list[float] | None] = [None] * len(texts)
+    with ThreadPoolExecutor(max_workers=min(workers, len(chunks))) as pool:
+        futures = {
+            pool.submit(get_embeddings_batch, chunk, url=url, model=model): (starts[idx], len(chunk))
+            for idx, chunk in enumerate(chunks)
+        }
+        for fut in as_completed(futures):
+            start, n = futures[fut]
+            try:
+                vectors = fut.result()
+            except Exception as exc:
+                print(f"  parallel embed error: {exc}")
+                vectors = [None] * n
+            for j, vec in enumerate(vectors):
+                out[start + j] = vec
+    return out
+
+
 def init_db(conn: Any, *, dim: int) -> None:
     cur = conn.cursor()
     cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
@@ -321,8 +361,8 @@ def main() -> int:
     parser.add_argument(
         "--workers",
         type=int,
-        default=_env_int("TMKI_LOAD_WORKERS", 8),
-        help="Устар.: параллельных /api/embeddings (fallback). Основной путь — --embed-batch",
+        default=_env_int("TMKI_LOAD_WORKERS", 2),
+        help="Параллельных /api/embed запросов (нужен OLLAMA_NUM_PARALLEL). Default: 2",
     )
     parser.add_argument("--resume", action="store_true", help="Продолжить с offset из state")
     parser.add_argument("--replace-corpus", action="store_true", help="DELETE WHERE corpus_id=...")
@@ -357,7 +397,7 @@ def main() -> int:
     print(f"  source: {args.chunks}")
     print(f"  corpus: {args.corpus}")
     print(f"  dim: {dim}  model: {model}")
-    print(f"  embed-batch: {embed_batch}  commit every: {args.batch}  (workers fallback: {workers})")
+    print(f"  embed-batch: {embed_batch}  workers: {workers}  commit every: {args.batch}")
     print("=" * 60)
 
     all_chunks = load_chunks_file(args.chunks)
@@ -391,13 +431,15 @@ def main() -> int:
     slice_chunks = all_chunks[offset:end]
     slice_len = len(slice_chunks)
     i = 0
+    # За один цикл берём workers×embed_batch чанков и шлём параллельные /api/embed.
+    fetch_size = embed_batch * max(1, workers)
 
     pbar = tqdm(total=slice_len, desc="embed+load")
 
     while i < slice_len:
         batch_rows: list[PreparedRow] = []
         batch_start = i
-        while len(batch_rows) < embed_batch and i < slice_len:
+        while len(batch_rows) < fetch_size and i < slice_len:
             row = _prepare_row(
                 slice_chunks[i],
                 slice_index=i,
@@ -416,7 +458,13 @@ def main() -> int:
             continue
 
         texts = [row.text for row in batch_rows]
-        vectors = get_embeddings_batch(texts, url=ollama, model=model)
+        vectors = get_embeddings_batch_parallel(
+            texts,
+            url=ollama,
+            model=model,
+            embed_batch=embed_batch,
+            workers=workers,
+        )
         ok_rows: list[tuple[PreparedRow, list[float]]] = []
         for row, embedding in zip(batch_rows, vectors):
             if embedding is None:

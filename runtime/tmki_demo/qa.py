@@ -1144,6 +1144,20 @@ def resolve_document(
         return {"status": "not_found", "doc_id": doc_id}
     if query:
         matches = catalog.search_paths(query, limit=10)
+        try:
+            from tmki_demo.synthetic_docs import search as synth_search
+
+            synth = synth_search(query, limit=8)
+            # Синтетика (договоры / To-do) — в начале списка для клика из UI Даши.
+            seen = {str(m.get("absolute_path") or "") for m in matches}
+            for hit in synth:
+                key = str(hit.get("absolute_path") or "")
+                if key and key not in seen:
+                    matches.insert(0, hit)
+                    seen.add(key)
+            matches = matches[:12]
+        except Exception:
+            pass
         return {"status": "ok", "matches": matches}
     return {"status": "error", "error": "doc_id or query required"}
 

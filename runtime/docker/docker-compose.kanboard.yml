@@ -1,0 +1,13 @@
+services:
+  kanboard:
+    image: kanboard/kanboard:v1.2.44
+    container_name: tmki-kanboard
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Moscow
+    ports:
+      - "8790:80"
+    volumes:
+      - ./kanboard-init.sh:/kanboard-init.sh:ro
+      - ./kanboard_seed_demo.php:/kanboard_seed_demo.php:ro
+    entrypoint: ["/bin/sh", "/kanboard-init.sh"]
